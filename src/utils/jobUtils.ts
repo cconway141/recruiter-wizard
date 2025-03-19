@@ -1,4 +1,3 @@
-
 import { Job, Locale, DEFAULT_WORK_DETAILS, DEFAULT_PAY_DETAILS } from "@/types/job";
 
 // Role to abbreviation mapping
@@ -47,11 +46,21 @@ export const ROLE_ABBREVIATIONS: Record<string, string> = {
   "Machine Learning Engineer": "DEV",
 };
 
+// Locale to abbreviation mapping
+export const LOCALE_ABBREVIATIONS: Record<Locale, string> = {
+  "Onshore": "On",
+  "Nearshore": "Near",
+  "Offshore": "Off"
+};
+
 export function generateInternalTitle(client: string, title: string, flavor: string, locale: Locale): string {
   // Get role abbreviation or default to "DEV" if not found
   const roleAbbreviation = ROLE_ABBREVIATIONS[title] || "DEV";
   
-  return `${client} ${roleAbbreviation} - ${flavor} ${locale}`;
+  // Get locale abbreviation
+  const localeAbbreviation = LOCALE_ABBREVIATIONS[locale];
+  
+  return `${client} ${roleAbbreviation} - ${flavor} ${localeAbbreviation}`;
 }
 
 export function calculateRates(baseRate: number): { high: number; medium: number; low: number } {
