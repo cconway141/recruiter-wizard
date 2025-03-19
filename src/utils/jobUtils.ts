@@ -1,8 +1,57 @@
 
 import { Job, Locale, DEFAULT_WORK_DETAILS, DEFAULT_PAY_DETAILS } from "@/types/job";
 
+// Role to abbreviation mapping
+export const ROLE_ABBREVIATIONS: Record<string, string> = {
+  "Account Manager": "AM",
+  "Business Analyst": "BA",
+  "Classroom TA": "TA",
+  "Cyber & Compliance Consultant": "DEV",
+  "Dev Ops Engineer": "DOP",
+  "Entry Level Developer": "DEV",
+  "Full Stack Engineer": "DEV",
+  "Lead Engineer": "DEV",
+  "AI-Driven Marketing Integration Specialist": "MKT",
+  "Operations Specialist": "OPS",
+  "Power BI Engineer": "PBI",
+  "Product Manager": "PDM",
+  "Product Owner": "PO",
+  "Quality Assurance Analyst": "QA",
+  "Marketing Integrator": "MKT",
+  "Sr. Android Developer": "DEV",
+  "Sales & Marketing": "MKT",
+  "SharePoint Specialist": "DEV",
+  "Social Media Manager": "MKT",
+  "Software Engineer": "DEV",
+  "Sr. Business Analyst": "BA",
+  "Sr. Data Engineer": "DEV",
+  "Sr. Data Modeler": "DEV",
+  "Sr. Engineer": "DEV",
+  "Sr. Full Stack Engineer": "DEV",
+  "Sr. iOS Engineer": "DEV",
+  "Sr. IT Recruiter": "REC",
+  "Sr. Java Engineer": "DEV",
+  "Sr. Performance Marketer": "MKT",
+  "Sr. Scrum Master": "SM",
+  "Agile Coach": "AGC",
+  "Fractional CTO": "fCTO",
+  "UI/UX Designer": "UIUX",
+  "QA": "QA",
+  "Power Apps Engineer": "DEV",
+  "Frontend Developer": "DEV",
+  "Backend Developer": "DEV",
+  "Full Stack Developer": "DEV",
+  "Mobile Developer": "DEV",
+  "DevOps Engineer": "DOP",
+  "Data Engineer": "DEV",
+  "Machine Learning Engineer": "DEV",
+};
+
 export function generateInternalTitle(client: string, title: string, flavor: string, locale: Locale): string {
-  return `${client} ${title} - ${flavor} ${locale}`;
+  // Get role abbreviation or default to "DEV" if not found
+  const roleAbbreviation = ROLE_ABBREVIATIONS[title] || "DEV";
+  
+  return `${client} ${roleAbbreviation} - ${flavor} ${locale}`;
 }
 
 export function calculateRates(baseRate: number): { high: number; medium: number; low: number } {
