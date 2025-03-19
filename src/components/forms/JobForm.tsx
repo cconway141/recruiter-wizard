@@ -23,6 +23,7 @@ import { Job, JobStatus, Locale, Flavor, JOB_TITLES } from "@/types/job";
 import { calculateRates, generateInternalTitle, getWorkDetails, getPayDetails, generateM1, generateM2, generateM3 } from "@/utils/jobUtils";
 import { useJobs } from "@/contexts/JobContext";
 import { MessageCard } from "@/components/messages/MessageCard";
+import { getClientNames, getClientByName } from "@/utils/clientData";
 
 interface JobFormProps {
   job?: Job;
@@ -41,11 +42,22 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
 
   const form = useFormContext();
   const watchedFields = form.watch();
+  const clientNames = getClientNames();
+
+  const handleClientSelection = (clientName: string) => {
+    const clientData = getClientByName(clientName);
+    if (clientData) {
+      form.setValue("compDesc", clientData.description);
+    }
+  };
 
   useEffect(() => {
     if (watchedFields.client && watchedFields.candidateFacingTitle && watchedFields.flavor && watchedFields.locale) {
+      const clientData = getClientByName(watchedFields.client);
+      const clientIdentifier = clientData ? clientData.abbreviation : watchedFields.client;
+      
       const newTitle = generateInternalTitle(
-        watchedFields.client,
+        clientIdentifier,
         watchedFields.candidateFacingTitle,
         watchedFields.flavor,
         watchedFields.locale as Locale
@@ -75,8 +87,11 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
     const workDetails = getWorkDetails(locale);
     const payDetails = getPayDetails(locale);
     
+    const clientData = getClientByName(values.client);
+    const clientIdentifier = clientData ? clientData.abbreviation : values.client;
+    
     const internalTitle = generateInternalTitle(
-      values.client,
+      clientIdentifier,
       values.candidateFacingTitle,
       values.flavor,
       locale
@@ -135,9 +150,26 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Client</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Client name" {...field} />
-                  </FormControl>
+                  <Select 
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      handleClientSelection(value);
+                    }} 
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select client" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {clientNames.map((clientName) => (
+                        <SelectItem key={clientName} value={clientName}>
+                          {clientName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

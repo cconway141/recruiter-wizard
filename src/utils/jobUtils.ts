@@ -28,7 +28,7 @@ I'm from The ITBC.
 
 Your background caught my eye.
 
-I have an open ${title} role at ${compDesc}.
+I have an open ${title} role at ${compDesc}
 
 Interested in learning more?
 
