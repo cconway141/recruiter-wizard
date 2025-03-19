@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -103,7 +102,6 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
       setPreviewTitle(newTitle);
     }
 
-    // Generate message previews
     if (watchedFields.candidateFacingTitle && watchedFields.compDesc && watchedFields.locale && watchedFields.skillsSought && watchedFields.videoQuestions) {
       const locale = watchedFields.locale as Locale;
       const workDetails = getWorkDetails(locale);
@@ -120,15 +118,12 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
   const onSubmit = (values: FormValues) => {
     const { previewName, ...jobData } = values;
     
-    // Calculate rates
     const { high, medium, low } = calculateRates(values.rate);
     
-    // Get work and pay details from the locale
     const locale = values.locale as Locale;
     const workDetails = getWorkDetails(locale);
     const payDetails = getPayDetails(locale);
     
-    // Generate the internal title
     const internalTitle = generateInternalTitle(
       values.client,
       values.candidateFacingTitle,
@@ -137,7 +132,6 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
     );
     
     if (isEditing && job) {
-      // Update existing job
       updateJob({
         ...job,
         ...jobData,
@@ -155,11 +149,23 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
         m3: messages.m3
       });
     } else {
-      // Add new job
       addJob({
-        ...jobData,
-        locale: jobData.locale as Locale,
+        jd: jobData.jd,
+        candidateFacingTitle: jobData.candidateFacingTitle,
         status: jobData.status as JobStatus,
+        skillsSought: jobData.skillsSought,
+        minSkills: jobData.minSkills, 
+        linkedinSearch: jobData.linkedinSearch,
+        lir: jobData.lir,
+        client: jobData.client,
+        compDesc: jobData.compDesc,
+        rate: jobData.rate,
+        locale: jobData.locale as Locale,
+        owner: jobData.owner,
+        date: jobData.date,
+        other: jobData.other || "",
+        videoQuestions: jobData.videoQuestions,
+        screeningQuestions: jobData.screeningQuestions,
         flavor: jobData.flavor as Flavor,
       });
     }
