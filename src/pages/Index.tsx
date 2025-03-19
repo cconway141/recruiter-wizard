@@ -1,12 +1,21 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import { PageHeader } from "@/components/layout/PageHeader";
+import { JobsFilter } from "@/components/jobs/JobsFilter";
+import { JobsTable } from "@/components/jobs/JobsTable";
+import { Navbar } from "@/components/layout/Navbar";
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
-      </div>
+    <div className="flex flex-col min-h-screen">
+      <Navbar />
+      <main className="flex-1 container py-10">
+        <PageHeader 
+          title="Job Dashboard" 
+          description="Manage and track recruiter jobs in one place. Create personalized messages for LinkedIn outreach."
+        />
+        <JobsFilter />
+        <JobsTable />
+      </main>
     </div>
   );
 };
