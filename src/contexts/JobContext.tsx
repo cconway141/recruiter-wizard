@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 import { Job, JobStatus, Locale, Flavor } from "@/types/job";
 import { calculateRates, generateInternalTitle, getWorkDetails, getPayDetails, generateM1, generateM2, generateM3 } from "@/utils/jobUtils";
 import { useToast } from "@/components/ui/use-toast";
+import { Candidate, CandidateStatus } from "@/components/candidates/CandidateEntry";
 
 interface JobContextType {
   jobs: Job[];
@@ -13,12 +14,24 @@ interface JobContextType {
   getJob: (id: string) => Job | undefined;
   filteredJobs: Job[];
   setFilters: (filters: { search: string; status: JobStatus | "All"; locale: Locale | "All" }) => void;
+  addCandidate: (jobId: string, name: string) => void;
+  removeCandidate: (jobId: string, candidateId: string) => void;
+  updateCandidateStatus: (jobId: string, candidateId: string, statusKey: keyof CandidateStatus, value: boolean) => void;
+  getCandidates: (jobId: string) => Candidate[];
+}
+
+interface JobsState {
+  jobs: Job[];
+  candidates: Record<string, Candidate[]>; // jobId -> candidates[]
 }
 
 const JobContext = createContext<JobContextType | undefined>(undefined);
 
 export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [jobs, setJobs] = useState<Job[]>([]);
+  const [state, setState] = useState<JobsState>({
+    jobs: [],
+    candidates: {}
+  });
   const [filteredJobs, setFilteredJobs] = useState<Job[]>([]);
   const [filters, setFiltersState] = useState({
     search: "",
@@ -28,19 +41,28 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const { toast } = useToast();
 
   useEffect(() => {
-    const storedJobs = localStorage.getItem("recruiterJobs");
-    if (storedJobs) {
-      setJobs(JSON.parse(storedJobs));
+    const storedData = localStorage.getItem("recruiterData");
+    if (storedData) {
+      const parsedData = JSON.parse(storedData);
+      // Handle backward compatibility for existing users
+      if (Array.isArray(parsedData)) {
+        setState({
+          jobs: parsedData,
+          candidates: {}
+        });
+      } else {
+        setState(parsedData);
+      }
     }
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("recruiterJobs", JSON.stringify(jobs));
+    localStorage.setItem("recruiterData", JSON.stringify(state));
     applyFilters();
-  }, [jobs, filters]);
+  }, [state, filters]);
 
   const applyFilters = () => {
-    let result = [...jobs];
+    let result = [...state.jobs];
 
     // Apply search filter
     if (filters.search) {
@@ -97,7 +119,15 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       m3
     };
 
-    setJobs((prevJobs) => [...prevJobs, newJob]);
+    setState(prevState => ({
+      ...prevState,
+      jobs: [...prevState.jobs, newJob],
+      candidates: {
+        ...prevState.candidates,
+        [id]: []
+      }
+    }));
+    
     toast({
       title: "Job Added",
       description: `${internalTitle} has been added successfully.`,
@@ -105,9 +135,11 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateJob = (updatedJob: Job) => {
-    setJobs((prevJobs) =>
-      prevJobs.map((job) => (job.id === updatedJob.id ? updatedJob : job))
-    );
+    setState(prevState => ({
+      ...prevState,
+      jobs: prevState.jobs.map((job) => (job.id === updatedJob.id ? updatedJob : job))
+    }));
+    
     toast({
       title: "Job Updated",
       description: `${updatedJob.internalTitle} has been updated successfully.`,
@@ -115,8 +147,17 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteJob = (id: string) => {
-    const jobToDelete = jobs.find(job => job.id === id);
-    setJobs((prevJobs) => prevJobs.filter((job) => job.id !== id));
+    const jobToDelete = state.jobs.find(job => job.id === id);
+    
+    setState(prevState => {
+      const { [id]: _, ...remainingCandidates } = prevState.candidates;
+      return {
+        ...prevState,
+        jobs: prevState.jobs.filter((job) => job.id !== id),
+        candidates: remainingCandidates
+      };
+    });
+    
     toast({
       title: "Job Deleted",
       description: jobToDelete 
@@ -127,19 +168,102 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const getJob = (id: string) => {
-    return jobs.find((job) => job.id === id);
+    return state.jobs.find((job) => job.id === id);
+  };
+
+  // Candidate management functions
+  const addCandidate = (jobId: string, name: string) => {
+    const newCandidate: Candidate = {
+      id: uuidv4(),
+      name,
+      status: {
+        approved: false,
+        preparing: false,
+        submitted: false,
+        interviewing: false,
+        offered: false
+      }
+    };
+
+    setState(prevState => ({
+      ...prevState,
+      candidates: {
+        ...prevState.candidates,
+        [jobId]: [
+          ...(prevState.candidates[jobId] || []),
+          newCandidate
+        ]
+      }
+    }));
+
+    toast({
+      title: "Candidate Added",
+      description: `${name} has been added to the candidate list.`,
+    });
+  };
+
+  const removeCandidate = (jobId: string, candidateId: string) => {
+    const candidate = state.candidates[jobId]?.find(c => c.id === candidateId);
+    
+    setState(prevState => ({
+      ...prevState,
+      candidates: {
+        ...prevState.candidates,
+        [jobId]: (prevState.candidates[jobId] || []).filter(c => c.id !== candidateId)
+      }
+    }));
+
+    if (candidate) {
+      toast({
+        title: "Candidate Removed",
+        description: `${candidate.name} has been removed from the candidate list.`,
+      });
+    }
+  };
+
+  const updateCandidateStatus = (
+    jobId: string, 
+    candidateId: string, 
+    statusKey: keyof CandidateStatus, 
+    value: boolean
+  ) => {
+    setState(prevState => ({
+      ...prevState,
+      candidates: {
+        ...prevState.candidates,
+        [jobId]: (prevState.candidates[jobId] || []).map(candidate => 
+          candidate.id === candidateId 
+            ? {
+                ...candidate,
+                status: {
+                  ...candidate.status,
+                  [statusKey]: value
+                }
+              }
+            : candidate
+        )
+      }
+    }));
+  };
+
+  const getCandidates = (jobId: string): Candidate[] => {
+    return state.candidates[jobId] || [];
   };
 
   return (
     <JobContext.Provider
       value={{
-        jobs,
+        jobs: state.jobs,
         addJob,
         updateJob,
         deleteJob,
         getJob,
         filteredJobs,
-        setFilters
+        setFilters,
+        addCandidate,
+        removeCandidate,
+        updateCandidateStatus,
+        getCandidates
       }}
     >
       {children}

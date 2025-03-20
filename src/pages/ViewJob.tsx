@@ -8,6 +8,7 @@ import { MessageCard } from "@/components/messages/MessageCard";
 import { useJobs } from "@/contexts/JobContext";
 import { ArrowLeft, ExternalLink, Pencil } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { CandidateEntry } from "@/components/candidates/CandidateEntry";
 
 const StatusBadgeColor = {
   Active: "bg-green-100 text-green-800 hover:bg-green-100",
@@ -191,7 +192,10 @@ const ViewJob = () => {
           </div>
         </div>
         
-        <div className="bg-white p-6 rounded-lg border">
+        {/* Candidate Entry Component */}
+        {id && <CandidateEntry jobId={id} />}
+        
+        <div className="bg-white p-6 rounded-lg border mt-6">
           <h3 className="text-xl font-semibold mb-6 text-recruiter-primary">Messages for LinkedIn Outreach</h3>
           
           <div className="space-y-6">
