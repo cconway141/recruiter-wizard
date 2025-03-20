@@ -1,5 +1,6 @@
 
-import { Eye, Pencil, Trash2 } from "lucide-react";
+import { Eye, Pencil, Trash2, Copy, Check } from "lucide-react";
+import { useState } from "react";
 import { useJobs } from "@/contexts/JobContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,6 +24,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
+import { useToast } from "@/components/ui/use-toast";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const StatusBadgeColor = {
   Active: "bg-green-100 text-green-800 hover:bg-green-100",
@@ -33,6 +41,22 @@ const StatusBadgeColor = {
 
 export function JobsTable() {
   const { filteredJobs, deleteJob } = useJobs();
+  const { toast } = useToast();
+  const [copiedMessage, setCopiedMessage] = useState<string | null>(null);
+
+  const copyToClipboard = (text: string, messageType: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedMessage(messageType);
+    
+    toast({
+      title: "Copied!",
+      description: `${messageType} has been copied to clipboard.`,
+    });
+    
+    setTimeout(() => {
+      setCopiedMessage(null);
+    }, 2000);
+  };
 
   return (
     <div className="rounded-md border bg-white">
@@ -44,13 +68,14 @@ export function JobsTable() {
             <TableHead>Status</TableHead>
             <TableHead>Rate (US)</TableHead>
             <TableHead>Owner</TableHead>
+            <TableHead className="text-center">Messages</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {filteredJobs.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+              <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
                 No jobs found. Try adjusting your filters or add a new job.
               </TableCell>
             </TableRow>
@@ -66,6 +91,78 @@ export function JobsTable() {
                 </TableCell>
                 <TableCell>${job.rate}/hr</TableCell>
                 <TableCell>{job.owner}</TableCell>
+                <TableCell className="text-center">
+                  <div className="flex justify-center gap-2">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => copyToClipboard(job.m1, "M1")}
+                            className={copiedMessage === "M1" ? "bg-green-100" : ""}
+                          >
+                            {copiedMessage === "M1" ? (
+                              <Check className="h-4 w-4 mr-1" />
+                            ) : (
+                              <Copy className="h-4 w-4 mr-1" />
+                            )}
+                            M1
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Copy initial outreach message</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => copyToClipboard(job.m2, "M2")}
+                            className={copiedMessage === "M2" ? "bg-green-100" : ""}
+                          >
+                            {copiedMessage === "M2" ? (
+                              <Check className="h-4 w-4 mr-1" />
+                            ) : (
+                              <Copy className="h-4 w-4 mr-1" />
+                            )}
+                            M2
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Copy role details message</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => copyToClipboard(job.m3, "M3")}
+                            className={copiedMessage === "M3" ? "bg-green-100" : ""}
+                          >
+                            {copiedMessage === "M3" ? (
+                              <Check className="h-4 w-4 mr-1" />
+                            ) : (
+                              <Copy className="h-4 w-4 mr-1" />
+                            )}
+                            M3
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Copy video request message</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     <Link to={`/jobs/${job.id}`}>
