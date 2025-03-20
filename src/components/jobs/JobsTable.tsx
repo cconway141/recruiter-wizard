@@ -91,7 +91,7 @@ export function JobsTable() {
                 </TableCell>
                 <TableCell>${job.rate}/hr</TableCell>
                 <TableCell>{job.owner}</TableCell>
-                <TableCell className="text-center">
+                <TableCell>
                   <div className="flex justify-center gap-2">
                     <TooltipProvider>
                       <Tooltip>
