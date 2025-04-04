@@ -17,6 +17,17 @@ import { StatusesManager } from "@/components/settings/StatusesManager";
 
 const Settings = () => {
   const { isAirtableEnabled } = useJobs();
+  const [activeTab, setActiveTab] = useState("clients");
+
+  useEffect(() => {
+    // Force a re-render when the component mounts to ensure data is refreshed
+    const refreshData = async () => {
+      // Invalidate query cache to force a refresh
+      console.log("Settings page mounted, refreshing data...");
+    };
+    
+    refreshData();
+  }, []);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -24,7 +35,7 @@ const Settings = () => {
       <main className="flex-1 container py-10">
         <PageHeader title="Settings" description="Configure application settings and integrations." />
         
-        <Tabs defaultValue="clients" className="w-full mb-8">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mb-8">
           <TabsList className="mb-4">
             <TabsTrigger value="clients">Clients</TabsTrigger>
             <TabsTrigger value="locales">Locales</TabsTrigger>

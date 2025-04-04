@@ -1,4 +1,3 @@
-
 import { useFormContext } from "react-hook-form";
 import {
   FormControl,
@@ -23,6 +22,7 @@ import {
   useStatusOptions, 
   useUserOptions 
 } from "@/hooks/use-dropdown-options";
+import { useEffect } from "react";
 
 interface JobFormBasicInfoProps {
   handleClientSelection: (clientName: string) => void;
@@ -31,11 +31,17 @@ interface JobFormBasicInfoProps {
 export function JobFormBasicInfo({ handleClientSelection }: JobFormBasicInfoProps) {
   const form = useFormContext();
   
-  const { data: clientOptions } = useClientOptions();
+  const { data: clientOptions, isLoading: clientsLoading, error: clientsError } = useClientOptions();
   const { data: flavorOptions } = useFlavorOptions();
   const { data: localeOptions } = useLocaleOptions();
   const { data: statusOptions } = useStatusOptions();
   const { data: userOptions } = useUserOptions();
+
+  useEffect(() => {
+    console.log("Client options loading:", clientsLoading);
+    console.log("Client options error:", clientsError);
+    console.log("Client options data:", clientOptions);
+  }, [clientOptions, clientsLoading, clientsError]);
 
   return (
     <>
@@ -59,11 +65,19 @@ export function JobFormBasicInfo({ handleClientSelection }: JobFormBasicInfoProp
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {clientOptions?.map((client) => (
-                    <SelectItem key={client.id} value={client.name}>
-                      {client.name}
-                    </SelectItem>
-                  ))}
+                  {clientsLoading ? (
+                    <SelectItem value="loading" disabled>Loading clients...</SelectItem>
+                  ) : clientsError ? (
+                    <SelectItem value="error" disabled>Error loading clients</SelectItem>
+                  ) : clientOptions && clientOptions.length > 0 ? (
+                    clientOptions.map((client) => (
+                      <SelectItem key={client.id} value={client.name}>
+                        {client.name}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="none" disabled>No clients found</SelectItem>
+                  )}
                 </SelectContent>
               </Select>
               <FormMessage />

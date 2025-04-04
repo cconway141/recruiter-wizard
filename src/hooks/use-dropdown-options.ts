@@ -78,12 +78,15 @@ export const useClientOptions = () => {
     queryFn: async (): Promise<SimpleOption[]> => {
       const { data, error } = await supabase
         .from("clients")
-        .select("*");
+        .select("*")
+        .order('name');
       
       if (error) {
+        console.error("Error fetching clients:", error);
         throw error;
       }
       
+      console.log("Fetched clients:", data);
       return data as SimpleOption[] || [];
     },
   });
