@@ -12,7 +12,10 @@ import { useJobs } from "@/contexts/JobContext";
 
 const Settings = () => {
   const [newClient, setNewClient] = useState("");
-  const [clients, setClients] = useState<Array<{ id: string, name: string }>>([]);
+  const [newManager, setNewManager] = useState("");
+  const [newAbbreviation, setNewAbbreviation] = useState("");
+  const [newDescription, setNewDescription] = useState("");
+  const [clients, setClients] = useState<Array<{ id: string, name: string, manager: string, abbreviation: string, description: string }>>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { isAirtableEnabled } = useJobs();
 
@@ -47,12 +50,24 @@ const Settings = () => {
   }, []);
 
   const handleAddClient = async () => {
-    if (!newClient.trim()) return;
+    if (!newClient.trim() || !newManager.trim() || !newAbbreviation.trim() || !newDescription.trim()) {
+      toast({
+        title: "Error",
+        description: "All fields are required",
+        variant: "destructive",
+      });
+      return;
+    }
     
     try {
       const { error } = await supabase
         .from("clients")
-        .insert({ name: newClient });
+        .insert({ 
+          name: newClient,
+          manager: newManager,
+          abbreviation: newAbbreviation,
+          description: newDescription
+        });
       
       if (error) {
         throw error;
@@ -64,6 +79,9 @@ const Settings = () => {
       });
       
       setNewClient("");
+      setNewManager("");
+      setNewAbbreviation("");
+      setNewDescription("");
       fetchClients();
     } catch (error) {
       console.error("Error adding client:", error);
@@ -89,14 +107,32 @@ const Settings = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="flex gap-2">
+                <div className="grid grid-cols-2 gap-2 mb-4">
                   <Input 
-                    placeholder="Add new client" 
+                    placeholder="Client Name" 
                     value={newClient} 
                     onChange={(e) => setNewClient(e.target.value)} 
-                    onKeyPress={(e) => e.key === 'Enter' && handleAddClient()}
+                    className="mb-2"
                   />
-                  <Button onClick={handleAddClient}>Add</Button>
+                  <Input 
+                    placeholder="Manager Name" 
+                    value={newManager} 
+                    onChange={(e) => setNewManager(e.target.value)} 
+                    className="mb-2"
+                  />
+                  <Input 
+                    placeholder="Abbreviation" 
+                    value={newAbbreviation} 
+                    onChange={(e) => setNewAbbreviation(e.target.value)} 
+                    className="mb-2"
+                  />
+                  <Input 
+                    placeholder="Company Description" 
+                    value={newDescription} 
+                    onChange={(e) => setNewDescription(e.target.value)} 
+                    className="mb-2"
+                  />
+                  <Button onClick={handleAddClient} className="col-span-2">Add Client</Button>
                 </div>
                 
                 <div className="border rounded-md divide-y">
@@ -104,8 +140,12 @@ const Settings = () => {
                     <div className="p-4 text-center text-gray-500">No clients added</div>
                   ) : (
                     clients.map((client) => (
-                      <div key={client.id} className="p-3 flex justify-between items-center">
-                        <span>{client.name}</span>
+                      <div key={client.id} className="p-3">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="font-semibold">{client.name} ({client.abbreviation})</span>
+                        </div>
+                        <div className="text-sm text-gray-600">Manager: {client.manager}</div>
+                        <div className="text-sm text-gray-600 mt-1">{client.description}</div>
                       </div>
                     ))
                   )}

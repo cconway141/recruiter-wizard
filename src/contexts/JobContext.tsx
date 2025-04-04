@@ -75,40 +75,6 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       throw jobsError;
     }
 
-    // Load all candidates
-    const { data: candidatesData, error: candidatesError } = await supabase
-      .from('candidates')
-      .select('*');
-    
-    if (candidatesError) {
-      throw candidatesError;
-    }
-
-    // Transform the candidates into our state structure
-    const candidatesMap: Record<string, Candidate[]> = {};
-    
-    if (candidatesData) {
-      candidatesData.forEach(candidate => {
-        const { job_id, id, name, approved, preparing, submitted, interviewing, offered } = candidate;
-        
-        if (!candidatesMap[job_id]) {
-          candidatesMap[job_id] = [];
-        }
-        
-        candidatesMap[job_id].push({
-          id,
-          name,
-          status: {
-            approved,
-            preparing,
-            submitted,
-            interviewing,
-            offered
-          }
-        });
-      });
-    }
-
     // Update state with data from Supabase
     if (jobsData) {
       const transformedJobs: Job[] = jobsData.map(job => ({
@@ -143,7 +109,7 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       setState({
         jobs: transformedJobs,
-        candidates: candidatesMap
+        candidates: {} // Empty candidates since we removed the candidates table
       });
     }
   };
@@ -277,10 +243,6 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setState(prevState => ({
         ...prevState,
         jobs: [...prevState.jobs, newJob],
-        candidates: {
-          ...prevState.candidates,
-          [newJob.id]: []
-        }
       }));
       
       toast({
@@ -349,7 +311,7 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const deleteJob = async (id: string) => {
     const jobToDelete = state.jobs.find(job => job.id === id);
     
-    // Delete from Supabase (cascade will automatically delete related candidates)
+    // Delete from Supabase
     const { error } = await supabase
       .from('jobs')
       .delete()
@@ -367,11 +329,9 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     // Update local state
     setState(prevState => {
-      const { [id]: _, ...remainingCandidates } = prevState.candidates;
       return {
         ...prevState,
         jobs: prevState.jobs.filter((job) => job.id !== id),
-        candidates: remainingCandidates
       };
     });
     
@@ -388,98 +348,21 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return state.jobs.find((job) => job.id === id);
   };
 
-  // Candidate management functions
+  // Placeholder functions for candidate management since we removed the candidates table
   const addCandidate = async (jobId: string, name: string) => {
-    // Add to Supabase
-    const { data, error } = await supabase
-      .from('candidates')
-      .insert({
-        job_id: jobId,
-        name: name,
-        approved: false,
-        preparing: false,
-        submitted: false,
-        interviewing: false,
-        offered: false
-      })
-      .select();
-
-    if (error) {
-      console.error("Error adding candidate:", error);
-      toast({
-        title: "Error Adding Candidate",
-        description: error.message,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (data && data.length > 0) {
-      const newCandidate: Candidate = {
-        id: data[0].id,
-        name: data[0].name,
-        status: {
-          approved: data[0].approved,
-          preparing: data[0].preparing,
-          submitted: data[0].submitted,
-          interviewing: data[0].interviewing,
-          offered: data[0].offered
-        }
-      };
-
-      // Update local state
-      setState(prevState => ({
-        ...prevState,
-        candidates: {
-          ...prevState.candidates,
-          [jobId]: [
-            ...(prevState.candidates[jobId] || []),
-            newCandidate
-          ]
-        }
-      }));
-
-      toast({
-        title: "Candidate Added",
-        description: `${name} has been added to the candidate list.`,
-      });
-    }
+    toast({
+      title: "Feature Unavailable",
+      description: "Candidate management is currently disabled.",
+      variant: "destructive",
+    });
   };
 
   const removeCandidate = async (jobId: string, candidateId: string) => {
-    const candidate = state.candidates[jobId]?.find(c => c.id === candidateId);
-    
-    // Delete from Supabase
-    const { error } = await supabase
-      .from('candidates')
-      .delete()
-      .eq('id', candidateId);
-
-    if (error) {
-      console.error("Error removing candidate:", error);
-      toast({
-        title: "Error Removing Candidate",
-        description: error.message,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Update local state
-    setState(prevState => ({
-      ...prevState,
-      candidates: {
-        ...prevState.candidates,
-        [jobId]: (prevState.candidates[jobId] || []).filter(c => c.id !== candidateId)
-      }
-    }));
-
-    if (candidate) {
-      toast({
-        title: "Candidate Removed",
-        description: `${candidate.name} has been removed from the candidate list.`,
-      });
-    }
+    toast({
+      title: "Feature Unavailable",
+      description: "Candidate management is currently disabled.",
+      variant: "destructive",
+    });
   };
 
   const updateCandidateStatus = async (
@@ -488,53 +371,15 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     statusKey: keyof CandidateStatus, 
     value: boolean
   ) => {
-    // Map status key to database column
-    const statusUpdate: Record<string, boolean> = {
-      [statusKey]: value
-    };
-
-    // Update in Supabase
-    const { error } = await supabase
-      .from('candidates')
-      .update(statusUpdate)
-      .eq('id', candidateId);
-
-    if (error) {
-      console.error("Error updating candidate status:", error);
-      toast({
-        title: "Error Updating Candidate",
-        description: error.message,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Update local state
-    setState(prevState => {
-      const updatedCandidates = {
-        ...prevState.candidates,
-        [jobId]: (prevState.candidates[jobId] || []).map(candidate => 
-          candidate.id === candidateId 
-            ? {
-                ...candidate,
-                status: {
-                  ...candidate.status,
-                  [statusKey]: value
-                }
-              }
-            : candidate
-        )
-      };
-      
-      return {
-        ...prevState,
-        candidates: updatedCandidates
-      };
+    toast({
+      title: "Feature Unavailable",
+      description: "Candidate management is currently disabled.",
+      variant: "destructive",
     });
   };
 
   const getCandidates = (jobId: string): Candidate[] => {
-    return state.candidates[jobId] || [];
+    return []; // Return empty array since candidates functionality is removed
   };
 
   return (
