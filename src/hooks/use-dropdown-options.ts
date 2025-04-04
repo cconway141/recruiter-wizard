@@ -78,6 +78,17 @@ export const useClientOptions = () => {
     queryFn: async (): Promise<SimpleOption[]> => {
       try {
         console.log("useClientOptions: Fetching clients from Supabase...");
+        
+        // First verify Supabase connection
+        const { error: connectionError } = await supabase.from("clients").select("count");
+        
+        if (connectionError) {
+          console.error("useClientOptions: Connection test failed:", connectionError);
+          throw new Error(`Connection error: ${connectionError.message}`);
+        }
+        
+        console.log("useClientOptions: Connection test passed, fetching clients...");
+        
         const { data, error } = await supabase
           .from("clients")
           .select("*")
@@ -91,13 +102,13 @@ export const useClientOptions = () => {
         console.log("useClientOptions: Fetched clients raw data:", data);
         
         // Make sure we're returning the data in the expected format
-        const formattedData = data.map(client => ({
+        const formattedData = (data || []).map(client => ({
           id: client.id,
           name: client.name
         }));
         
         console.log("useClientOptions: Formatted client data:", formattedData);
-        return formattedData || [];
+        return formattedData;
       } catch (error) {
         console.error("Error in useClientOptions:", error);
         throw error;
@@ -107,6 +118,9 @@ export const useClientOptions = () => {
     refetchOnMount: true,
     // Add stale time to avoid too frequent refetches
     staleTime: 30000,
+    // Add retry for better error handling
+    retry: 2,
+    retryDelay: 1000,
   });
 };
 

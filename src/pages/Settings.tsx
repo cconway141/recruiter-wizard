@@ -13,11 +13,15 @@ import { LocalesManager } from "@/components/settings/LocalesManager";
 import { FlavorsManager } from "@/components/settings/FlavorsManager";
 import { StatusesManager } from "@/components/settings/StatusesManager";
 import { useQueryClient } from "@tanstack/react-query";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Info } from "lucide-react";
 
 const Settings = () => {
   const { isAirtableEnabled } = useJobs();
   const [activeTab, setActiveTab] = useState("clients");
   const [connectionStatus, setConnectionStatus] = useState("Checking...");
+  const [dbTables, setDbTables] = useState<string[]>([]);
+  const [dbDetails, setDbDetails] = useState<any>(null);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -25,6 +29,8 @@ const Settings = () => {
     const checkConnection = async () => {
       try {
         console.log("Settings: Checking Supabase connection...");
+        
+        // First check basic connectivity
         const { data, error } = await supabase.from('clients').select('count');
         
         if (error) {
@@ -35,6 +41,38 @@ const Settings = () => {
         
         console.log("Settings: Supabase connection successful, count data:", data);
         setConnectionStatus("Connected to Supabase successfully");
+
+        // Try to get list of tables in public schema (helps debugging)
+        try {
+          const { data: tablesData, error: tablesError } = await supabase
+            .rpc('get_public_tables');
+          
+          if (tablesError && tablesError.code === '42883') {
+            // This is fine - the function doesn't exist yet
+            console.log("Settings: get_public_tables function doesn't exist, this is expected");
+          } else if (tablesError) {
+            console.error("Settings: Error getting tables list:", tablesError);
+          } else {
+            console.log("Settings: Public tables:", tablesData);
+            setDbTables(tablesData || []);
+          }
+          
+          // Get more details about clients table specifically
+          const { data: clientsInfo, error: clientsInfoError } = await supabase
+            .rpc('get_table_details', { table_name: 'clients' });
+          
+          if (clientsInfoError && clientsInfoError.code === '42883') {
+            // This is fine - the function doesn't exist yet
+            console.log("Settings: get_table_details function doesn't exist, this is expected");
+          } else if (clientsInfoError) {
+            console.error("Settings: Error getting clients table info:", clientsInfoError);
+          } else {
+            console.log("Settings: Clients table details:", clientsInfo);
+            setDbDetails(clientsInfo);
+          }
+        } catch (e) {
+          console.error("Settings: Error checking database metadata:", e);
+        }
       } catch (error) {
         console.error("Settings: Error checking Supabase connection:", error);
         setConnectionStatus("Failed to connect to Supabase");
@@ -59,10 +97,36 @@ const Settings = () => {
       <main className="flex-1 container py-10">
         <PageHeader title="Settings" description="Configure application settings and integrations." />
         
-        {/* Debug connection status */}
-        <div className="mb-4 text-sm text-muted-foreground">
-          <p>Supabase connection: {connectionStatus}</p>
-        </div>
+        {/* Enhanced connection status with debug info */}
+        <Accordion type="single" collapsible className="mb-6 w-full">
+          <AccordionItem value="connection-info">
+            <AccordionTrigger className="text-sm">
+              <div className="flex items-center text-left">
+                <Info className="h-4 w-4 mr-2" />
+                Supabase connection: {connectionStatus.includes("Error") ? 
+                  <span className="text-red-500 ml-2">{connectionStatus}</span> : 
+                  <span className="text-green-500 ml-2">{connectionStatus}</span>}
+              </div>
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="text-xs text-muted-foreground space-y-2 p-2 bg-muted/50 rounded-md">
+                <p>Connection URL: {supabase.supabaseUrl}</p>
+                <details>
+                  <summary className="cursor-pointer">Available Tables</summary>
+                  <pre className="overflow-auto mt-2 p-2 bg-muted rounded-md">
+                    {dbTables.length ? dbTables.join(', ') : 'No tables info available'}
+                  </pre>
+                </details>
+                <details>
+                  <summary className="cursor-pointer">Clients Table Details</summary>
+                  <pre className="overflow-auto mt-2 p-2 bg-muted rounded-md">
+                    {JSON.stringify(dbDetails, null, 2) || 'No details available'}
+                  </pre>
+                </details>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mb-8">
           <TabsList className="mb-4">
