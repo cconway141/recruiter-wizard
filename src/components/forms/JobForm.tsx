@@ -1,28 +1,30 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useFormContext } from "react-hook-form";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Job, JobStatus, Locale, Flavor } from "@/types/job";
-import { calculateRates, generateInternalTitle, getWorkDetails, getPayDetails, generateM1, generateM2, generateM3 } from "@/utils/jobUtils";
+import { Job, Locale } from "@/types/job";
+import { 
+  calculateRates, 
+  generateInternalTitle, 
+  getWorkDetails, 
+  getPayDetails, 
+  generateM1, 
+  generateM2, 
+  generateM3 
+} from "@/utils/jobUtils";
 import { useJobs } from "@/contexts/JobContext";
-import { MessageCard } from "@/components/messages/MessageCard";
+import { Loader2 } from "lucide-react";
+
+// Import the new component files
+import { JobFormBasicInfo } from "./JobFormBasicInfo";
+import { JobFormCompanyDesc } from "./JobFormCompanyDesc";
+import { JobFormDetails } from "./JobFormDetails";
+import { JobFormLinks } from "./JobFormLinks";
+import { JobFormQuestions } from "./JobFormQuestions";
+import { FormRatePreview } from "./FormRatePreview";
+import { MessagePreviewSection } from "./MessagePreviewSection";
+
 import { 
   useClientOptions, 
   useFlavorOptions, 
@@ -30,7 +32,6 @@ import {
   useStatusOptions, 
   useUserOptions 
 } from "@/hooks/use-dropdown-options";
-import { Loader2 } from "lucide-react";
 
 interface JobFormProps {
   job?: Job;
@@ -50,26 +51,33 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
   const form = useFormContext();
   const watchedFields = form.watch();
 
-  const { data: clientOptions, isLoading: clientsLoading } = useClientOptions();
-  const { data: flavorOptions, isLoading: flavorsLoading } = useFlavorOptions();
-  const { data: localeOptions, isLoading: localesLoading } = useLocaleOptions();
-  const { data: statusOptions, isLoading: statusesLoading } = useStatusOptions();
-  const { data: userOptions, isLoading: usersLoading } = useUserOptions();
+  const { isLoading: clientsLoading } = useClientOptions();
+  const { isLoading: flavorsLoading } = useFlavorOptions();
+  const { isLoading: localesLoading } = useLocaleOptions();
+  const { isLoading: statusesLoading } = useStatusOptions();
+  const { isLoading: usersLoading } = useUserOptions();
 
   const isLoading = clientsLoading || flavorsLoading || localesLoading || statusesLoading || usersLoading;
 
   const handleClientSelection = (clientName: string) => {
-    const selectedClient = clientOptions?.find(client => client.name === clientName);
-    if (selectedClient) {
-      const clientData = getClientByName(clientName);
-      if (clientData) {
-        form.setValue("compDesc", clientData.description);
-      }
+    const getClientByName = (name: string) => {
+      const { getClientByName } = require("@/utils/clientData");
+      return getClientByName(name);
+    };
+    
+    const clientData = getClientByName(clientName);
+    if (clientData) {
+      form.setValue("compDesc", clientData.description);
     }
   };
 
   useEffect(() => {
     if (watchedFields.client && watchedFields.candidateFacingTitle && watchedFields.flavor && watchedFields.locale) {
+      const getClientByName = (name: string) => {
+        const { getClientByName } = require("@/utils/clientData");
+        return getClientByName(name);
+      };
+
       const clientData = getClientByName(watchedFields.client);
       const clientIdentifier = clientData ? clientData.abbreviation : watchedFields.client;
       
@@ -104,6 +112,11 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
     const workDetails = getWorkDetails(locale);
     const payDetails = getPayDetails(locale);
     
+    const getClientByName = (name: string) => {
+      const { getClientByName } = require("@/utils/clientData");
+      return getClientByName(name);
+    };
+    
     const clientData = getClientByName(values.client);
     const clientIdentifier = clientData ? clientData.abbreviation : values.client;
     
@@ -119,8 +132,8 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
         ...job,
         ...jobData,
         locale: jobData.locale as Locale,
-        status: jobData.status as JobStatus,
-        flavor: jobData.flavor as Flavor,
+        status: jobData.status,
+        flavor: jobData.flavor,
         internalTitle,
         highRate: high,
         mediumRate: medium,
@@ -135,7 +148,7 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
       addJob({
         jd: jobData.jd,
         candidateFacingTitle: jobData.candidateFacingTitle,
-        status: jobData.status as JobStatus,
+        status: jobData.status,
         skillsSought: jobData.skillsSought,
         minSkills: jobData.minSkills, 
         linkedinSearch: jobData.linkedinSearch,
@@ -149,7 +162,7 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
         other: jobData.other || "",
         videoQuestions: jobData.videoQuestions,
         screeningQuestions: jobData.screeningQuestions,
-        flavor: jobData.flavor as Flavor,
+        flavor: jobData.flavor,
       });
     }
     
@@ -165,369 +178,15 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
     );
   }
 
-  const getClientByName = (name: string) => {
-    const { getClientByName } = require("@/utils/clientData");
-    return getClientByName(name);
-  };
-
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
       <div>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="client"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Client</FormLabel>
-                  <Select 
-                    onValueChange={(value) => {
-                      field.onChange(value);
-                      handleClientSelection(value);
-                    }} 
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select client" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {clientOptions?.map((client) => (
-                        <SelectItem key={client.id} value={client.name}>
-                          {client.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="candidateFacingTitle"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Job Title</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter job title" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <FormField
-              control={form.control}
-              name="flavor"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Flavor</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select flavor" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {flavorOptions?.map((flavor) => (
-                        <SelectItem key={flavor.id} value={flavor.name}>
-                          {flavor.label} ({flavor.name})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="locale"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Locale</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select locale" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {localeOptions?.map((locale) => (
-                        <SelectItem key={locale.id} value={locale.name}>
-                          {locale.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="status"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Status</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {statusOptions?.map((status) => (
-                        <SelectItem key={status.id} value={status.name}>
-                          {status.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="owner"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Recruiter (Owner)</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select recruiter" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {userOptions?.map((user) => (
-                        <SelectItem key={user.id} value={user.display_name}>
-                          {user.display_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="rate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Rate (US Onshore $/hr)</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="number" 
-                      min={0} 
-                      placeholder="Hourly rate" 
-                      {...field} 
-                      onChange={(e) => {
-                        field.onChange(parseFloat(e.target.value) || 0);
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          
-          <div className="grid grid-cols-1 gap-4">
-            <FormField
-              control={form.control}
-              name="compDesc"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Company Description</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Briefly describe the client company"
-                      className="resize-none"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    This appears in the M1 message to candidates.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          
-          <div className="grid grid-cols-1 gap-4">
-            <FormField
-              control={form.control}
-              name="jd"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Job Description</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Full job description"
-                      className="min-h-[120px]"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          
-          <div className="grid grid-cols-1 gap-4">
-            <FormField
-              control={form.control}
-              name="skillsSought"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Skills Sought</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="List required skills (one per line)"
-                      className="min-h-[100px]"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    These skills will appear in the M2 message to candidates.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          
-          <div className="grid grid-cols-1 gap-4">
-            <FormField
-              control={form.control}
-              name="minSkills"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Minimum Skills Block</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Format: Skill (Level, Years)"
-                      className="min-h-[80px]"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    Structured format: Skill (Level, Years)
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="linkedinSearch"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>LinkedIn Search URL</FormLabel>
-                  <FormControl>
-                    <Input placeholder="https://www.linkedin.com/search/..." {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="lir"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>LinkedIn Recruiter Project URL</FormLabel>
-                  <FormControl>
-                    <Input placeholder="https://www.linkedin.com/talent/..." {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          
-          <div className="grid grid-cols-1 gap-4">
-            <FormField
-              control={form.control}
-              name="videoQuestions"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Video Questions</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Questions for video interview"
-                      className="min-h-[80px]"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    These will appear in the M3 message.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          
-          <div className="grid grid-cols-1 gap-4">
-            <FormField
-              control={form.control}
-              name="screeningQuestions"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Screening Questions</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Questions for initial screening call"
-                      className="min-h-[80px]"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          
-          <div className="grid grid-cols-1 gap-4">
-            <FormField
-              control={form.control}
-              name="other"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Other Requirements (Nice to Have)</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Additional or nice-to-have requirements"
-                      className="min-h-[80px]"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
+          <JobFormBasicInfo handleClientSelection={handleClientSelection} />
+          <JobFormCompanyDesc />
+          <JobFormDetails />
+          <JobFormLinks />
+          <JobFormQuestions />
           
           <div className="flex justify-end gap-4">
             <Button type="button" variant="outline" onClick={() => navigate("/")}>
@@ -551,63 +210,8 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
             </div>
           )}
           
-          {watchedFields.rate > 0 && (
-            <div className="mb-6 grid grid-cols-3 gap-2">
-              <div className="p-3 bg-gray-50 rounded-md">
-                <h4 className="text-sm font-medium text-gray-500">High Rate</h4>
-                <p className="text-lg font-semibold">${Math.round(watchedFields.rate * 0.55)}/hr</p>
-              </div>
-              <div className="p-3 bg-gray-50 rounded-md">
-                <h4 className="text-sm font-medium text-gray-500">Medium Rate</h4>
-                <p className="text-lg font-semibold">${Math.round(watchedFields.rate * 0.4)}/hr</p>
-              </div>
-              <div className="p-3 bg-gray-50 rounded-md">
-                <h4 className="text-sm font-medium text-gray-500">Low Rate</h4>
-                <p className="text-lg font-semibold">${Math.round(watchedFields.rate * 0.2)}/hr</p>
-              </div>
-            </div>
-          )}
-          
-          <FormField
-            control={form.control}
-            name="previewName"
-            render={({ field }) => (
-              <FormItem className="mb-6">
-                <FormLabel>Preview Name (for messages)</FormLabel>
-                <FormControl>
-                  <Input placeholder="Candidate name for preview" {...field} />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-          
-          <div className="space-y-4">
-            <h4 className="font-medium text-gray-700 mb-2">Message Previews</h4>
-            
-            {messages.m1 && (
-              <MessageCard
-                title="M1 - Initial Outreach"
-                message={messages.m1}
-                previewName={form.watch("previewName")}
-              />
-            )}
-            
-            {messages.m2 && (
-              <MessageCard
-                title="M2 - Detailed Information"
-                message={messages.m2}
-                previewName={form.watch("previewName")}
-              />
-            )}
-            
-            {messages.m3 && (
-              <MessageCard
-                title="M3 - Video & Final Questions"
-                message={messages.m3}
-                previewName={form.watch("previewName")}
-              />
-            )}
-          </div>
+          <FormRatePreview rate={watchedFields.rate} />
+          <MessagePreviewSection messages={messages} />
         </div>
       </div>
     </div>
