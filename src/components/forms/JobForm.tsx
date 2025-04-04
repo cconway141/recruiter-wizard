@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Job, JobStatus, Locale, Flavor, JOB_TITLES } from "@/types/job";
+import { Job, JobStatus, Locale, Flavor } from "@/types/job";
 import { calculateRates, generateInternalTitle, getWorkDetails, getPayDetails, generateM1, generateM2, generateM3 } from "@/utils/jobUtils";
 import { useJobs } from "@/contexts/JobContext";
 import { MessageCard } from "@/components/messages/MessageCard";
@@ -212,20 +212,9 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Job Title</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a job title" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {JOB_TITLES.map((title) => (
-                        <SelectItem key={title} value={title}>
-                          {title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <Input placeholder="Enter job title" {...field} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

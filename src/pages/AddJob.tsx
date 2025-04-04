@@ -6,6 +6,7 @@ import { FormProvider, useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
+// Define the form schema for the job
 const formSchema = z.object({
   candidateFacingTitle: z.string().min(1, "Title is required"),
   jd: z.string().min(1, "Job description is required"),
