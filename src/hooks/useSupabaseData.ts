@@ -4,6 +4,7 @@ import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Job, JobStatus, Locale, Flavor } from "@/types/job";
 import { JobsState } from "@/types/contextTypes";
+import { Candidate } from "@/components/candidates/CandidateEntry";
 
 export function useSupabaseData() {
   const [state, setState] = useState<JobsState>({
