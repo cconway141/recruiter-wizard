@@ -229,8 +229,7 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         m2: m2,
         m3: m3
       })
-      .select()
-      .single();
+      .select();
 
     if (error) {
       console.error("Error adding job:", error);
@@ -242,51 +241,53 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return;
     }
 
-    // Transform the returned data to match our Job interface
-    const newJob: Job = {
-      id: data.id,
-      internalTitle,
-      candidateFacingTitle: jobData.candidateFacingTitle,
-      jd: jobData.jd,
-      status: jobData.status,
-      skillsSought: jobData.skillsSought,
-      minSkills: jobData.minSkills,
-      linkedinSearch: jobData.linkedinSearch,
-      lir: jobData.lir,
-      client: jobData.client,
-      compDesc: jobData.compDesc,
-      rate: jobData.rate,
-      highRate: high,
-      mediumRate: medium,
-      lowRate: low,
-      locale: jobData.locale,
-      owner: jobData.owner,
-      date: jobData.date,
-      workDetails: workDetails,
-      payDetails: payDetails,
-      other: jobData.other || "",
-      videoQuestions: jobData.videoQuestions,
-      screeningQuestions: jobData.screeningQuestions,
-      flavor: jobData.flavor,
-      m1,
-      m2,
-      m3
-    };
+    if (data && data.length > 0) {
+      // Transform the returned data to match our Job interface
+      const newJob: Job = {
+        id: data[0].id,
+        internalTitle,
+        candidateFacingTitle: jobData.candidateFacingTitle,
+        jd: jobData.jd,
+        status: jobData.status,
+        skillsSought: jobData.skillsSought,
+        minSkills: jobData.minSkills,
+        linkedinSearch: jobData.linkedinSearch,
+        lir: jobData.lir,
+        client: jobData.client,
+        compDesc: jobData.compDesc,
+        rate: jobData.rate,
+        highRate: high,
+        mediumRate: medium,
+        lowRate: low,
+        locale: jobData.locale,
+        owner: jobData.owner,
+        date: jobData.date,
+        workDetails: workDetails,
+        payDetails: payDetails,
+        other: jobData.other || "",
+        videoQuestions: jobData.videoQuestions,
+        screeningQuestions: jobData.screeningQuestions,
+        flavor: jobData.flavor,
+        m1,
+        m2,
+        m3
+      };
 
-    // Update local state
-    setState(prevState => ({
-      ...prevState,
-      jobs: [...prevState.jobs, newJob],
-      candidates: {
-        ...prevState.candidates,
-        [newJob.id]: []
-      }
-    }));
-    
-    toast({
-      title: "Job Added",
-      description: `${internalTitle} has been added successfully.`,
-    });
+      // Update local state
+      setState(prevState => ({
+        ...prevState,
+        jobs: [...prevState.jobs, newJob],
+        candidates: {
+          ...prevState.candidates,
+          [newJob.id]: []
+        }
+      }));
+      
+      toast({
+        title: "Job Added",
+        description: `${internalTitle} has been added successfully.`,
+      });
+    }
   };
 
   const updateJob = async (updatedJob: Job) => {
@@ -401,8 +402,7 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         interviewing: false,
         offered: false
       })
-      .select()
-      .single();
+      .select();
 
     if (error) {
       console.error("Error adding candidate:", error);
@@ -414,34 +414,36 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return;
     }
 
-    const newCandidate: Candidate = {
-      id: data.id,
-      name: data.name,
-      status: {
-        approved: data.approved,
-        preparing: data.preparing,
-        submitted: data.submitted,
-        interviewing: data.interviewing,
-        offered: data.offered
-      }
-    };
+    if (data && data.length > 0) {
+      const newCandidate: Candidate = {
+        id: data[0].id,
+        name: data[0].name,
+        status: {
+          approved: data[0].approved,
+          preparing: data[0].preparing,
+          submitted: data[0].submitted,
+          interviewing: data[0].interviewing,
+          offered: data[0].offered
+        }
+      };
 
-    // Update local state
-    setState(prevState => ({
-      ...prevState,
-      candidates: {
-        ...prevState.candidates,
-        [jobId]: [
-          ...(prevState.candidates[jobId] || []),
-          newCandidate
-        ]
-      }
-    }));
+      // Update local state
+      setState(prevState => ({
+        ...prevState,
+        candidates: {
+          ...prevState.candidates,
+          [jobId]: [
+            ...(prevState.candidates[jobId] || []),
+            newCandidate
+          ]
+        }
+      }));
 
-    toast({
-      title: "Candidate Added",
-      description: `${name} has been added to the candidate list.`,
-    });
+      toast({
+        title: "Candidate Added",
+        description: `${name} has been added to the candidate list.`,
+      });
+    }
   };
 
   const removeCandidate = async (jobId: string, candidateId: string) => {
