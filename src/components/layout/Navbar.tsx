@@ -1,9 +1,17 @@
 
 import { Button } from "@/components/ui/button";
-import { Briefcase, Plus, Settings } from "lucide-react";
+import { Briefcase, Plus, Settings, User } from "lucide-react";
 import { Link } from "react-router-dom";
 import { UserNavButton } from "./UserNavButton";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function Navbar() {
   const { user } = useAuth();
@@ -28,9 +36,9 @@ export function Navbar() {
                   <Settings className="h-5 w-5" />
                 </Button>
               </Link>
+              <UserNavButton />
             </>
           )}
-          <UserNavButton />
         </div>
       </div>
     </div>

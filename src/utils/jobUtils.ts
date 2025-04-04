@@ -1,6 +1,7 @@
+
 import { Job, Locale, DEFAULT_WORK_DETAILS, DEFAULT_PAY_DETAILS } from "@/types/job";
 
-// Role to abbreviation mapping
+// Update Role to abbreviation mapping
 export const ROLE_ABBREVIATIONS: Record<string, string> = {
   "Account Manager": "AM",
   "Business Analyst": "BA",

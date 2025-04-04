@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { LogIn, LogOut, User } from "lucide-react";
+import { LogIn, LogOut, User, Settings } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -41,12 +41,18 @@ export function UserNavButton() {
       <DropdownMenuTrigger asChild>
         <Button variant="outline" className="flex gap-2 items-center">
           <User className="h-4 w-4" />
-          <span className="hidden md:inline">{user.email?.split('@')[0]}</span>
+          <span className="hidden md:inline">{user.user_metadata.display_name || user.email?.split('@')[0]}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuLabel>My Account</DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <Link to="/profile">
+          <DropdownMenuItem className="cursor-pointer">
+            <Settings className="mr-2 h-4 w-4" />
+            <span>Edit Profile</span>
+          </DropdownMenuItem>
+        </Link>
         <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
           <LogOut className="mr-2 h-4 w-4" />
           <span>Log out</span>

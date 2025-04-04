@@ -9,69 +9,31 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      candidates: {
-        Row: {
-          approved: boolean
-          created_at: string
-          id: string
-          interviewing: boolean
-          job_id: string
-          name: string
-          offered: boolean
-          preparing: boolean
-          submitted: boolean
-          updated_at: string
-        }
-        Insert: {
-          approved?: boolean
-          created_at?: string
-          id?: string
-          interviewing?: boolean
-          job_id: string
-          name: string
-          offered?: boolean
-          preparing?: boolean
-          submitted?: boolean
-          updated_at?: string
-        }
-        Update: {
-          approved?: boolean
-          created_at?: string
-          id?: string
-          interviewing?: boolean
-          job_id?: string
-          name?: string
-          offered?: boolean
-          preparing?: boolean
-          submitted?: boolean
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "candidates_job_id_fkey"
-            columns: ["job_id"]
-            isOneToOne: false
-            referencedRelation: "jobs"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       clients: {
         Row: {
+          abbreviation: string
           created_at: string
+          description: string
           id: string
+          manager: string
           name: string
           updated_at: string
         }
         Insert: {
+          abbreviation: string
           created_at?: string
+          description: string
           id?: string
+          manager: string
           name: string
           updated_at?: string
         }
         Update: {
+          abbreviation?: string
           created_at?: string
+          description?: string
           id?: string
+          manager?: string
           name?: string
           updated_at?: string
         }
@@ -242,26 +204,32 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          display_name: string | null
           email: string | null
           first_name: string | null
           id: string
           last_name: string | null
+          role: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
+          display_name?: string | null
           email?: string | null
           first_name?: string | null
           id: string
           last_name?: string | null
+          role?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
+          display_name?: string | null
           email?: string | null
           first_name?: string | null
           id?: string
           last_name?: string | null
+          role?: string | null
           updated_at?: string
         }
         Relationships: []
