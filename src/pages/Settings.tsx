@@ -56,7 +56,7 @@ const Settings = () => {
             }
           } else if (tablesData) {
             console.log("Settings: Public tables:", tablesData);
-            setDbTables(Array.isArray(tablesData) ? tablesData : []);
+            setDbTables(tablesData as string[]);
           }
           
           // Get more details about clients table specifically

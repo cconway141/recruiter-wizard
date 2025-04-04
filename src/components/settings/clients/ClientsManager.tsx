@@ -86,7 +86,7 @@ export function ClientsManager() {
       console.log("ClientsManager: Data length:", data?.length || 0);
       
       if (data) {
-        setClients(data);
+        setClients(data as Client[]);
         console.log("ClientsManager: Clients state updated with:", data);
       } else {
         console.log("ClientsManager: No data returned from Supabase");
