@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -56,7 +55,7 @@ const Settings = () => {
             }
           } else if (tablesData) {
             console.log("Settings: Public tables:", tablesData);
-            setDbTables(tablesData as string[]);
+            setDbTables(tablesData);
           }
           
           // Get more details about clients table specifically
