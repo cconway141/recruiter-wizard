@@ -88,10 +88,12 @@ export type Database = {
         Row: {
           candidate_facing_title: string
           client: string
+          client_id: string | null
           comp_desc: string
           created_at: string
           date: string
           flavor: string
+          flavor_id: string | null
           high_rate: number
           id: string
           internal_title: string
@@ -99,6 +101,7 @@ export type Database = {
           linkedin_search: string
           lir: string
           locale: string
+          locale_id: string | null
           low_rate: number
           m1: string
           m2: string
@@ -107,11 +110,13 @@ export type Database = {
           min_skills: string
           other: string | null
           owner: string
+          owner_id: string | null
           pay_details: string
           rate: number
           screening_questions: string
           skills_sought: string
           status: string
+          status_id: string | null
           updated_at: string
           video_questions: string
           work_details: string
@@ -119,10 +124,12 @@ export type Database = {
         Insert: {
           candidate_facing_title: string
           client: string
+          client_id?: string | null
           comp_desc: string
           created_at?: string
           date: string
           flavor: string
+          flavor_id?: string | null
           high_rate: number
           id?: string
           internal_title: string
@@ -130,6 +137,7 @@ export type Database = {
           linkedin_search: string
           lir: string
           locale: string
+          locale_id?: string | null
           low_rate: number
           m1: string
           m2: string
@@ -138,11 +146,13 @@ export type Database = {
           min_skills: string
           other?: string | null
           owner: string
+          owner_id?: string | null
           pay_details: string
           rate: number
           screening_questions: string
           skills_sought: string
           status: string
+          status_id?: string | null
           updated_at?: string
           video_questions: string
           work_details: string
@@ -150,10 +160,12 @@ export type Database = {
         Update: {
           candidate_facing_title?: string
           client?: string
+          client_id?: string | null
           comp_desc?: string
           created_at?: string
           date?: string
           flavor?: string
+          flavor_id?: string | null
           high_rate?: number
           id?: string
           internal_title?: string
@@ -161,6 +173,7 @@ export type Database = {
           linkedin_search?: string
           lir?: string
           locale?: string
+          locale_id?: string | null
           low_rate?: number
           m1?: string
           m2?: string
@@ -169,16 +182,54 @@ export type Database = {
           min_skills?: string
           other?: string | null
           owner?: string
+          owner_id?: string | null
           pay_details?: string
           rate?: number
           screening_questions?: string
           skills_sought?: string
           status?: string
+          status_id?: string | null
           updated_at?: string
           video_questions?: string
           work_details?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_job_client"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_job_flavor"
+            columns: ["flavor_id"]
+            isOneToOne: false
+            referencedRelation: "flavors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_job_locale"
+            columns: ["locale_id"]
+            isOneToOne: false
+            referencedRelation: "locales"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_job_owner"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_job_status"
+            columns: ["status_id"]
+            isOneToOne: false
+            referencedRelation: "job_statuses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       locales: {
         Row: {

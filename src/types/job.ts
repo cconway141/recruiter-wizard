@@ -9,6 +9,7 @@ export interface Job {
   jd: string;
   candidateFacingTitle: string;
   status: JobStatus;
+  statusId?: string;
   m1: string;
   m2: string;
   m3: string;
@@ -17,13 +18,16 @@ export interface Job {
   linkedinSearch: string;
   lir: string; // LinkedIn Recruiter project link
   client: string;
+  clientId?: string;
   compDesc: string; // Company description
   rate: number; // US Onshore rate
   highRate: number; // H (High Non-US Rate)
   mediumRate: number; // M (Medium Non-US Rate)
   lowRate: number; // L (Low Non-US Rate)
   locale: Locale;
+  localeId?: string;
   owner: string;
+  ownerId?: string;
   date: string;
   workDetails: string;
   payDetails: string;
@@ -31,6 +35,7 @@ export interface Job {
   videoQuestions: string;
   screeningQuestions: string;
   flavor: Flavor;
+  flavorId?: string;
 }
 
 export const DEFAULT_WORK_DETAILS: Record<Locale, string> = {

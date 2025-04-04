@@ -1,6 +1,5 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { v4 as uuidv4 } from "uuid";
 import { Job, JobStatus, Locale, Flavor } from "@/types/job";
 import { calculateRates, generateInternalTitle, getWorkDetails, getPayDetails, generateM1, generateM2, generateM3 } from "@/utils/jobUtils";
 import { toast } from "@/components/ui/use-toast";
@@ -66,10 +65,17 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   const loadFromSupabase = async () => {
-    // Load jobs from Supabase
+    // Load jobs with related data from Supabase
     const { data: jobsData, error: jobsError } = await supabase
       .from('jobs')
-      .select('*');
+      .select(`
+        *,
+        clients(*),
+        flavors(*),
+        locales(*),
+        job_statuses(*),
+        profiles(*)
+      `);
     
     if (jobsError) {
       throw jobsError;
@@ -91,25 +97,30 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         linkedinSearch: job.linkedin_search,
         lir: job.lir,
         client: job.client,
+        clientId: job.client_id,
         compDesc: job.comp_desc,
         rate: Number(job.rate),
         highRate: Number(job.high_rate),
         mediumRate: Number(job.medium_rate),
         lowRate: Number(job.low_rate),
         locale: job.locale as Locale,
+        localeId: job.locale_id,
         owner: job.owner,
+        ownerId: job.owner_id,
         date: job.date,
         workDetails: job.work_details,
         payDetails: job.pay_details,
         other: job.other || "",
         videoQuestions: job.video_questions,
         screeningQuestions: job.screening_questions,
-        flavor: job.flavor as Flavor
+        flavor: job.flavor as Flavor,
+        flavorId: job.flavor_id,
+        statusId: job.status_id
       }));
 
       setState({
         jobs: transformedJobs,
-        candidates: {} // Empty candidates since we removed the candidates table
+        candidates: {}
       });
     }
   };
@@ -159,12 +170,43 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const workDetails = getWorkDetails(jobData.locale);
     const payDetails = getPayDetails(jobData.locale);
     
-    // Generate placeholder messages (these would typically require candidate names)
+    // Generate placeholder messages
     const m1 = generateM1("[First Name]", jobData.candidateFacingTitle, jobData.compDesc);
     const m2 = generateM2(jobData.candidateFacingTitle, payDetails, workDetails, jobData.skillsSought);
     const m3 = generateM3(jobData.videoQuestions);
 
-    // Insert into Supabase
+    // Get the IDs for the relations
+    const { data: clientData } = await supabase
+      .from('clients')
+      .select('id')
+      .eq('name', jobData.client)
+      .single();
+      
+    const { data: localeData } = await supabase
+      .from('locales')
+      .select('id')
+      .eq('name', jobData.locale)
+      .single();
+      
+    const { data: flavorData } = await supabase
+      .from('flavors')
+      .select('id')
+      .eq('name', jobData.flavor)
+      .single();
+      
+    const { data: statusData } = await supabase
+      .from('job_statuses')
+      .select('id')
+      .eq('name', jobData.status)
+      .single();
+      
+    const { data: ownerData } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('display_name', jobData.owner)
+      .single();
+
+    // Insert into Supabase with IDs
     const { data, error } = await supabase
       .from('jobs')
       .insert({
@@ -177,13 +219,16 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         linkedin_search: jobData.linkedinSearch,
         lir: jobData.lir,
         client: jobData.client,
+        client_id: clientData?.id,
         comp_desc: jobData.compDesc,
         rate: jobData.rate,
         high_rate: high,
         medium_rate: medium,
         low_rate: low,
         locale: jobData.locale,
+        locale_id: localeData?.id,
         owner: jobData.owner,
+        owner_id: ownerData?.id,
         date: jobData.date,
         work_details: workDetails,
         pay_details: payDetails,
@@ -191,6 +236,8 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         video_questions: jobData.videoQuestions,
         screening_questions: jobData.screeningQuestions,
         flavor: jobData.flavor,
+        flavor_id: flavorData?.id,
+        status_id: statusData?.id,
         m1: m1,
         m2: m2,
         m3: m3
@@ -220,13 +267,16 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         linkedinSearch: jobData.linkedinSearch,
         lir: jobData.lir,
         client: jobData.client,
+        clientId: data[0].client_id,
         compDesc: jobData.compDesc,
         rate: jobData.rate,
         highRate: high,
         mediumRate: medium,
         lowRate: low,
         locale: jobData.locale,
+        localeId: data[0].locale_id,
         owner: jobData.owner,
+        ownerId: data[0].owner_id,
         date: jobData.date,
         workDetails: workDetails,
         payDetails: payDetails,
@@ -234,6 +284,8 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         videoQuestions: jobData.videoQuestions,
         screeningQuestions: jobData.screeningQuestions,
         flavor: jobData.flavor,
+        flavorId: data[0].flavor_id,
+        statusId: data[0].status_id,
         m1,
         m2,
         m3
@@ -269,20 +321,25 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         linkedin_search: updatedJob.linkedinSearch,
         lir: updatedJob.lir,
         client: updatedJob.client,
+        client_id: updatedJob.clientId,
         comp_desc: updatedJob.compDesc,
         rate: updatedJob.rate,
         high_rate: updatedJob.highRate,
         medium_rate: updatedJob.mediumRate,
         low_rate: updatedJob.lowRate,
         locale: updatedJob.locale,
+        locale_id: updatedJob.localeId,
         owner: updatedJob.owner,
+        owner_id: updatedJob.ownerId,
         date: updatedJob.date,
         work_details: updatedJob.workDetails,
         pay_details: updatedJob.payDetails,
         other: updatedJob.other,
         video_questions: updatedJob.videoQuestions,
         screening_questions: updatedJob.screeningQuestions,
-        flavor: updatedJob.flavor
+        flavor: updatedJob.flavor,
+        flavor_id: updatedJob.flavorId,
+        status_id: updatedJob.statusId
       })
       .eq('id', updatedJob.id);
 
