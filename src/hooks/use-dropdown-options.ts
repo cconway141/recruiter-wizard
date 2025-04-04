@@ -15,9 +15,9 @@ export interface SimpleOption {
 
 export interface UserOption {
   id: string;
-  first_name: string;
-  last_name: string;
-  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
   display_name: string;
 }
 
@@ -25,13 +25,15 @@ export const useFlavorOptions = () => {
   return useQuery({
     queryKey: ["flavorOptions"],
     queryFn: async (): Promise<FlavorOption[]> => {
-      const { data, error } = await supabase.from("flavors").select("*");
+      const { data, error } = await supabase
+        .from("flavors")
+        .select("*");
       
       if (error) {
         throw error;
       }
       
-      return data || [];
+      return data as FlavorOption[] || [];
     },
   });
 };
@@ -40,13 +42,15 @@ export const useLocaleOptions = () => {
   return useQuery({
     queryKey: ["localeOptions"],
     queryFn: async (): Promise<SimpleOption[]> => {
-      const { data, error } = await supabase.from("locales").select("*");
+      const { data, error } = await supabase
+        .from("locales")
+        .select("*");
       
       if (error) {
         throw error;
       }
       
-      return data || [];
+      return data as SimpleOption[] || [];
     },
   });
 };
@@ -55,13 +59,15 @@ export const useStatusOptions = () => {
   return useQuery({
     queryKey: ["statusOptions"],
     queryFn: async (): Promise<SimpleOption[]> => {
-      const { data, error } = await supabase.from("job_statuses").select("*");
+      const { data, error } = await supabase
+        .from("job_statuses")
+        .select("*");
       
       if (error) {
         throw error;
       }
       
-      return data || [];
+      return data as SimpleOption[] || [];
     },
   });
 };
@@ -70,13 +76,15 @@ export const useClientOptions = () => {
   return useQuery({
     queryKey: ["clientOptions"],
     queryFn: async (): Promise<SimpleOption[]> => {
-      const { data, error } = await supabase.from("clients").select("*");
+      const { data, error } = await supabase
+        .from("clients")
+        .select("*");
       
       if (error) {
         throw error;
       }
       
-      return data || [];
+      return data as SimpleOption[] || [];
     },
   });
 };
@@ -85,7 +93,9 @@ export const useUserOptions = () => {
   return useQuery({
     queryKey: ["userOptions"],
     queryFn: async (): Promise<UserOption[]> => {
-      const { data, error } = await supabase.from("profiles").select("*");
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*");
       
       if (error) {
         throw error;
@@ -94,7 +104,7 @@ export const useUserOptions = () => {
       return data?.map(user => ({
         ...user,
         display_name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email || 'Unknown User'
-      })) || [];
+      })) as UserOption[] || [];
     },
   });
 };

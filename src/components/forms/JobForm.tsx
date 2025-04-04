@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Job, JobStatus, Locale, Flavor } from "@/types/job";
+import { Job, JobStatus, Locale, Flavor, JOB_TITLES } from "@/types/job";
 import { calculateRates, generateInternalTitle, getWorkDetails, getPayDetails, generateM1, generateM2, generateM3 } from "@/utils/jobUtils";
 import { useJobs } from "@/contexts/JobContext";
 import { MessageCard } from "@/components/messages/MessageCard";
