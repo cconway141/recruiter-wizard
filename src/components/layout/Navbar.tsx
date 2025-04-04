@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Briefcase, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
+import { UserNavButton } from "./UserNavButton";
 
 export function Navbar() {
   return (
@@ -17,6 +18,7 @@ export function Navbar() {
               <Plus className="mr-2 h-4 w-4" /> Add Job
             </Button>
           </Link>
+          <UserNavButton />
         </div>
       </div>
     </div>
