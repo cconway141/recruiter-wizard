@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -55,7 +56,7 @@ const Settings = () => {
             }
           } else if (tablesData) {
             console.log("Settings: Public tables:", tablesData);
-            setDbTables(tablesData);
+            setDbTables(tablesData as string[]);
           }
           
           // Get more details about clients table specifically
@@ -113,7 +114,7 @@ const Settings = () => {
             </AccordionTrigger>
             <AccordionContent>
               <div className="text-xs text-muted-foreground space-y-2 p-2 bg-muted/50 rounded-md">
-                <p>Connection URL: {process.env.SUPABASE_URL || "https://evggwokrvotnnkazteia.supabase.co"}</p>
+                <p>Connection URL: {import.meta.env.VITE_SUPABASE_URL || "https://evggwokrvotnnkazteia.supabase.co"}</p>
                 <details>
                   <summary className="cursor-pointer">Available Tables</summary>
                   <pre className="overflow-auto mt-2 p-2 bg-muted rounded-md">
