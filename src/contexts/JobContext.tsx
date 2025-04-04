@@ -1,9 +1,8 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { Job, JobStatus, Locale, Flavor } from "@/types/job";
 import { calculateRates, generateInternalTitle, getWorkDetails, getPayDetails, generateM1, generateM2, generateM3 } from "@/utils/jobUtils";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "@/components/ui/use-toast";
 import { Candidate, CandidateStatus } from "@/components/candidates/CandidateEntry";
 import { 
   isAirtableConfigured, 
@@ -53,7 +52,6 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
   const [isAirtableEnabled, setIsAirtableEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
 
   // Initialize data from localStorage or Airtable
   useEffect(() => {

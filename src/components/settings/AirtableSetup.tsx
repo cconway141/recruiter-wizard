@@ -13,10 +13,9 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { setupAirtable, getAirtableConfig, isAirtableConfigured } from "@/utils/airtableUtils";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "@/components/ui/use-toast";
 
 export const AirtableSetup = () => {
-  const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [apiKey, setApiKey] = useState(getAirtableConfig().apiKey);
   const [baseId, setBaseId] = useState(getAirtableConfig().baseId);

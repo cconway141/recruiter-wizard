@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Check, Copy } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "@/components/ui/use-toast";
 
 interface MessageCardProps {
   title: string;
@@ -13,7 +13,6 @@ interface MessageCardProps {
 
 export function MessageCard({ title, message, previewName = "Candidate" }: MessageCardProps) {
   const [copied, setCopied] = useState(false);
-  const { toast } = useToast();
 
   const handleCopy = () => {
     // Replace placeholder with preview name
