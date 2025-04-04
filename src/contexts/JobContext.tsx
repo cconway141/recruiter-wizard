@@ -5,6 +5,7 @@ import { Job, JobStatus, Locale, Flavor } from "@/types/job";
 import { calculateRates, generateInternalTitle, getWorkDetails, getPayDetails, generateM1, generateM2, generateM3 } from "@/utils/jobUtils";
 import { toast } from "@/components/ui/use-toast";
 import { Candidate, CandidateStatus } from "@/components/candidates/CandidateEntry";
+import { supabase } from "@/integrations/supabase/client";
 
 interface JobContextType {
   jobs: Job[];
@@ -42,40 +43,117 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isAirtableEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Initialize data from localStorage
+  // Initialize data from Supabase
   useEffect(() => {
     const initializeData = async () => {
       setIsLoading(true);
-      loadFromLocalStorage();
-      setIsLoading(false);
+      
+      try {
+        await loadFromSupabase();
+      } catch (error) {
+        console.error("Error loading data from Supabase:", error);
+        toast({
+          title: "Error Loading Data",
+          description: "Failed to load data from the database. Please refresh the page.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
     };
     
     initializeData();
   }, []);
 
-  const loadFromLocalStorage = () => {
-    const storedData = localStorage.getItem("recruiterData");
-    if (storedData) {
-      const parsedData = JSON.parse(storedData);
-      // Handle backward compatibility for existing users
-      if (Array.isArray(parsedData)) {
-        setState({
-          jobs: parsedData,
-          candidates: {}
+  const loadFromSupabase = async () => {
+    // Load jobs from Supabase
+    const { data: jobsData, error: jobsError } = await supabase
+      .from('jobs')
+      .select('*');
+    
+    if (jobsError) {
+      throw jobsError;
+    }
+
+    // Load all candidates
+    const { data: candidatesData, error: candidatesError } = await supabase
+      .from('candidates')
+      .select('*');
+    
+    if (candidatesError) {
+      throw candidatesError;
+    }
+
+    // Transform the candidates into our state structure
+    const candidatesMap: Record<string, Candidate[]> = {};
+    
+    if (candidatesData) {
+      candidatesData.forEach(candidate => {
+        const { job_id, id, name, approved, preparing, submitted, interviewing, offered } = candidate;
+        
+        if (!candidatesMap[job_id]) {
+          candidatesMap[job_id] = [];
+        }
+        
+        candidatesMap[job_id].push({
+          id,
+          name,
+          status: {
+            approved,
+            preparing,
+            submitted,
+            interviewing,
+            offered
+          }
         });
-      } else {
-        setState(parsedData);
-      }
+      });
+    }
+
+    // Update state with data from Supabase
+    if (jobsData) {
+      const transformedJobs: Job[] = jobsData.map(job => ({
+        id: job.id,
+        internalTitle: job.internal_title,
+        candidateFacingTitle: job.candidate_facing_title,
+        jd: job.jd,
+        status: job.status as JobStatus,
+        m1: job.m1,
+        m2: job.m2,
+        m3: job.m3,
+        skillsSought: job.skills_sought,
+        minSkills: job.min_skills,
+        linkedinSearch: job.linkedin_search,
+        lir: job.lir,
+        client: job.client,
+        compDesc: job.comp_desc,
+        rate: Number(job.rate),
+        highRate: Number(job.high_rate),
+        mediumRate: Number(job.medium_rate),
+        lowRate: Number(job.low_rate),
+        locale: job.locale as Locale,
+        owner: job.owner,
+        date: job.date,
+        workDetails: job.work_details,
+        payDetails: job.pay_details,
+        other: job.other || "",
+        videoQuestions: job.video_questions,
+        screeningQuestions: job.screening_questions,
+        flavor: job.flavor as Flavor
+      }));
+
+      setState({
+        jobs: transformedJobs,
+        candidates: candidatesMap
+      });
     }
   };
 
-  // Save data to localStorage
+  // Apply filters effect
   useEffect(() => {
     if (!isLoading) {
-      localStorage.setItem("recruiterData", JSON.stringify(state));
       applyFilters();
     }
-  }, [state, filters, isLoading]);
+  }, [state.jobs, filters, isLoading]);
 
   const applyFilters = () => {
     let result = [...state.jobs];
@@ -110,7 +188,6 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const addJob = async (jobData: Omit<Job, "id" | "internalTitle" | "highRate" | "mediumRate" | "lowRate" | "workDetails" | "payDetails" | "m1" | "m2" | "m3">) => {
-    const id = uuidv4();
     const internalTitle = generateInternalTitle(jobData.client, jobData.candidateFacingTitle, jobData.flavor, jobData.locale);
     const { high, medium, low } = calculateRates(jobData.rate);
     const workDetails = getWorkDetails(jobData.locale);
@@ -121,20 +198,82 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const m2 = generateM2(jobData.candidateFacingTitle, payDetails, workDetails, jobData.skillsSought);
     const m3 = generateM3(jobData.videoQuestions);
 
+    // Insert into Supabase
+    const { data, error } = await supabase
+      .from('jobs')
+      .insert({
+        internal_title: internalTitle,
+        candidate_facing_title: jobData.candidateFacingTitle,
+        jd: jobData.jd,
+        status: jobData.status,
+        skills_sought: jobData.skillsSought,
+        min_skills: jobData.minSkills,
+        linkedin_search: jobData.linkedinSearch,
+        lir: jobData.lir,
+        client: jobData.client,
+        comp_desc: jobData.compDesc,
+        rate: jobData.rate,
+        high_rate: high,
+        medium_rate: medium,
+        low_rate: low,
+        locale: jobData.locale,
+        owner: jobData.owner,
+        date: jobData.date,
+        work_details: workDetails,
+        pay_details: payDetails,
+        other: jobData.other,
+        video_questions: jobData.videoQuestions,
+        screening_questions: jobData.screeningQuestions,
+        flavor: jobData.flavor,
+        m1: m1,
+        m2: m2,
+        m3: m3
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error adding job:", error);
+      toast({
+        title: "Error Adding Job",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Transform the returned data to match our Job interface
     const newJob: Job = {
-      ...jobData,
-      id,
+      id: data.id,
       internalTitle,
+      candidateFacingTitle: jobData.candidateFacingTitle,
+      jd: jobData.jd,
+      status: jobData.status,
+      skillsSought: jobData.skillsSought,
+      minSkills: jobData.minSkills,
+      linkedinSearch: jobData.linkedinSearch,
+      lir: jobData.lir,
+      client: jobData.client,
+      compDesc: jobData.compDesc,
+      rate: jobData.rate,
       highRate: high,
       mediumRate: medium,
       lowRate: low,
-      workDetails,
-      payDetails,
+      locale: jobData.locale,
+      owner: jobData.owner,
+      date: jobData.date,
+      workDetails: workDetails,
+      payDetails: payDetails,
+      other: jobData.other || "",
+      videoQuestions: jobData.videoQuestions,
+      screeningQuestions: jobData.screeningQuestions,
+      flavor: jobData.flavor,
       m1,
       m2,
       m3
     };
 
+    // Update local state
     setState(prevState => ({
       ...prevState,
       jobs: [...prevState.jobs, newJob],
@@ -151,6 +290,50 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateJob = async (updatedJob: Job) => {
+    // Update in Supabase
+    const { error } = await supabase
+      .from('jobs')
+      .update({
+        internal_title: updatedJob.internalTitle,
+        candidate_facing_title: updatedJob.candidateFacingTitle,
+        jd: updatedJob.jd,
+        status: updatedJob.status,
+        m1: updatedJob.m1,
+        m2: updatedJob.m2,
+        m3: updatedJob.m3,
+        skills_sought: updatedJob.skillsSought,
+        min_skills: updatedJob.minSkills,
+        linkedin_search: updatedJob.linkedinSearch,
+        lir: updatedJob.lir,
+        client: updatedJob.client,
+        comp_desc: updatedJob.compDesc,
+        rate: updatedJob.rate,
+        high_rate: updatedJob.highRate,
+        medium_rate: updatedJob.mediumRate,
+        low_rate: updatedJob.lowRate,
+        locale: updatedJob.locale,
+        owner: updatedJob.owner,
+        date: updatedJob.date,
+        work_details: updatedJob.workDetails,
+        pay_details: updatedJob.payDetails,
+        other: updatedJob.other,
+        video_questions: updatedJob.videoQuestions,
+        screening_questions: updatedJob.screeningQuestions,
+        flavor: updatedJob.flavor
+      })
+      .eq('id', updatedJob.id);
+
+    if (error) {
+      console.error("Error updating job:", error);
+      toast({
+        title: "Error Updating Job",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Update local state
     setState(prevState => ({
       ...prevState,
       jobs: prevState.jobs.map((job) => (job.id === updatedJob.id ? updatedJob : job))
@@ -165,6 +348,23 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const deleteJob = async (id: string) => {
     const jobToDelete = state.jobs.find(job => job.id === id);
     
+    // Delete from Supabase (cascade will automatically delete related candidates)
+    const { error } = await supabase
+      .from('jobs')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error("Error deleting job:", error);
+      toast({
+        title: "Error Deleting Job",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Update local state
     setState(prevState => {
       const { [id]: _, ...remainingCandidates } = prevState.candidates;
       return {
@@ -189,18 +389,44 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Candidate management functions
   const addCandidate = async (jobId: string, name: string) => {
-    const newCandidate: Candidate = {
-      id: uuidv4(),
-      name,
-      status: {
+    // Add to Supabase
+    const { data, error } = await supabase
+      .from('candidates')
+      .insert({
+        job_id: jobId,
+        name: name,
         approved: false,
         preparing: false,
         submitted: false,
         interviewing: false,
         offered: false
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error adding candidate:", error);
+      toast({
+        title: "Error Adding Candidate",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newCandidate: Candidate = {
+      id: data.id,
+      name: data.name,
+      status: {
+        approved: data.approved,
+        preparing: data.preparing,
+        submitted: data.submitted,
+        interviewing: data.interviewing,
+        offered: data.offered
       }
     };
 
+    // Update local state
     setState(prevState => ({
       ...prevState,
       candidates: {
@@ -221,6 +447,23 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const removeCandidate = async (jobId: string, candidateId: string) => {
     const candidate = state.candidates[jobId]?.find(c => c.id === candidateId);
     
+    // Delete from Supabase
+    const { error } = await supabase
+      .from('candidates')
+      .delete()
+      .eq('id', candidateId);
+
+    if (error) {
+      console.error("Error removing candidate:", error);
+      toast({
+        title: "Error Removing Candidate",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Update local state
     setState(prevState => ({
       ...prevState,
       candidates: {
@@ -243,7 +486,28 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     statusKey: keyof CandidateStatus, 
     value: boolean
   ) => {
-    // First update the state
+    // Map status key to database column
+    const statusUpdate: Record<string, boolean> = {
+      [statusKey]: value
+    };
+
+    // Update in Supabase
+    const { error } = await supabase
+      .from('candidates')
+      .update(statusUpdate)
+      .eq('id', candidateId);
+
+    if (error) {
+      console.error("Error updating candidate status:", error);
+      toast({
+        title: "Error Updating Candidate",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Update local state
     setState(prevState => {
       const updatedCandidates = {
         ...prevState.candidates,

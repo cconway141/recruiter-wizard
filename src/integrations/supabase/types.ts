@@ -9,7 +9,149 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      candidates: {
+        Row: {
+          approved: boolean
+          created_at: string
+          id: string
+          interviewing: boolean
+          job_id: string
+          name: string
+          offered: boolean
+          preparing: boolean
+          submitted: boolean
+          updated_at: string
+        }
+        Insert: {
+          approved?: boolean
+          created_at?: string
+          id?: string
+          interviewing?: boolean
+          job_id: string
+          name: string
+          offered?: boolean
+          preparing?: boolean
+          submitted?: boolean
+          updated_at?: string
+        }
+        Update: {
+          approved?: boolean
+          created_at?: string
+          id?: string
+          interviewing?: boolean
+          job_id?: string
+          name?: string
+          offered?: boolean
+          preparing?: boolean
+          submitted?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidates_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      jobs: {
+        Row: {
+          candidate_facing_title: string
+          client: string
+          comp_desc: string
+          created_at: string
+          date: string
+          flavor: string
+          high_rate: number
+          id: string
+          internal_title: string
+          jd: string
+          linkedin_search: string
+          lir: string
+          locale: string
+          low_rate: number
+          m1: string
+          m2: string
+          m3: string
+          medium_rate: number
+          min_skills: string
+          other: string | null
+          owner: string
+          pay_details: string
+          rate: number
+          screening_questions: string
+          skills_sought: string
+          status: string
+          updated_at: string
+          video_questions: string
+          work_details: string
+        }
+        Insert: {
+          candidate_facing_title: string
+          client: string
+          comp_desc: string
+          created_at?: string
+          date: string
+          flavor: string
+          high_rate: number
+          id?: string
+          internal_title: string
+          jd: string
+          linkedin_search: string
+          lir: string
+          locale: string
+          low_rate: number
+          m1: string
+          m2: string
+          m3: string
+          medium_rate: number
+          min_skills: string
+          other?: string | null
+          owner: string
+          pay_details: string
+          rate: number
+          screening_questions: string
+          skills_sought: string
+          status: string
+          updated_at?: string
+          video_questions: string
+          work_details: string
+        }
+        Update: {
+          candidate_facing_title?: string
+          client?: string
+          comp_desc?: string
+          created_at?: string
+          date?: string
+          flavor?: string
+          high_rate?: number
+          id?: string
+          internal_title?: string
+          jd?: string
+          linkedin_search?: string
+          lir?: string
+          locale?: string
+          low_rate?: number
+          m1?: string
+          m2?: string
+          m3?: string
+          medium_rate?: number
+          min_skills?: string
+          other?: string | null
+          owner?: string
+          pay_details?: string
+          rate?: number
+          screening_questions?: string
+          skills_sought?: string
+          status?: string
+          updated_at?: string
+          video_questions?: string
+          work_details?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
