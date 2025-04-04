@@ -76,19 +76,37 @@ export const useClientOptions = () => {
   return useQuery({
     queryKey: ["clientOptions"],
     queryFn: async (): Promise<SimpleOption[]> => {
-      const { data, error } = await supabase
-        .from("clients")
-        .select("*")
-        .order('name');
-      
-      if (error) {
-        console.error("Error fetching clients:", error);
+      try {
+        console.log("Fetching clients from Supabase...");
+        const { data, error } = await supabase
+          .from("clients")
+          .select("*")
+          .order('name');
+        
+        if (error) {
+          console.error("Error fetching clients:", error);
+          throw error;
+        }
+        
+        console.log("Fetched clients raw data:", data);
+        
+        // Make sure we're returning the data in the expected format
+        const formattedData = data.map(client => ({
+          id: client.id,
+          name: client.name
+        }));
+        
+        console.log("Formatted client data:", formattedData);
+        return formattedData || [];
+      } catch (error) {
+        console.error("Error in useClientOptions:", error);
         throw error;
       }
-      
-      console.log("Fetched clients:", data);
-      return data as SimpleOption[] || [];
     },
+    // Force refetch on component mount
+    refetchOnMount: true,
+    // Add stale time to avoid too frequent refetches
+    staleTime: 30000,
   });
 };
 

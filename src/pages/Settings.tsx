@@ -14,20 +14,23 @@ import { ClientsManager } from "@/components/settings/ClientsManager";
 import { LocalesManager } from "@/components/settings/LocalesManager";
 import { FlavorsManager } from "@/components/settings/FlavorsManager";
 import { StatusesManager } from "@/components/settings/StatusesManager";
+import { useQueryClient } from "@tanstack/react-query";
 
 const Settings = () => {
   const { isAirtableEnabled } = useJobs();
   const [activeTab, setActiveTab] = useState("clients");
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     // Force a re-render when the component mounts to ensure data is refreshed
     const refreshData = async () => {
       // Invalidate query cache to force a refresh
       console.log("Settings page mounted, refreshing data...");
+      queryClient.invalidateQueries({ queryKey: ["clientOptions"] });
     };
     
     refreshData();
-  }, []);
+  }, [queryClient]);
 
   return (
     <div className="flex flex-col min-h-screen">

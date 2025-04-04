@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Pencil, Trash, Save, X } from "lucide-react";
+import { Pencil, Trash, Save, X, RefreshCw } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -25,6 +25,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface Client {
   id: string;
@@ -42,10 +43,12 @@ export function ClientsManager() {
   const [newAbbreviation, setNewAbbreviation] = useState("");
   const [newDescription, setNewDescription] = useState("");
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const queryClient = useQueryClient();
 
   const fetchClients = async () => {
     setIsLoading(true);
     try {
+      console.log("ClientsManager: Fetching clients...");
       const { data, error } = await supabase
         .from("clients")
         .select("*")
@@ -56,6 +59,7 @@ export function ClientsManager() {
       }
       
       if (data) {
+        console.log("ClientsManager: Fetched clients:", data);
         setClients(data);
       }
     } catch (error) {
@@ -73,6 +77,13 @@ export function ClientsManager() {
   useEffect(() => {
     fetchClients();
   }, []);
+
+  // Function to invalidate queries and refresh data
+  const refreshData = () => {
+    console.log("Refreshing client data and invalidating queries...");
+    fetchClients();
+    queryClient.invalidateQueries({ queryKey: ["clientOptions"] });
+  };
 
   const handleAddClient = async () => {
     if (!newClient.trim() || !newManager.trim() || !newAbbreviation.trim() || !newDescription.trim()) {
@@ -107,7 +118,9 @@ export function ClientsManager() {
       setNewManager("");
       setNewAbbreviation("");
       setNewDescription("");
-      fetchClients();
+      
+      // Refresh data after adding
+      refreshData();
     } catch (error) {
       console.error("Error adding client:", error);
       toast({
@@ -150,7 +163,9 @@ export function ClientsManager() {
       });
       
       setEditingClient(null);
-      fetchClients();
+      
+      // Refresh data after updating
+      refreshData();
     } catch (error) {
       console.error("Error updating client:", error);
       toast({
@@ -177,7 +192,8 @@ export function ClientsManager() {
         description: "Client deleted successfully",
       });
       
-      fetchClients();
+      // Refresh data after deleting
+      refreshData();
     } catch (error) {
       console.error("Error deleting client:", error);
       toast({
@@ -191,8 +207,21 @@ export function ClientsManager() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Clients</CardTitle>
-        <CardDescription>Manage client companies</CardDescription>
+        <div className="flex justify-between items-center">
+          <div>
+            <CardTitle>Clients</CardTitle>
+            <CardDescription>Manage client companies</CardDescription>
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={refreshData} 
+            disabled={isLoading}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
@@ -232,7 +261,13 @@ export function ClientsManager() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {clients.length === 0 ? (
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-muted-foreground py-6">
+                      Loading clients...
+                    </TableCell>
+                  </TableRow>
+                ) : clients.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center text-muted-foreground py-6">
                       No clients found
