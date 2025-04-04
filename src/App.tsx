@@ -12,6 +12,7 @@ import Index from "./pages/Index";
 import AddJob from "./pages/AddJob";
 import EditJob from "./pages/EditJob";
 import ViewJob from "./pages/ViewJob";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 
@@ -57,6 +58,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <EditJob />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/settings" 
+                element={
+                  <ProtectedRoute>
+                    <Settings />
                   </ProtectedRoute>
                 } 
               />

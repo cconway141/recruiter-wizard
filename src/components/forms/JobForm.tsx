@@ -19,11 +19,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Job, JobStatus, Locale, Flavor, JOB_TITLES } from "@/types/job";
+import { Job, JobStatus, Locale, Flavor } from "@/types/job";
 import { calculateRates, generateInternalTitle, getWorkDetails, getPayDetails, generateM1, generateM2, generateM3 } from "@/utils/jobUtils";
 import { useJobs } from "@/contexts/JobContext";
 import { MessageCard } from "@/components/messages/MessageCard";
-import { getClientNames, getClientByName } from "@/utils/clientData";
+import { 
+  useClientOptions, 
+  useFlavorOptions, 
+  useLocaleOptions, 
+  useStatusOptions, 
+  useUserOptions 
+} from "@/hooks/use-dropdown-options";
+import { Loader2 } from "lucide-react";
 
 interface JobFormProps {
   job?: Job;
@@ -42,12 +49,22 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
 
   const form = useFormContext();
   const watchedFields = form.watch();
-  const clientNames = getClientNames();
+
+  const { data: clientOptions, isLoading: clientsLoading } = useClientOptions();
+  const { data: flavorOptions, isLoading: flavorsLoading } = useFlavorOptions();
+  const { data: localeOptions, isLoading: localesLoading } = useLocaleOptions();
+  const { data: statusOptions, isLoading: statusesLoading } = useStatusOptions();
+  const { data: userOptions, isLoading: usersLoading } = useUserOptions();
+
+  const isLoading = clientsLoading || flavorsLoading || localesLoading || statusesLoading || usersLoading;
 
   const handleClientSelection = (clientName: string) => {
-    const clientData = getClientByName(clientName);
-    if (clientData) {
-      form.setValue("compDesc", clientData.description);
+    const selectedClient = clientOptions?.find(client => client.name === clientName);
+    if (selectedClient) {
+      const clientData = getClientByName(clientName);
+      if (clientData) {
+        form.setValue("compDesc", clientData.description);
+      }
     }
   };
 
@@ -139,6 +156,20 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
     navigate("/");
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-40">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+        <span className="ml-2 text-gray-500">Loading options...</span>
+      </div>
+    );
+  }
+
+  const getClientByName = (name: string) => {
+    const { getClientByName } = require("@/utils/clientData");
+    return getClientByName(name);
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
       <div>
@@ -163,9 +194,9 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {clientNames.map((clientName) => (
-                        <SelectItem key={clientName} value={clientName}>
-                          {clientName}
+                      {clientOptions?.map((client) => (
+                        <SelectItem key={client.id} value={client.name}>
+                          {client.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -215,14 +246,11 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="FE">FE (Frontend)</SelectItem>
-                      <SelectItem value="BE">BE (Backend)</SelectItem>
-                      <SelectItem value="FS">FS (Full Stack)</SelectItem>
-                      <SelectItem value="DevOps">DevOps</SelectItem>
-                      <SelectItem value="Data">Data</SelectItem>
-                      <SelectItem value="ML">ML (Machine Learning)</SelectItem>
-                      <SelectItem value="Mobile">Mobile</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
+                      {flavorOptions?.map((flavor) => (
+                        <SelectItem key={flavor.id} value={flavor.name}>
+                          {flavor.label} ({flavor.name})
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -243,9 +271,11 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="Onshore">Onshore</SelectItem>
-                      <SelectItem value="Nearshore">Nearshore</SelectItem>
-                      <SelectItem value="Offshore">Offshore</SelectItem>
+                      {localeOptions?.map((locale) => (
+                        <SelectItem key={locale.id} value={locale.name}>
+                          {locale.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -266,10 +296,11 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="Active">Active</SelectItem>
-                      <SelectItem value="Aquarium">Aquarium</SelectItem>
-                      <SelectItem value="Inactive">Inactive</SelectItem>
-                      <SelectItem value="Closed">Closed</SelectItem>
+                      {statusOptions?.map((status) => (
+                        <SelectItem key={status.id} value={status.name}>
+                          {status.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -285,9 +316,20 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Recruiter (Owner)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Recruiter name" {...field} />
-                  </FormControl>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select recruiter" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {userOptions?.map((user) => (
+                        <SelectItem key={user.id} value={user.display_name}>
+                          {user.display_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

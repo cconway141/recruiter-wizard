@@ -2,6 +2,7 @@
 import { ReactNode, useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { Loader2 } from "lucide-react";
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -19,9 +20,14 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     }
   }, [loading]);
 
-  if (isChecking) {
-    // Show nothing while checking auth status
-    return null;
+  if (isChecking || loading) {
+    // Show a loading indicator while checking auth status
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+        <span className="ml-2 text-gray-500">Checking authentication...</span>
+      </div>
+    );
   }
 
   if (!user) {
