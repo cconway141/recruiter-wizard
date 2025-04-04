@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -16,9 +17,32 @@ import { useQueryClient } from "@tanstack/react-query";
 const Settings = () => {
   const { isAirtableEnabled } = useJobs();
   const [activeTab, setActiveTab] = useState("clients");
+  const [connectionStatus, setConnectionStatus] = useState("Checking...");
   const queryClient = useQueryClient();
 
   useEffect(() => {
+    // Verify connection to Supabase
+    const checkConnection = async () => {
+      try {
+        console.log("Settings: Checking Supabase connection...");
+        const { data, error } = await supabase.from('clients').select('count');
+        
+        if (error) {
+          console.error("Settings: Supabase connection error:", error);
+          setConnectionStatus(`Error: ${error.message}`);
+          return;
+        }
+        
+        console.log("Settings: Supabase connection successful, count data:", data);
+        setConnectionStatus("Connected to Supabase successfully");
+      } catch (error) {
+        console.error("Settings: Error checking Supabase connection:", error);
+        setConnectionStatus("Failed to connect to Supabase");
+      }
+    };
+    
+    checkConnection();
+    
     // Force a re-render when the component mounts to ensure data is refreshed
     const refreshData = async () => {
       // Invalidate query cache to force a refresh
@@ -34,6 +58,11 @@ const Settings = () => {
       <Navbar />
       <main className="flex-1 container py-10">
         <PageHeader title="Settings" description="Configure application settings and integrations." />
+        
+        {/* Debug connection status */}
+        <div className="mb-4 text-sm text-muted-foreground">
+          <p>Supabase connection: {connectionStatus}</p>
+        </div>
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mb-8">
           <TabsList className="mb-4">

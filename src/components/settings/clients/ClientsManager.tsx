@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "@/components/ui/use-toast";
 
 export function ClientsManager() {
   const [clients, setClients] = useState<Client[]>([]);
@@ -17,29 +18,59 @@ export function ClientsManager() {
   const fetchClients = async () => {
     setIsLoading(true);
     try {
-      console.log("ClientsManager: Fetching clients...");
+      console.log("ClientsManager: Attempting to fetch clients from Supabase...");
       const { data, error } = await supabase
         .from("clients")
         .select("*")
         .order('name');
       
       if (error) {
+        console.error("ClientsManager: Error fetching clients:", error);
+        toast({
+          title: "Error fetching clients",
+          description: error.message,
+          variant: "destructive",
+        });
         throw error;
       }
       
+      console.log("ClientsManager: Raw data received:", data);
+      console.log("ClientsManager: Data length:", data?.length || 0);
+      
       if (data) {
-        console.log("ClientsManager: Fetched clients:", data);
         setClients(data);
+        console.log("ClientsManager: Clients state updated with:", data);
+      } else {
+        console.log("ClientsManager: No data returned from Supabase");
+        setClients([]);
       }
     } catch (error) {
       console.error("Error fetching clients:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch clients",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
+    console.log("ClientsManager: Component mounted, fetching clients...");
     fetchClients();
+    
+    // Listen for client-added events
+    const handleClientAdded = () => {
+      console.log("ClientsManager: Detected client-added event, refreshing...");
+      fetchClients();
+    };
+    
+    document.addEventListener('client-added', handleClientAdded);
+    
+    return () => {
+      document.removeEventListener('client-added', handleClientAdded);
+    };
   }, []);
 
   // Function to invalidate queries and refresh data
@@ -72,6 +103,11 @@ export function ClientsManager() {
         <div className="space-y-6">
           <ClientForm />
           <ClientsList clients={clients} isLoading={isLoading} />
+          {/* Debug info */}
+          <div className="text-xs text-muted-foreground mt-4">
+            <p>Debug: Clients count: {clients.length}</p>
+            <p>Debug: Loading state: {isLoading ? 'Loading' : 'Not loading'}</p>
+          </div>
         </div>
       </CardContent>
     </Card>

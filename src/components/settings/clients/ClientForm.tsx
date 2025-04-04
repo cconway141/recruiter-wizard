@@ -1,9 +1,9 @@
 
 import { useState } from "react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useQueryClient } from "@tanstack/react-query";
 
 export function ClientForm() {
@@ -11,6 +11,7 @@ export function ClientForm() {
   const [newManager, setNewManager] = useState("");
   const [newAbbreviation, setNewAbbreviation] = useState("");
   const [newDescription, setNewDescription] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const queryClient = useQueryClient();
 
   const handleAddClient = async () => {
@@ -23,19 +24,31 @@ export function ClientForm() {
       return;
     }
     
+    setIsSubmitting(true);
     try {
-      const { error } = await supabase
+      console.log("ClientForm: Adding new client:", { 
+        name: newClient,
+        manager: newManager,
+        abbreviation: newAbbreviation,
+        description: newDescription
+      });
+      
+      const { data, error } = await supabase
         .from("clients")
         .insert({ 
           name: newClient,
           manager: newManager,
           abbreviation: newAbbreviation,
           description: newDescription
-        });
+        })
+        .select();
       
       if (error) {
+        console.error("ClientForm: Error adding client:", error);
         throw error;
       }
+      
+      console.log("ClientForm: Client added successfully:", data);
       
       toast({
         title: "Success",
@@ -49,6 +62,8 @@ export function ClientForm() {
       
       // Refresh data after adding
       queryClient.invalidateQueries({ queryKey: ["clientOptions"] });
+      // Trigger a refetch in the parent component
+      document.dispatchEvent(new CustomEvent('client-added'));
     } catch (error) {
       console.error("Error adding client:", error);
       toast({
@@ -56,6 +71,8 @@ export function ClientForm() {
         description: "Failed to add client",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -81,7 +98,13 @@ export function ClientForm() {
         value={newDescription} 
         onChange={(e) => setNewDescription(e.target.value)} 
       />
-      <Button onClick={handleAddClient} className="md:col-span-2">Add Client</Button>
+      <Button 
+        onClick={handleAddClient} 
+        className="md:col-span-2"
+        disabled={isSubmitting}
+      >
+        {isSubmitting ? 'Adding...' : 'Add Client'}
+      </Button>
     </div>
   );
 }

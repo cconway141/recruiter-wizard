@@ -77,18 +77,18 @@ export const useClientOptions = () => {
     queryKey: ["clientOptions"],
     queryFn: async (): Promise<SimpleOption[]> => {
       try {
-        console.log("Fetching clients from Supabase...");
+        console.log("useClientOptions: Fetching clients from Supabase...");
         const { data, error } = await supabase
           .from("clients")
           .select("*")
           .order('name');
         
         if (error) {
-          console.error("Error fetching clients:", error);
+          console.error("useClientOptions: Error fetching clients:", error);
           throw error;
         }
         
-        console.log("Fetched clients raw data:", data);
+        console.log("useClientOptions: Fetched clients raw data:", data);
         
         // Make sure we're returning the data in the expected format
         const formattedData = data.map(client => ({
@@ -96,7 +96,7 @@ export const useClientOptions = () => {
           name: client.name
         }));
         
-        console.log("Formatted client data:", formattedData);
+        console.log("useClientOptions: Formatted client data:", formattedData);
         return formattedData || [];
       } catch (error) {
         console.error("Error in useClientOptions:", error);
