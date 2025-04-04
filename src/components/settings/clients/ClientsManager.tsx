@@ -44,13 +44,15 @@ export function ClientsManager() {
       const { data: tableData, error: tableError } = await supabase
         .rpc('get_clients_table_info');
       
-      if (tableError && tableError.code === '42883') {
-        console.log("ClientsManager: get_clients_table_info function doesn't exist, this is expected");
-        // This is fine - the function doesn't exist yet
-        setTableInfo({ note: "Table info function doesn't exist yet" });
-      } else if (tableError) {
-        console.error("ClientsManager: Error getting table info:", tableError);
-      } else {
+      if (tableError) {
+        if (tableError.code === '42883') {
+          console.log("ClientsManager: get_clients_table_info function doesn't exist, this is expected");
+          // This is fine - the function doesn't exist yet
+          setTableInfo({ note: "Table info function doesn't exist yet" });
+        } else {
+          console.error("ClientsManager: Error getting table info:", tableError);
+        }
+      } else if (tableData) {
         console.log("ClientsManager: Table info:", tableData);
         setTableInfo(tableData);
       }
@@ -133,7 +135,7 @@ export function ClientsManager() {
     queryClient.invalidateQueries({ queryKey: ["clientOptions"] });
   };
 
-  // Temporary function to seed a client if none exist
+  // Temporary function to seed a sample client if none exist
   const seedSampleClient = async () => {
     try {
       console.log("Seeding sample client...");

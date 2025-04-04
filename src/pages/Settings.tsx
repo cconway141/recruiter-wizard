@@ -47,26 +47,30 @@ const Settings = () => {
           const { data: tablesData, error: tablesError } = await supabase
             .rpc('get_public_tables');
           
-          if (tablesError && tablesError.code === '42883') {
-            // This is fine - the function doesn't exist yet
-            console.log("Settings: get_public_tables function doesn't exist, this is expected");
-          } else if (tablesError) {
-            console.error("Settings: Error getting tables list:", tablesError);
-          } else {
+          if (tablesError) {
+            if (tablesError.code === '42883') {
+              // This is fine - the function doesn't exist yet
+              console.log("Settings: get_public_tables function doesn't exist, this is expected");
+            } else {
+              console.error("Settings: Error getting tables list:", tablesError);
+            }
+          } else if (tablesData) {
             console.log("Settings: Public tables:", tablesData);
-            setDbTables(tablesData || []);
+            setDbTables(Array.isArray(tablesData) ? tablesData : []);
           }
           
           // Get more details about clients table specifically
           const { data: clientsInfo, error: clientsInfoError } = await supabase
             .rpc('get_table_details', { table_name: 'clients' });
           
-          if (clientsInfoError && clientsInfoError.code === '42883') {
-            // This is fine - the function doesn't exist yet
-            console.log("Settings: get_table_details function doesn't exist, this is expected");
-          } else if (clientsInfoError) {
-            console.error("Settings: Error getting clients table info:", clientsInfoError);
-          } else {
+          if (clientsInfoError) {
+            if (clientsInfoError.code === '42883') {
+              // This is fine - the function doesn't exist yet
+              console.log("Settings: get_table_details function doesn't exist, this is expected");
+            } else {
+              console.error("Settings: Error getting clients table info:", clientsInfoError);
+            }
+          } else if (clientsInfo) {
             console.log("Settings: Clients table details:", clientsInfo);
             setDbDetails(clientsInfo);
           }
@@ -110,7 +114,7 @@ const Settings = () => {
             </AccordionTrigger>
             <AccordionContent>
               <div className="text-xs text-muted-foreground space-y-2 p-2 bg-muted/50 rounded-md">
-                <p>Connection URL: {supabase.supabaseUrl}</p>
+                <p>Connection URL: {process.env.SUPABASE_URL || "https://evggwokrvotnnkazteia.supabase.co"}</p>
                 <details>
                   <summary className="cursor-pointer">Available Tables</summary>
                   <pre className="overflow-auto mt-2 p-2 bg-muted rounded-md">
