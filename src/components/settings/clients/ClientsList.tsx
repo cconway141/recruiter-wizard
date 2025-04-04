@@ -1,0 +1,152 @@
+
+import { useState } from "react";
+import { Client } from "./types";
+import { ClientItem } from "./ClientItem";
+import { EditableClientItem } from "./EditableClientItem";
+import { toast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
+interface ClientsListProps {
+  clients: Client[];
+  isLoading: boolean;
+}
+
+export function ClientsList({ clients, isLoading }: ClientsListProps) {
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const queryClient = useQueryClient();
+
+  const handleStartEditing = (client: Client) => {
+    setEditingClient({ ...client });
+  };
+
+  const handleCancelEditing = () => {
+    setEditingClient(null);
+  };
+
+  const handleUpdateClient = async () => {
+    if (!editingClient) return;
+    
+    try {
+      const { error } = await supabase
+        .from("clients")
+        .update({
+          name: editingClient.name,
+          manager: editingClient.manager,
+          abbreviation: editingClient.abbreviation,
+          description: editingClient.description
+        })
+        .eq("id", editingClient.id);
+        
+      if (error) {
+        throw error;
+      }
+      
+      toast({
+        title: "Success",
+        description: "Client updated successfully",
+      });
+      
+      setEditingClient(null);
+      
+      // Refresh data after updating
+      queryClient.invalidateQueries({ queryKey: ["clientOptions"] });
+    } catch (error) {
+      console.error("Error updating client:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update client",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  const handleDeleteClient = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("clients")
+        .delete()
+        .eq("id", id);
+        
+      if (error) {
+        throw error;
+      }
+      
+      toast({
+        title: "Success",
+        description: "Client deleted successfully",
+      });
+      
+      // Refresh data after deleting
+      queryClient.invalidateQueries({ queryKey: ["clientOptions"] });
+    } catch (error) {
+      console.error("Error deleting client:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete client. It may be referenced by existing jobs.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEditChange = (updatedClient: Client) => {
+    setEditingClient(updatedClient);
+  };
+
+  return (
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>Abbreviation</TableHead>
+            <TableHead>Manager</TableHead>
+            <TableHead>Description</TableHead>
+            <TableHead className="w-[100px]">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {isLoading ? (
+            <TableRow>
+              <TableCell colSpan={5} className="text-center text-muted-foreground py-6">
+                Loading clients...
+              </TableCell>
+            </TableRow>
+          ) : clients.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={5} className="text-center text-muted-foreground py-6">
+                No clients found
+              </TableCell>
+            </TableRow>
+          ) : (
+            clients.map((client) => (
+              editingClient && editingClient.id === client.id ? (
+                <EditableClientItem 
+                  key={client.id}
+                  client={editingClient}
+                  onUpdate={handleUpdateClient}
+                  onCancel={handleCancelEditing}
+                />
+              ) : (
+                <ClientItem 
+                  key={client.id}
+                  client={client}
+                  onEdit={handleStartEditing}
+                  onDelete={handleDeleteClient}
+                />
+              )
+            ))
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}

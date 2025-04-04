@@ -1,16 +1,13 @@
-
 import { useState, useEffect } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/components/ui/use-toast";
 import { AirtableSetup } from "@/components/settings/AirtableSetup";
 import { supabase } from "@/integrations/supabase/client";
 import { useJobs } from "@/contexts/JobContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ClientsManager } from "@/components/settings/ClientsManager";
+import { ClientsManager } from "@/components/settings/clients/ClientsManager";
 import { LocalesManager } from "@/components/settings/LocalesManager";
 import { FlavorsManager } from "@/components/settings/FlavorsManager";
 import { StatusesManager } from "@/components/settings/StatusesManager";
