@@ -32,19 +32,19 @@ export function ClientsList({ clients, isLoading }: ClientsListProps) {
     setEditingClient(null);
   };
 
-  const handleUpdateClient = async () => {
-    if (!editingClient) return;
+  const handleUpdateClient = async (updatedClient: Client) => {
+    if (!updatedClient) return;
     
     try {
       const { error } = await supabase
         .from("clients")
         .update({
-          name: editingClient.name,
-          manager: editingClient.manager,
-          abbreviation: editingClient.abbreviation,
-          description: editingClient.description
+          name: updatedClient.name,
+          manager: updatedClient.manager,
+          abbreviation: updatedClient.abbreviation,
+          description: updatedClient.description
         })
-        .eq("id", editingClient.id);
+        .eq("id", updatedClient.id);
         
       if (error) {
         throw error;
@@ -95,10 +95,6 @@ export function ClientsList({ clients, isLoading }: ClientsListProps) {
         variant: "destructive",
       });
     }
-  };
-
-  const handleEditChange = (updatedClient: Client) => {
-    setEditingClient(updatedClient);
   };
 
   return (

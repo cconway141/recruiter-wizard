@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Save, X } from "lucide-react";
+import { useState } from "react";
 
 interface EditableClientItemProps {
   client: Client;
@@ -12,39 +13,45 @@ interface EditableClientItemProps {
 }
 
 export function EditableClientItem({ client, onUpdate, onCancel }: EditableClientItemProps) {
+  const [editedClient, setEditedClient] = useState<Client>({ ...client });
+
   const handleChange = (field: keyof Client, value: string) => {
-    onUpdate({ ...client, [field]: value });
+    setEditedClient({ ...editedClient, [field]: value });
+  };
+
+  const handleSave = () => {
+    onUpdate(editedClient);
   };
 
   return (
     <TableRow>
       <TableCell>
         <Input 
-          value={client.name}
+          value={editedClient.name}
           onChange={(e) => handleChange("name", e.target.value)}
         />
       </TableCell>
       <TableCell>
         <Input 
-          value={client.abbreviation}
+          value={editedClient.abbreviation}
           onChange={(e) => handleChange("abbreviation", e.target.value)}
         />
       </TableCell>
       <TableCell>
         <Input 
-          value={client.manager}
+          value={editedClient.manager}
           onChange={(e) => handleChange("manager", e.target.value)}
         />
       </TableCell>
       <TableCell>
         <Input 
-          value={client.description}
+          value={editedClient.description}
           onChange={(e) => handleChange("description", e.target.value)}
         />
       </TableCell>
       <TableCell>
         <div className="flex space-x-2">
-          <Button size="sm" variant="outline" onClick={onUpdate}>
+          <Button size="sm" variant="outline" onClick={handleSave}>
             <Save className="h-4 w-4" />
           </Button>
           <Button size="sm" variant="outline" onClick={onCancel}>
