@@ -101,12 +101,17 @@ export const useUserOptions = () => {
         throw error;
       }
       
+      // Make sure we handle both cases - whether display_name exists or not
       return (data || []).map(user => ({
         id: user.id,
         first_name: user.first_name,
         last_name: user.last_name,
         email: user.email,
-        display_name: user.display_name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email || 'Unknown User'
+        // Fallback chain in case display_name isn't set
+        display_name: user.display_name || 
+                     `${user.first_name || ''} ${user.last_name || ''}`.trim() || 
+                     user.email?.split('@')[0] || 
+                     'Unknown User'
       }));
     },
   });
