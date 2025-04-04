@@ -13,7 +13,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { setupAirtable, getAirtableConfig, isAirtableConfigured } from "@/utils/airtableUtils";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 
 export const AirtableSetup = () => {
   const [open, setOpen] = useState(false);
