@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { Locale } from "@/types/job";
 import { getWorkDetails, getPayDetails, generateM1, generateM2, generateM3 } from "@/utils/jobUtils";
@@ -40,7 +40,7 @@ export function JobFormDetails({ form }: JobFormDetailsProps) {
     m3: ""
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [debouncedUpdate, setDebouncedUpdate] = useState(false);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const watchedFields = {
     candidateFacingTitle: form.watch("candidateFacingTitle"),
@@ -50,26 +50,22 @@ export function JobFormDetails({ form }: JobFormDetailsProps) {
     videoQuestions: form.watch("videoQuestions")
   };
 
-  // Add a debounce to prevent too frequent updates
+  // Update messages with debounce to prevent too frequent updates
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedUpdate(true);
-    }, 1000); // Wait 1 second after typing stops
-
-    return () => {
-      clearTimeout(timer);
-      setDebouncedUpdate(false);
-    };
-  }, [watchedFields]);
-
-  useEffect(() => {
-    const updateMessages = async () => {
-      // Only update messages if all required fields are filled and the debounce timer has completed
-      if (debouncedUpdate && 
-          watchedFields.candidateFacingTitle && 
-          watchedFields.compDesc && 
-          watchedFields.locale && 
-          watchedFields.skillsSought) {
+    // Only proceed if all required fields are filled
+    if (
+      watchedFields.candidateFacingTitle && 
+      watchedFields.compDesc && 
+      watchedFields.locale && 
+      watchedFields.skillsSought
+    ) {
+      // Clear any existing timer
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      
+      // Set a new timer
+      debounceTimerRef.current = setTimeout(async () => {
         try {
           setIsLoading(true);
           const locale = watchedFields.locale as Locale;
@@ -100,11 +96,16 @@ export function JobFormDetails({ form }: JobFormDetailsProps) {
         } finally {
           setIsLoading(false);
         }
+      }, 1000); // 1 second debounce
+    }
+    
+    // Clean up the timer on component unmount
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
       }
     };
-    
-    updateMessages();
-  }, [debouncedUpdate, form]);
+  }, [watchedFields, form, messages.m3]);
 
   return (
     <div className="space-y-6">

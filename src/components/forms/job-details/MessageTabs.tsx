@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { UseFormReturn } from "react-hook-form";
 import { MessagePreviewSection } from "../MessagePreviewSection";
 import { Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
 
 interface MessageTabsProps {
   form: UseFormReturn<any>;
@@ -28,6 +30,19 @@ export function MessageTabs({ form, messages, isLoading = false }: MessageTabsPr
         </CardDescription>
       </CardHeader>
       <CardContent>
+        <FormField
+          control={form.control}
+          name="previewName"
+          render={({ field }) => (
+            <FormItem className="mb-6">
+              <FormLabel>Preview Name (for messages)</FormLabel>
+              <FormControl>
+                <Input placeholder="Candidate name for preview" {...field} />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+        
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />

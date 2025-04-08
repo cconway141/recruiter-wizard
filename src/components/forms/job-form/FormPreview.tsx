@@ -15,6 +15,13 @@ interface FormPreviewProps {
 }
 
 export function FormPreview({ previewTitle, watchedFields, messages }: FormPreviewProps) {
+  // Check if all required fields for message preview are filled
+  const canShowMessages = 
+    watchedFields.candidateFacingTitle && 
+    watchedFields.compDesc && 
+    watchedFields.locale && 
+    watchedFields.skillsSought;
+
   return (
     <div className="border-l pl-8">
       <div className="sticky top-8">
@@ -28,7 +35,19 @@ export function FormPreview({ previewTitle, watchedFields, messages }: FormPrevi
         )}
         
         <FormRatePreview rate={watchedFields.rate || 0} />
-        <MessagePreviewSection messages={messages} />
+        
+        {canShowMessages ? (
+          <div className="mt-6">
+            <h4 className="text-md font-medium mb-3">Message Previews</h4>
+            <MessagePreviewSection messages={messages} />
+          </div>
+        ) : (
+          <div className="mt-6 p-4 bg-muted rounded-md">
+            <p className="text-sm text-muted-foreground">
+              Complete all required fields (job title, company description, locale, and skills) to see message previews.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
