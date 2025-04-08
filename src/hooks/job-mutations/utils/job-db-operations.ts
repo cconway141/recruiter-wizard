@@ -3,7 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import { Database } from "@/integrations/supabase/types";
 
-type TableName = keyof Database['public']['Tables'];
+// Define a simpler type for table names to avoid excessive type instantiation
+type TableName = 'clients' | 'flavors' | 'job_statuses' | 'jobs' | 'locales' | 'profiles';
 
 /**
  * Looks up an entity in the database by name
