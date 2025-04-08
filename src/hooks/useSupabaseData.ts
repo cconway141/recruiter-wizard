@@ -12,12 +12,20 @@ export function useSupabaseData() {
     candidates: {}
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [lastLoadTime, setLastLoadTime] = useState(0);
 
   const loadFromSupabase = useCallback(async () => {
+    // Prevent excessive reloading (throttle to once per second)
+    const now = Date.now();
+    if (now - lastLoadTime < 1000) {
+      return;
+    }
+    
     console.log("Loading data from Supabase...");
     try {
       // Set loading state to true while fetching
       setIsLoading(true);
+      setLastLoadTime(now);
       
       // Load jobs with related data from Supabase
       const { data: jobsData, error: jobsError } = await supabase
@@ -90,7 +98,7 @@ export function useSupabaseData() {
       // Always set loading to false when done
       setIsLoading(false);
     }
-  }, []);
+  }, [lastLoadTime]);
 
   // Initialize data from Supabase
   useEffect(() => {

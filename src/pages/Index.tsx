@@ -3,19 +3,30 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { JobsFilter } from "@/components/jobs/JobsFilter";
 import { JobsTable } from "@/components/jobs/JobsTable";
 import { Navbar } from "@/components/layout/Navbar";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { useJobs } from "@/contexts/JobContext";
 
 const Index = () => {
   const location = useLocation();
   const { loadFromSupabase } = useJobs();
+  const refreshingRef = useRef(false);
   
   // Refresh data when navigating to the home page
   useEffect(() => {
     const refreshData = async () => {
-      console.log("Refreshing job dashboard data...");
-      await loadFromSupabase();
+      // Prevent multiple simultaneous refresh calls
+      if (refreshingRef.current) return;
+      
+      try {
+        refreshingRef.current = true;
+        console.log("Refreshing job dashboard data...");
+        await loadFromSupabase();
+      } catch (error) {
+        console.error("Error refreshing data:", error);
+      } finally {
+        refreshingRef.current = false;
+      }
     };
     
     refreshData();
