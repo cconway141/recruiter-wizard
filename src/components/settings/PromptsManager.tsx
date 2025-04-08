@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,7 +32,7 @@ export function PromptsManager() {
   const fetchPrompts = async () => {
     setIsLoading(true);
     try {
-      console.log('Fetching prompts...'); // Added logging
+      console.log('Fetching prompts...');
       const { data, error } = await (supabase
         .from('prompts') as any)
         .select('*')
@@ -45,7 +44,7 @@ export function PromptsManager() {
       }
       
       if (data) {
-        console.log('Fetched prompts:', data); // Added logging
+        console.log('Fetched prompts:', data);
         const typedPrompts = data as Prompt[];
         setPrompts(typedPrompts);
         if (typedPrompts.length > 0) {
@@ -69,7 +68,6 @@ export function PromptsManager() {
     
     setIsSaving(true);
     try {
-      // Use type assertion to work with the prompts table
       const { error } = await (supabase
         .from('prompts') as any)
         .update({
@@ -87,7 +85,6 @@ export function PromptsManager() {
         description: "The AI prompt was successfully updated.",
       });
       
-      // Refresh the prompts list
       fetchPrompts();
     } catch (error) {
       console.error('Error saving prompt:', error);
@@ -117,25 +114,36 @@ export function PromptsManager() {
     });
   };
 
-  // Function to get variable hints for the current prompt
   const getVariableHints = (promptId: number) => {
     switch (promptId) {
       case 1: // Video Questions
       case 2: // Screening Questions
         return [
-          { name: "${minSkills}", description: "Minimum skills required for the role" }
+          { 
+            name: "${minSkills}", 
+            description: "Minimum skills required for the role, including skill levels and years of experience" 
+          }
         ];
       case 3: // Other Information
         return [
-          { name: "${jobDescription}", description: "Full job description text" }
+          { 
+            name: "${jobDescription}", 
+            description: "Full job description text used to extract contextual details" 
+          }
         ];
       case 4: // Extract Skills
         return [
-          { name: "${jobDescription}", description: "Full job description text" }
+          { 
+            name: "${jobDescription}", 
+            description: "Complete job description to extract technical skills" 
+          }
         ];
       case 5: // Extract Minimum Skills
         return [
-          { name: "${jobDescription}", description: "Full job description text" }
+          { 
+            name: "${jobDescription}", 
+            description: "Full job description to determine minimum required skills" 
+          }
         ];
       default:
         return [];
@@ -222,12 +230,12 @@ export function PromptsManager() {
                                   Available Variables
                                 </div>
                               </TooltipTrigger>
-                              <TooltipContent className="w-80 p-4">
+                              <TooltipContent className="w-96 p-4">
                                 <h4 className="font-semibold mb-2">Variables you can use:</h4>
                                 <ul className="space-y-2">
                                   {getVariableHints(prompt.id).map((variable, idx) => (
                                     <li key={idx} className="flex flex-col">
-                                      <span className="font-mono text-sm">{variable.name}</span>
+                                      <span className="font-mono text-sm text-primary">{variable.name}</span>
                                       <span className="text-xs text-muted-foreground">{variable.description}</span>
                                     </li>
                                   ))}
