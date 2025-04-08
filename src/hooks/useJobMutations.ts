@@ -1,4 +1,3 @@
-
 import { Job, JobStatus, Locale, Flavor } from "@/types/job";
 import { 
   calculateRates, 

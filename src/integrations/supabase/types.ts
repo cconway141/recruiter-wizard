@@ -236,19 +236,25 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          pay_details: string | null
           updated_at: string
+          work_details: string | null
         }
         Insert: {
           created_at?: string
           id?: string
           name: string
+          pay_details?: string | null
           updated_at?: string
+          work_details?: string | null
         }
         Update: {
           created_at?: string
           id?: string
           name?: string
+          pay_details?: string | null
           updated_at?: string
+          work_details?: string | null
         }
         Relationships: []
       }

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -5,9 +6,26 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { UseFormReturn } from "react-hook-form";
-import { JobFormValues } from "@/types/forms";
 import { Locale } from "@/types/job";
 import { getWorkDetails, getPayDetails, generateM1, generateM2, generateM3 } from "@/utils/jobUtils";
+
+interface JobFormValues {
+  candidateFacingTitle: string;
+  compDesc: string;
+  locale: string;
+  skillsSought: string;
+  videoQuestions: string;
+  workDetails: string;
+  payDetails: string;
+  jd: string;
+  minSkills: string;
+  other: string;
+  screeningQuestions: string;
+  m1: string;
+  m2: string;
+  m3: string;
+  [key: string]: any;
+}
 
 interface JobFormDetailsProps {
   form: UseFormReturn<JobFormValues>;
@@ -19,6 +37,7 @@ export function JobFormDetails({ form }: JobFormDetailsProps) {
     m2: "",
     m3: ""
   });
+  const [isLoading, setIsLoading] = useState(false);
 
   const watchedFields = {
     candidateFacingTitle: form.watch("candidateFacingTitle"),
@@ -32,23 +51,35 @@ export function JobFormDetails({ form }: JobFormDetailsProps) {
     const updateMessages = async () => {
       if (watchedFields.candidateFacingTitle && watchedFields.compDesc && watchedFields.locale && watchedFields.skillsSought && watchedFields.videoQuestions) {
         try {
+          setIsLoading(true);
           const locale = watchedFields.locale as Locale;
           const workDetails = await getWorkDetails(locale);
           const payDetails = await getPayDetails(locale);
+          
+          // Update the form values with the fetched details
+          form.setValue("workDetails", workDetails);
+          form.setValue("payDetails", payDetails);
           
           const m1 = generateM1("[First Name]", watchedFields.candidateFacingTitle, watchedFields.compDesc);
           const m2 = generateM2(watchedFields.candidateFacingTitle, payDetails, workDetails, watchedFields.skillsSought);
           const m3 = generateM3(watchedFields.videoQuestions);
           
           setMessages({ m1, m2, m3 });
+          
+          // Update the form values with the generated messages
+          form.setValue("m1", m1);
+          form.setValue("m2", m2);
+          form.setValue("m3", m3);
         } catch (err) {
           console.error("Error generating messages:", err);
+        } finally {
+          setIsLoading(false);
         }
       }
     };
     
     updateMessages();
-  }, [watchedFields]);
+  }, [watchedFields, form]);
 
   return (
     <div className="space-y-6">

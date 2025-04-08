@@ -30,8 +30,10 @@ import {
 interface Locale {
   id: string;
   name: string;
-  work_details: string;
-  pay_details: string;
+  work_details: string | null;
+  pay_details: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export function LocalesManager() {
@@ -55,7 +57,7 @@ export function LocalesManager() {
       }
       
       if (data) {
-        setLocales(data);
+        setLocales(data as Locale[]);
       }
     } catch (error) {
       console.error("Error fetching locales:", error);

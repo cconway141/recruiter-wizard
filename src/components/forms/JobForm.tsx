@@ -22,7 +22,6 @@ import { JobFormBasicInfo } from "./JobFormBasicInfo";
 import { JobFormCompanyDesc } from "./JobFormCompanyDesc";
 import { JobFormDetails } from "./JobFormDetails";
 import { JobFormLinks } from "./JobFormLinks";
-import { JobFormQuestions } from "./JobFormQuestions";
 import { FormRatePreview } from "./FormRatePreview";
 import { MessagePreviewSection } from "./MessagePreviewSection";
 
@@ -48,6 +47,7 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
     m2: "",
     m3: "",
   });
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
 
   const form = useFormContext();
   const watchedFields = form.watch();
@@ -58,7 +58,7 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
   const { isLoading: statusesLoading } = useStatusOptions();
   const { isLoading: usersLoading } = useUserOptions();
 
-  const isLoading = clientsLoading || flavorsLoading || localesLoading || statusesLoading || usersLoading;
+  const isLoading = clientsLoading || flavorsLoading || localesLoading || statusesLoading || usersLoading || isLoadingMessages;
 
   const handleClientSelection = async (clientName: string) => {
     try {
@@ -83,6 +83,7 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
   };
 
   useEffect(() => {
+    // Generate internal title preview when relevant fields change
     if (watchedFields.client && watchedFields.candidateFacingTitle && watchedFields.flavor && watchedFields.locale) {
       try {
         const newTitle = generateInternalTitle(
@@ -97,32 +98,40 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
       }
     }
 
-    if (watchedFields.candidateFacingTitle && watchedFields.compDesc && watchedFields.locale && watchedFields.skillsSought && watchedFields.videoQuestions) {
-      try {
-        const locale = watchedFields.locale as Locale;
-        const workDetails = getWorkDetails(locale);
-        const payDetails = getPayDetails(locale);
-        
-        const m1 = generateM1("[First Name]", watchedFields.candidateFacingTitle, watchedFields.compDesc);
-        const m2 = generateM2(watchedFields.candidateFacingTitle, payDetails, workDetails, watchedFields.skillsSought);
-        const m3 = generateM3(watchedFields.videoQuestions);
-        
-        setMessages({ m1, m2, m3 });
-      } catch (err) {
-        console.error("Error generating messages:", err);
+    // Generate message previews when relevant fields change
+    const generateMessages = async () => {
+      if (watchedFields.candidateFacingTitle && watchedFields.compDesc && watchedFields.locale && watchedFields.skillsSought && watchedFields.videoQuestions) {
+        try {
+          setIsLoadingMessages(true);
+          const locale = watchedFields.locale as Locale;
+          const workDetails = await getWorkDetails(locale);
+          const payDetails = await getPayDetails(locale);
+          
+          const m1 = generateM1("[First Name]", watchedFields.candidateFacingTitle, watchedFields.compDesc);
+          const m2 = generateM2(watchedFields.candidateFacingTitle, payDetails, workDetails, watchedFields.skillsSought);
+          const m3 = generateM3(watchedFields.videoQuestions);
+          
+          setMessages({ m1, m2, m3 });
+        } catch (err) {
+          console.error("Error generating messages:", err);
+        } finally {
+          setIsLoadingMessages(false);
+        }
       }
-    }
+    };
+
+    generateMessages();
   }, [watchedFields]);
 
-  const onSubmit = (values: any) => {
+  const onSubmit = async (values: any) => {
     try {
       const { previewName, ...jobData } = values;
       
       const { high, medium, low } = calculateRates(values.rate);
       
       const locale = values.locale as Locale;
-      const workDetails = getWorkDetails(locale);
-      const payDetails = getPayDetails(locale);
+      const workDetails = await getWorkDetails(locale);
+      const payDetails = await getPayDetails(locale);
       
       const internalTitle = generateInternalTitle(
         values.client,
@@ -190,9 +199,8 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <JobFormBasicInfo handleClientSelection={handleClientSelection} />
           <JobFormCompanyDesc />
-          <JobFormDetails />
+          <JobFormDetails form={form} />
           <JobFormLinks />
-          <JobFormQuestions />
           
           <div className="flex justify-end gap-4">
             <Button type="button" variant="outline" onClick={() => navigate("/")}>

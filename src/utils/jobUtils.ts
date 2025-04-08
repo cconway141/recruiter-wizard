@@ -1,3 +1,4 @@
+
 import { Job, Locale, DEFAULT_WORK_DETAILS, DEFAULT_PAY_DETAILS } from "@/types/job";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -80,8 +81,14 @@ export async function getWorkDetails(locale: Locale): Promise<string> {
       .eq("name", locale)
       .single();
     
-    if (error || !data || !data.work_details) {
+    if (error) {
+      console.error("Error fetching work details:", error);
       // Fallback to default if database lookup fails
+      return DEFAULT_WORK_DETAILS[locale];
+    }
+    
+    if (!data || !data.work_details) {
+      // Fallback to default if data is empty
       return DEFAULT_WORK_DETAILS[locale];
     }
     
@@ -100,8 +107,14 @@ export async function getPayDetails(locale: Locale): Promise<string> {
       .eq("name", locale)
       .single();
     
-    if (error || !data || !data.pay_details) {
+    if (error) {
+      console.error("Error fetching pay details:", error);
       // Fallback to default if database lookup fails
+      return DEFAULT_PAY_DETAILS[locale];
+    }
+    
+    if (!data || !data.pay_details) {
+      // Fallback to default if data is empty
       return DEFAULT_PAY_DETAILS[locale];
     }
     
