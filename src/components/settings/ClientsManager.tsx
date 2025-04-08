@@ -1,7 +1,7 @@
 
 import { useState } from "react";
-import { ClientForm } from "./clients/ClientForm";
-import { ClientsList } from "./clients/ClientsList";
+import { ClientForm } from "@/components/settings/clients/ClientForm";
+import { ClientsList } from "@/components/settings/clients/ClientsList";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 
@@ -21,7 +21,7 @@ export function ClientsManager() {
       </div>
 
       {isAdding ? (
-        <ClientForm onCancel={() => setIsAdding(false)} onSuccess={() => setIsAdding(false)} />
+        <ClientForm onCancel={() => setIsAdding(false)} />
       ) : (
         <ClientsList />
       )}
