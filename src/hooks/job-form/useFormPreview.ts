@@ -2,8 +2,31 @@
 import { useState, useEffect } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { Locale } from "@/types/job";
-import { JobFormValues } from "../forms/JobFormDetails";
 import { generateInternalTitle, calculateRates, generateM1, generateM2, generateM3 } from "@/utils/jobUtils";
+
+// Define the JobFormValues interface here to avoid the import error
+interface JobFormValues {
+  candidateFacingTitle: string;
+  compDesc: string;
+  locale: string;
+  skillsSought: string;
+  videoQuestions: string;
+  workDetails: string;
+  payDetails: string;
+  jd: string;
+  minSkills: string;
+  other: string;
+  screeningQuestions: string;
+  m1: string;
+  m2: string;
+  m3: string;
+  owner: string;
+  client: string;
+  flavor: string;
+  rate: number;
+  previewName?: string;
+  [key: string]: any;
+}
 
 export function useFormPreview(form: UseFormReturn<JobFormValues>) {
   const [previewTitle, setPreviewTitle] = useState("");
@@ -81,6 +104,7 @@ export function useFormPreview(form: UseFormReturn<JobFormValues>) {
           const firstName = form.watch("previewName") || "[First Name]";
           const owner = watchedFields.owner || "";
           
+          // Fix: Wait for the promise to resolve before updating state
           const m1 = await generateM1(firstName, watchedFields.candidateFacingTitle, watchedFields.compDesc, owner);
           const m2 = await generateM2(
             watchedFields.candidateFacingTitle,

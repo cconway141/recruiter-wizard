@@ -28,7 +28,6 @@ interface JobFormProps {
 
 export function JobForm({ job, isEditing = false }: JobFormProps) {
   const form = useFormContext<JobFormValues>();
-  // Add a null check here to prevent the error
   const { handleSubmit } = useFormProcessor({ job, isEditing }) || { handleSubmit: () => {} };
   const { handleClientSelection } = useClientSelection(form);
 
@@ -40,8 +39,10 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
 
   const isLoading = clientsLoading || flavorsLoading || localesLoading || statusesLoading || usersLoading;
 
-  // Set default messages in background (invisible to user but needed for database)
+  // Add a null check for form before accessing getValues
   useEffect(() => {
+    if (!form) return; // Guard clause to prevent accessing null form
+    
     const locale = form.getValues("locale");
     const candidateFacingTitle = form.getValues("candidateFacingTitle");
     const compDesc = form.getValues("compDesc");
@@ -56,6 +57,8 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
 
   // Handle initial client selection for company description
   useEffect(() => {
+    if (!form) return; // Guard clause to prevent accessing null form
+    
     const clientValue = form.getValues("client");
     if (clientValue) {
       handleClientSelection(clientValue);

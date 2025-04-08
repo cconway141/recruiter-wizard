@@ -1,254 +1,262 @@
-import { Job, Locale, DEFAULT_WORK_DETAILS, DEFAULT_PAY_DETAILS } from "@/types/job";
-import { supabase } from "@/integrations/supabase/client";
 
-// Function to get locale abbreviations from database
-export async function getLocaleAbbreviations(): Promise<Record<Locale, string>> {
+import { supabase } from "@/integrations/supabase/client";
+import { Locale } from "@/types/job";
+
+/**
+ * Generate internal title for a job
+ */
+export async function generateInternalTitle(
+  client: string,
+  candidateFacingTitle: string,
+  flavor: string,
+  locale: Locale
+): Promise<string> {
   try {
-    const { data, error } = await supabase
-      .from("locales")
-      .select("name, abbreviation");
+    // Get locale abbreviation from database
+    const { data: localeData, error: localeError } = await supabase
+      .from('locales')
+      .select('abbreviation')
+      .eq('name', locale)
+      .single();
     
-    if (error) {
-      console.error("Error fetching locale abbreviations:", error);
-      // Fall back to default if there's an error
-      return {
+    if (localeError || !localeData) {
+      console.error("Error fetching locale abbreviation:", localeError);
+      // Fallback to hardcoded abbreviations
+      const fallbackAbbreviations: Record<Locale, string> = {
         "Onshore": "On",
         "Nearshore": "Near",
         "Offshore": "Off"
       };
+      
+      // Get role abbreviation from the title (simplified approach)
+      // Assuming candidateFacingTitle contains the role
+      const roleWords = candidateFacingTitle.split(' ');
+      const firstWord = roleWords[0]; // e.g., "Sr.", "Full", etc.
+      
+      return `${client} | ${fallbackAbbreviations[locale]} | ${candidateFacingTitle} | ${flavor}`;
     }
     
-    const abbreviations: Record<string, string> = {};
+    // Use the abbreviation from the database
+    const localeAbbreviation = localeData.abbreviation;
     
-    // Convert the database results to a record
-    for (const locale of data || []) {
-      if (locale.name && locale.abbreviation) {
-        abbreviations[locale.name] = locale.abbreviation;
-      }
-    }
-    
-    // Ensure all locales have an abbreviation
-    const result: Record<Locale, string> = {
-      "Onshore": abbreviations["Onshore"] || "On",
-      "Nearshore": abbreviations["Nearshore"] || "Near", 
-      "Offshore": abbreviations["Offshore"] || "Off"
-    };
-    
-    return result;
-  } catch (error) {
-    console.error("Error in getLocaleAbbreviations:", error);
-    // Fall back to default if there's an exception
-    return {
-      "Onshore": "On",
-      "Nearshore": "Near",
-      "Offshore": "Off"
-    };
+    return `${client} | ${localeAbbreviation} | ${candidateFacingTitle} | ${flavor}`;
+  } catch (err) {
+    console.error("Error generating internal title:", err);
+    // Return a fallback title
+    return `${client} | ${candidateFacingTitle} | ${flavor}`;
   }
 }
 
-// Function to get role abbreviations from database
-export async function getRoleAbbreviations(): Promise<Record<string, string>> {
+/**
+ * Calculate high, medium, and low rates from a base rate
+ */
+export function calculateRates(rate: number) {
+  // Calculate rates
+  const high = rate;
+  const medium = Math.floor(rate * 0.85);
+  const low = Math.floor(rate * 0.7);
+  
+  return { high, medium, low };
+}
+
+// Function to get role abbreviation from database
+export async function getRoleAbbreviation(role: string): Promise<string> {
   try {
-    // Cast the table name to any to bypass TypeScript checking for now
-    // This is a workaround until Supabase types get updated
+    // Try to get the abbreviation from the database
     const { data, error } = await supabase
-      .from("role_abbreviations" as any)
-      .select("role_name, abbreviation");
+      .from('role_abbreviations')
+      .select('abbreviation')
+      .eq('role_name', role)
+      .single();
     
-    if (error) {
+    if (error || !data) {
+      console.warn(`Role abbreviation not found for: ${role}`);
+      // Return the role itself if no abbreviation found
+      return role;
+    }
+    
+    return data.abbreviation;
+  } catch (err) {
+    console.error("Error fetching role abbreviation:", err);
+    // Return the role itself if an error occurs
+    return role;
+  }
+}
+
+// Function to get all role abbreviations
+export async function getAllRoleAbbreviations(): Promise<Record<string, string>> {
+  try {
+    const { data, error } = await supabase
+      .from('role_abbreviations')
+      .select('role_name, abbreviation');
+    
+    if (error || !data) {
       console.error("Error fetching role abbreviations:", error);
-      // We'll return an empty object and the generateInternalTitle function will use DEV as default
+      // Return an empty object if there's an error
       return {};
     }
     
-    const abbreviations: Record<string, string> = {};
+    // Convert array to object
+    const abbreviationsMap: Record<string, string> = {};
+    data.forEach(item => {
+      abbreviationsMap[item.role_name] = item.abbreviation;
+    });
     
-    // Convert the database results to a record
-    if (data) {
-      for (const role of data) {
-        if (role.role_name && role.abbreviation) {
-          abbreviations[role.role_name] = role.abbreviation;
-        }
-      }
-    }
-    
-    return abbreviations;
-  } catch (error) {
-    console.error("Error in getRoleAbbreviations:", error);
+    return abbreviationsMap;
+  } catch (err) {
+    console.error("Error processing role abbreviations:", err);
     return {};
   }
 }
 
-export async function generateInternalTitle(client: string, title: string, flavor: string, locale: Locale): Promise<string> {
-  // Get locale abbreviation
-  const localeAbbreviations = await getLocaleAbbreviations();
-  const localeAbbreviation = localeAbbreviations[locale];
-  
-  // Get role abbreviation
-  const roleAbbreviations = await getRoleAbbreviations();
-  // Get role abbreviation or default to "DEV" if not found
-  const roleAbbreviation = roleAbbreviations[title] || "DEV";
-  
-  return `${client} ${roleAbbreviation} - ${flavor} ${localeAbbreviation}`;
-}
-
-export function calculateRates(baseRate: number): { high: number; medium: number; low: number } {
-  return {
-    high: Math.round(baseRate * 0.55),
-    medium: Math.round(baseRate * 0.4),
-    low: Math.round(baseRate * 0.2)
-  };
-}
-
+/**
+ * Get work details based on locale
+ */
 export async function getWorkDetails(locale: Locale): Promise<string> {
   try {
     const { data, error } = await supabase
-      .from("locales")
-      .select("work_details")
-      .eq("name", locale)
-      .maybeSingle();
+      .from('locales')
+      .select('work_details')
+      .eq('name', locale)
+      .single();
     
-    if (error) {
+    if (error || !data) {
       console.error("Error fetching work details:", error);
-      // Fallback to default if database lookup fails
-      return DEFAULT_WORK_DETAILS[locale];
+      return "";
     }
     
-    if (!data || !data.work_details) {
-      // Fallback to default if data is empty
-      return DEFAULT_WORK_DETAILS[locale];
-    }
-    
-    return data.work_details;
-  } catch (error) {
-    console.error("Error fetching work details:", error);
-    return DEFAULT_WORK_DETAILS[locale];
+    return data.work_details || "";
+  } catch (err) {
+    console.error("Error in getWorkDetails:", err);
+    return "";
   }
 }
 
+/**
+ * Get pay details based on locale
+ */
 export async function getPayDetails(locale: Locale): Promise<string> {
   try {
     const { data, error } = await supabase
-      .from("locales")
-      .select("pay_details")
-      .eq("name", locale)
-      .maybeSingle();
+      .from('locales')
+      .select('pay_details')
+      .eq('name', locale)
+      .single();
     
-    if (error) {
+    if (error || !data) {
       console.error("Error fetching pay details:", error);
-      // Fallback to default if database lookup fails
-      return DEFAULT_PAY_DETAILS[locale];
+      return "";
     }
     
-    if (!data || !data.pay_details) {
-      // Fallback to default if data is empty
-      return DEFAULT_PAY_DETAILS[locale];
-    }
-    
-    return data.pay_details;
-  } catch (error) {
-    console.error("Error fetching pay details:", error);
-    return DEFAULT_PAY_DETAILS[locale];
+    return data.pay_details || "";
+  } catch (err) {
+    console.error("Error in getPayDetails:", err);
+    return "";
   }
 }
 
-// Default templates as fallbacks
-const DEFAULT_M1_TEMPLATE = `Hi [First Name]!
-
-I'm [Owner] from The ITBC.
-
-Your background caught my eye.
-
-I have an open [Title] role at [Company Description]
-
-Interested in learning more?
-
-Best,`;
-
-const DEFAULT_M2_TEMPLATE = `Great! Here is some more information.
-
-I founded The ITBC ~ 10 years ago, today we specialize in placing candidates in targeted IT project roles as a staffing firm. I have a few messages I'll send starting with this one, each requiring a response from you.
-
-For this opening:
-[Title] Role
-[Pay Details]
-
-Working Details:
-[Work Details]
-
-If that works, please review the skills below and reply with:
-1) Years of hands-on experience
-2) Expertise level for each skill
-
-[Skills Sought]
-
-For level choose from beginner, advanced beginner, intermediate, advanced, and expert.
-
-Below that, please share your rate expectations.`;
-
-const DEFAULT_M3_TEMPLATE = `Awesome! To expedite things as I think you are a strong fit, could you record a brief intro video focusing on the skills mentioned and real project examples (only I will see it)?
-    
-Please also touch on:
-[Video Questions]
-
-Upload the video and share the link here.
-
-Additionally, please send me the following:
-- Interview availability
-- Notice period if offered
-- Email
-- WhatsApp number
-- Updated resume/LinkedIn
-- Hourly rate in USD
-
-I'll also be sending you a right-to-represent document so we can proceed.`;
-
-async function getMessageTemplate(templateField: string, defaultTemplate: string): Promise<string> {
-  try {
-    const { data, error } = await supabase
-      .from('message_templates' as any)
-      .select(templateField)
-      .eq('id', 1)
-      .maybeSingle();
-    
-    if (error) {
-      console.error(`Error fetching ${templateField}:`, error);
-      return defaultTemplate;
-    }
-    
-    if (!data || !data[templateField]) {
-      return defaultTemplate;
-    }
-    
-    return data[templateField];
-  } catch (error) {
-    console.error(`Error fetching ${templateField}:`, error);
-    return defaultTemplate;
-  }
-}
-
+/**
+ * Get the latest M1 template and populate it with job details
+ */
 export async function generateM1(firstName: string, title: string, compDesc: string, owner: string = ""): Promise<string> {
-  const template = await getMessageTemplate('m1_template', DEFAULT_M1_TEMPLATE);
-  
-  return template
-    .replace(/\[First Name\]/g, firstName)
-    .replace(/\[Title\]/g, title)
-    .replace(/\[Company Description\]/g, compDesc)
-    .replace(/\[Owner\]/g, owner);
+  try {
+    // Fetch the latest M1 template from the database
+    const { data, error } = await supabase
+      .from('message_templates')
+      .select('m1_template')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+    
+    if (error || !data) {
+      console.error("Error fetching M1 template:", error);
+      // Fallback to a default template
+      return `Hi ${firstName}!\n\nI'm ${owner} from The ITBC.\n\nYour background caught my eye.\n\nI have an open ${title} role at ${compDesc}\n\nInterested in learning more?\n\nBest,`;
+    }
+    
+    // Replace placeholders in the template
+    let message = data.m1_template
+      .replace(/\[First Name\]/g, firstName)
+      .replace(/\[Title\]/g, title)
+      .replace(/\[Company Description\]/g, compDesc);
+    
+    // Replace [Owner] with the provided owner
+    if (owner) {
+      message = message.replace(/\[Owner\]/g, owner);
+    } else {
+      // If no owner is provided, replace [Owner] with empty string
+      message = message.replace(/\[Owner\]/g, "");
+    }
+    
+    return message;
+  } catch (err) {
+    console.error("Error generating M1:", err);
+    // Fallback
+    return `Hi ${firstName}!\n\nI'm ${owner} from The ITBC.\n\nYour background caught my eye.\n\nI have an open ${title} role at ${compDesc}\n\nInterested in learning more?\n\nBest,`;
+  }
 }
 
-export async function generateM2(title: string, payDetails: string, workDetails: string, skillsSought: string): Promise<string> {
-  const template = await getMessageTemplate('m2_template', DEFAULT_M2_TEMPLATE);
-  
-  return template
-    .replace(/\[Title\]/g, title)
-    .replace(/\[Pay Details\]/g, payDetails)
-    .replace(/\[Work Details\]/g, workDetails)
-    .replace(/\[Skills Sought\]/g, skillsSought);
+/**
+ * Generate M2 message
+ */
+export async function generateM2(title: string, payDetails: string, workDetails: string, skills: string): Promise<string> {
+  try {
+    // Fetch the latest M2 template from the database
+    const { data, error } = await supabase
+      .from('message_templates')
+      .select('m2_template')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+    
+    if (error || !data) {
+      console.error("Error fetching M2 template:", error);
+      // Fallback to a default template
+      return `Great to connect!\n\nHere's more about the ${title} role:\n\n${payDetails}\n\n${workDetails}\n\nSkills Sought:\n${skills}\n\nWould you be interested in this opportunity?`;
+    }
+    
+    // Replace placeholders in the template
+    const message = data.m2_template
+      .replace(/\[Title\]/g, title)
+      .replace(/\[Pay Details\]/g, payDetails)
+      .replace(/\[Work Details\]/g, workDetails)
+      .replace(/\[Skills\]/g, skills);
+    
+    return message;
+  } catch (err) {
+    console.error("Error generating M2:", err);
+    // Fallback
+    return `Great to connect!\n\nHere's more about the ${title} role:\n\n${payDetails}\n\n${workDetails}\n\nSkills Sought:\n${skills}\n\nWould you be interested in this opportunity?`;
+  }
 }
 
+/**
+ * Generate M3 message
+ */
 export async function generateM3(videoQuestions: string): Promise<string> {
-  const template = await getMessageTemplate('m3_template', DEFAULT_M3_TEMPLATE);
-  
-  return template.replace(/\[Video Questions\]/g, videoQuestions);
+  try {
+    // Fetch the latest M3 template from the database
+    const { data, error } = await supabase
+      .from('message_templates')
+      .select('m3_template')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+    
+    if (error || !data) {
+      console.error("Error fetching M3 template:", error);
+      // Fallback to a default template
+      return `Please record a short video (2-3 minutes) answering these questions:\n\n${videoQuestions}\n\nThis helps us get to know you better!`;
+    }
+    
+    // Replace placeholders in the template
+    const message = data.m3_template
+      .replace(/\[Video Questions\]/g, videoQuestions);
+    
+    return message;
+  } catch (err) {
+    console.error("Error generating M3:", err);
+    // Fallback
+    return `Please record a short video (2-3 minutes) answering these questions:\n\n${videoQuestions}\n\nThis helps us get to know you better!`;
+  }
 }

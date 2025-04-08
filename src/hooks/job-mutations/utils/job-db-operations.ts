@@ -3,8 +3,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import { Locale, Flavor, JobStatus } from "@/types/job";
 
-// Define valid table names to fix type errors
-type ValidTableName = "clients" | "flavors" | "locales" | "job_statuses" | "profiles" | "jobs" | "message_templates";
+// Define specific table names with their column types to avoid type errors
+type ClientsTable = "clients";
+type FlavorsTable = "flavors";
+type LocalesTable = "locales";
+type JobStatusesTable = "job_statuses";
+type ProfilesTable = "profiles";
+type JobsTable = "jobs";
+type MessageTemplatesTable = "message_templates";
+type RoleAbbreviationsTable = "role_abbreviations";
+
+// Define a union type of all valid table names
+type ValidTableName = ClientsTable | FlavorsTable | LocalesTable | JobStatusesTable | ProfilesTable | JobsTable | MessageTemplatesTable | RoleAbbreviationsTable;
 
 /**
  * Look up an entity ID by its name from a specific table
@@ -35,7 +45,7 @@ export async function lookupEntityByName(
     }
     
     console.log(`Found ${tableName} id:`, data.id);
-    return data.id;
+    return data.id as string; // Explicitly cast to string to avoid type errors
   } catch (err) {
     console.error(`Exception in lookupEntityByName for ${tableName}:`, err);
     return null;
