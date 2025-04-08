@@ -30,18 +30,17 @@ export function useAddJob(jobs: Job[], setJobs: (jobs: Job[]) => void) {
     ) => {
       try {
         // Step 1: Prepare the job data with calculated fields
-        const preparedJob = prepareJobForCreate(jobToAdd);
-
+        const preparedJobPromise = await prepareJobForCreate(jobToAdd);
+        
         // Step 2: Update state immediately for a responsive UI
         const newJob: Job = {
-          ...preparedJob,
+          ...preparedJobPromise,
           // Add default values for the omitted properties
           workDetails: "",
           payDetails: "",
           m1: "",
           m2: "",
           m3: "",
-          linkedinSearch: jobToAdd.linkedinSearch || "",
         };
 
         setJobs([...jobs, newJob]);

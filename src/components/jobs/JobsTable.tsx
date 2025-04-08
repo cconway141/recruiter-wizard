@@ -1,40 +1,16 @@
 
-import { Eye, Pencil, Trash2, Copy, Check } from "lucide-react";
-import { useState } from "react";
 import { useJobs } from "@/contexts/JobContext";
-import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
-import { Link } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { generateM1, generateM2, generateM3 } from "@/utils/messageUtils";
 import { SortableHeader } from "@/components/ui/sortable-header";
 import { useSortableTable } from "@/hooks/useSortableTable";
 import { Job } from "@/types/job";
-
-const StatusBadgeColor = {
-  Active: "bg-green-100 text-green-800 hover:bg-green-100",
-  Aquarium: "bg-blue-100 text-blue-800 hover:bg-blue-100",
-  Inactive: "bg-orange-100 text-orange-800 hover:bg-orange-100",
-  Closed: "bg-gray-100 text-gray-800 hover:bg-gray-100"
-};
-
-// Define a type for copied message tracking
-type CopiedMessageInfo = {
-  jobId: string;
-  messageType: string;
-} | null;
+import { StatusBadge } from "./table/StatusBadge";
+import { MessageButtons } from "./table/MessageButtons";
+import { TableActions } from "./table/TableActions";
+import { EmptyTableRow } from "./table/EmptyTableRow";
 
 export function JobsTable() {
-  const {
-    filteredJobs,
-    deleteJob
-  } = useJobs();
-  const {
-    toast
-  } = useToast();
+  const { filteredJobs, deleteJob } = useJobs();
   
   // Add sorting functionality
   const { sortField, sortDirection, handleSort, sortedData } = 
@@ -43,49 +19,9 @@ export function JobsTable() {
       'internalTitle',
       'asc'
     );
-    
-  // Track both job ID and message type that was copied
-  const [copiedMessage, setCopiedMessage] = useState<CopiedMessageInfo>(null);
-  const copyToClipboard = async (jobId: string, messageType: string, job: any) => {
-    try {
-      let text = '';
-
-      // Generate fresh messages using the latest templates from the database
-      if (messageType === "M1") {
-        text = await generateM1("[First Name]", job.candidateFacingTitle, job.compDesc, job.owner);
-      } else if (messageType === "M2") {
-        text = await generateM2(job.candidateFacingTitle, job.payDetails, job.workDetails, job.skillsSought);
-      } else if (messageType === "M3") {
-        text = await generateM3(job.videoQuestions);
-      }
-      await navigator.clipboard.writeText(text);
-      setCopiedMessage({
-        jobId,
-        messageType
-      });
-      toast({
-        title: "Copied!",
-        description: `${messageType} has been copied to clipboard.`
-      });
-      setTimeout(() => {
-        setCopiedMessage(null);
-      }, 2000);
-    } catch (err) {
-      console.error("Error copying message:", err);
-      toast({
-        title: "Error",
-        description: "Failed to copy message to clipboard.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  // Helper to check if a specific job's message has been copied
-  const isMessageCopied = (jobId: string, messageType: string) => {
-    return copiedMessage?.jobId === jobId && copiedMessage?.messageType === messageType;
-  };
   
-  return <div className="rounded-md border bg-white">
+  return (
+    <div className="rounded-md border bg-white">
       <Table>
         <TableHeader>
           <TableRow>
@@ -129,102 +65,32 @@ export function JobsTable() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {sortedData.length === 0 ? <TableRow>
-              <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
-                No jobs found. Try adjusting your filters or add a new job.
-              </TableCell>
-            </TableRow> : sortedData.map(job => <TableRow key={job.id}>
+          {sortedData.length === 0 ? (
+            <EmptyTableRow />
+          ) : (
+            sortedData.map(job => (
+              <TableRow key={job.id}>
                 <TableCell className="font-medium">{job.internalTitle}</TableCell>
                 <TableCell>{job.client}</TableCell>
                 <TableCell>
-                  <Badge className={StatusBadgeColor[job.status] || ""} variant="outline">
-                    {job.status}
-                  </Badge>
+                  <StatusBadge status={job.status} />
                 </TableCell>
                 <TableCell>${job.rate}/hr</TableCell>
                 <TableCell>{job.owner}</TableCell>
                 <TableCell>
-                  <div className="flex justify-center gap-2">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="outline" size="sm" onClick={() => copyToClipboard(job.id, "M1", job)} className={isMessageCopied(job.id, "M1") ? "bg-green-100" : ""}>
-                            {isMessageCopied(job.id, "M1") ? <Check className="h-4 w-4 mr-1" /> : <Copy className="h-4 w-4 mr-1" />}
-                            M1
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Copy initial outreach message</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="outline" size="sm" onClick={() => copyToClipboard(job.id, "M2", job)} className={isMessageCopied(job.id, "M2") ? "bg-green-100" : ""}>
-                            {isMessageCopied(job.id, "M2") ? <Check className="h-4 w-4 mr-1" /> : <Copy className="h-4 w-4 mr-1" />}
-                            M2
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Copy role details message</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="outline" size="sm" onClick={() => copyToClipboard(job.id, "M3", job)} className={isMessageCopied(job.id, "M3") ? "bg-green-100" : ""}>
-                            {isMessageCopied(job.id, "M3") ? <Check className="h-4 w-4 mr-1" /> : <Copy className="h-4 w-4 mr-1" />}
-                            M3
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Copy video request message</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
+                  <MessageButtons job={job} />
                 </TableCell>
                 <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    <Link to={`/jobs/${job.id}`}>
-                      <Button variant="ghost" size="icon">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    </Link>
-                    <Link to={`/jobs/${job.id}/edit`}>
-                      <Button variant="ghost" size="icon">
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                    </Link>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="text-red-500">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Job</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to delete this job? This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction className="bg-red-600 text-white hover:bg-red-700" onClick={() => deleteJob(job.id)}>
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
+                  <TableActions 
+                    jobId={job.id} 
+                    onDelete={deleteJob} 
+                  />
                 </TableCell>
-              </TableRow>)}
+              </TableRow>
+            ))
+          )}
         </TableBody>
       </Table>
-    </div>;
+    </div>
+  );
 }
