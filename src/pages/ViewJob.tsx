@@ -1,6 +1,6 @@
 
 import { useParams, useNavigate } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { useJobs } from "@/contexts/JobContext";
 import { CandidateEntry } from "@/components/candidates/CandidateEntry";
@@ -14,14 +14,16 @@ const ViewJob = () => {
   const { getJob, loadCandidatesForJob } = useJobs();
   const navigate = useNavigate();
   const job = id ? getJob(id) : undefined;
+  const hasLoadedCandidates = useRef(false);
 
   useEffect(() => {
     if (id && !job) {
       // Job not found, redirect to dashboard
       navigate("/");
-    } else if (id) {
-      // Load candidates for this job
+    } else if (id && !hasLoadedCandidates.current) {
+      // Load candidates for this job only once
       loadCandidatesForJob(id);
+      hasLoadedCandidates.current = true;
     }
   }, [id, job, navigate, loadCandidatesForJob]);
 

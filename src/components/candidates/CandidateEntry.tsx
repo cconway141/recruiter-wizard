@@ -34,6 +34,7 @@ export const CandidateEntry: React.FC<CandidateEntryProps> = ({ jobId }) => {
   const [newCandidateEmail, setNewCandidateEmail] = useState("");
   const [newCandidateLinkedin, setNewCandidateLinkedin] = useState("");
   const [isAddingCandidate, setIsAddingCandidate] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   
   const { 
     addCandidate, 
@@ -41,16 +42,19 @@ export const CandidateEntry: React.FC<CandidateEntryProps> = ({ jobId }) => {
     updateCandidateStatus, 
     getCandidates,
     loadCandidatesForJob,
-    isLoading
+    candidatesLoading
   } = useJobs();
   
   const candidates = getCandidates(jobId);
   
+  // Load candidates only once on initial component mount
   useEffect(() => {
-    if (jobId) {
+    // Only load if we need to (we're not loading already and haven't loaded before)
+    if (isInitialLoad && !candidatesLoading) {
       loadCandidatesForJob(jobId);
+      setIsInitialLoad(false);
     }
-  }, [jobId]);
+  }, [jobId, loadCandidatesForJob, isInitialLoad, candidatesLoading]);
 
   const handleAddCandidate = async () => {
     if (newCandidateName.trim()) {
@@ -129,7 +133,7 @@ export const CandidateEntry: React.FC<CandidateEntryProps> = ({ jobId }) => {
         </div>
       </div>
       
-      {isLoading ? (
+      {candidatesLoading ? (
         <div className="flex justify-center items-center py-8">
           <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
           <span className="ml-2 text-gray-500">Loading candidates...</span>
