@@ -1,17 +1,67 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ClientForm } from "@/components/settings/clients/ClientForm";
 import { ClientsList } from "@/components/settings/clients/ClientsList";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import { useClientOptions } from "@/hooks/use-dropdown-options";
+import { supabase } from "@/integrations/supabase/client";
+import { Client } from "./clients/types";
+import { toast } from "@/components/ui/use-toast";
 
 export function ClientsManager() {
   const [isAdding, setIsAdding] = useState(false);
-  const { data: clients, isLoading, refetch } = useClientOptions();
+  const [clients, setClients] = useState<Client[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { refetch } = useClientOptions();
+
+  // Fetch full client data
+  const fetchClients = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("clients")
+        .select("*")
+        .order('name');
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (data) {
+        setClients(data as Client[]);
+      }
+    } catch (error) {
+      console.error("Error fetching clients:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch clients",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fetch clients on component mount
+  useEffect(() => {
+    fetchClients();
+  }, []);
 
   const handleSubmitSuccess = () => {
     setIsAdding(false);
+    fetchClients();
+    refetch();
+  };
+
+  const handleEdit = () => {
+    // This would be implemented when editing functionality is needed
+    fetchClients();
+  };
+
+  const handleDelete = () => {
+    // This would be implemented when delete functionality is needed
+    fetchClients();
     refetch();
   };
 
@@ -30,7 +80,7 @@ export function ClientsManager() {
       {isAdding ? (
         <ClientForm onCancel={() => setIsAdding(false)} onSubmit={handleSubmitSuccess} />
       ) : (
-        <ClientsList clients={clients || []} isLoading={isLoading} onEdit={() => {}} onDelete={() => {}} />
+        <ClientsList clients={clients} isLoading={isLoading} onEdit={handleEdit} onDelete={handleDelete} />
       )}
     </div>
   );
