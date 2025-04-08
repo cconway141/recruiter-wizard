@@ -4,7 +4,8 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/comp
 import { Textarea } from "@/components/ui/textarea";
 import { useFormContext } from "react-hook-form";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Check } from "lucide-react";
+import { Loader2, Check, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 
 export function JobFormDescription() {
@@ -22,7 +23,7 @@ export function JobFormDescription() {
   const videoQuestionsGeneratedRef = useRef(false);
 
   const extractSkillsFromDescription = async (description: string) => {
-    if (!description.trim() || skillsExtractedRef.current) return;
+    if (!description.trim()) return;
     
     setIsGeneratingSkills(true);
     setSkillsExtracted(false);
@@ -66,7 +67,7 @@ export function JobFormDescription() {
   };
 
   const extractMinimumSkills = async (skillsSought: string, jobDescription: string) => {
-    if (!skillsSought.trim() || !jobDescription.trim() || minSkillsExtractedRef.current) return;
+    if (!skillsSought.trim() || !jobDescription.trim()) return;
     
     setIsGeneratingMinSkills(true);
     setMinSkillsExtracted(false);
@@ -110,7 +111,7 @@ export function JobFormDescription() {
   };
 
   const generateVideoQuestions = async (minSkills: string) => {
-    if (!minSkills.trim() || videoQuestionsGeneratedRef.current) return;
+    if (!minSkills.trim()) return;
     
     setIsGeneratingVideoQuestions(true);
     setVideoQuestionsGenerated(false);
@@ -150,6 +151,54 @@ export function JobFormDescription() {
     }
   };
 
+  // Function to regenerate skills only (without the cascade)
+  const handleRegenerateSkills = async () => {
+    const description = form.getValues('jd');
+    if (!description) {
+      toast({
+        title: "Missing job description",
+        description: "Job description is required to extract skills.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    await extractSkillsFromDescription(description);
+  };
+
+  // Function to regenerate minimum skills only
+  const handleRegenerateMinSkills = async () => {
+    const skillsSought = form.getValues('skillsSought');
+    const jobDescription = form.getValues('jd');
+    
+    if (!skillsSought || !jobDescription) {
+      toast({
+        title: "Missing information",
+        description: "Both job description and skills are required to generate minimum skills.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    await extractMinimumSkills(skillsSought, jobDescription);
+  };
+
+  // Function to regenerate video questions only
+  const handleRegenerateVideoQuestions = async () => {
+    const minSkills = form.getValues('minSkills');
+    
+    if (!minSkills) {
+      toast({
+        title: "Missing minimum skills",
+        description: "Minimum skills are required to generate video questions.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    await generateVideoQuestions(minSkills);
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <FormField
@@ -165,7 +214,9 @@ export function JobFormDescription() {
                 {...field}
                 onBlur={(e) => {
                   field.onBlur();
-                  extractSkillsFromDescription(e.target.value);
+                  if (!skillsExtractedRef.current) {
+                    extractSkillsFromDescription(e.target.value);
+                  }
                 }}
               />
             </FormControl>
@@ -190,6 +241,18 @@ export function JobFormDescription() {
                     <Check className="h-4 w-4 mr-1" />
                     Success!
                   </span>
+                )}
+                {!isGeneratingSkills && (
+                  <Button 
+                    type="button" 
+                    size="sm" 
+                    variant="outline"
+                    className="ml-auto flex items-center gap-1 text-xs"
+                    onClick={handleRegenerateSkills}
+                  >
+                    <RefreshCw className="h-3 w-3" />
+                    Regenerate
+                  </Button>
                 )}
               </FormLabel>
               <FormControl>
@@ -219,6 +282,18 @@ export function JobFormDescription() {
                     <Check className="h-4 w-4 mr-1" />
                     Success!
                   </span>
+                )}
+                {!isGeneratingMinSkills && (
+                  <Button 
+                    type="button" 
+                    size="sm" 
+                    variant="outline"
+                    className="ml-auto flex items-center gap-1 text-xs"
+                    onClick={handleRegenerateMinSkills}
+                  >
+                    <RefreshCw className="h-3 w-3" />
+                    Regenerate
+                  </Button>
                 )}
               </FormLabel>
               <FormControl>
