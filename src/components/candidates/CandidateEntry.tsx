@@ -25,7 +25,7 @@ export const CandidateEntry: React.FC<CandidateEntryProps> = ({ jobId }) => {
   
   // Load candidates only once on initial component mount
   useEffect(() => {
-    // Only load if we need to (we're not loading already and haven't loaded before)
+    // Only load if we haven't loaded before and aren't currently loading
     if (isInitialLoad && !candidatesLoading) {
       loadCandidatesForJob(jobId);
       setIsInitialLoad(false);
@@ -56,7 +56,7 @@ export const CandidateEntry: React.FC<CandidateEntryProps> = ({ jobId }) => {
       
       <CandidateList 
         candidates={candidates}
-        isLoading={candidatesLoading}
+        isLoading={candidatesLoading && isInitialLoad}
         onRemoveCandidate={handleRemoveCandidate}
         onStatusChange={handleStatusChange}
       />

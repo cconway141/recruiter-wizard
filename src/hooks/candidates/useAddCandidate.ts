@@ -1,7 +1,7 @@
 
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Candidate } from "@/components/candidates/CandidateEntry";
+import { Candidate } from "@/components/candidates/types";
 import { CandidateState } from "./types";
 
 export function useAddCandidate(

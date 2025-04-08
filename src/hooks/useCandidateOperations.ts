@@ -1,5 +1,5 @@
 
-import { Candidate } from "@/components/candidates/CandidateEntry";
+import { Candidate } from "@/components/candidates/types";
 import { useLoadCandidates } from "./candidates/useLoadCandidates";
 import { useAddCandidate } from "./candidates/useAddCandidate";
 import { useRemoveCandidate } from "./candidates/useRemoveCandidate";

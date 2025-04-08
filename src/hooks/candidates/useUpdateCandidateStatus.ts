@@ -1,7 +1,7 @@
 
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { CandidateStatus } from "@/components/candidates/CandidateEntry";
+import { Candidate, CandidateStatus } from "@/components/candidates/types";
 import { CandidateState, dbStatusMap } from "./types";
 
 export function useUpdateCandidateStatus(
@@ -59,7 +59,7 @@ export function useUpdateCandidateStatus(
       
       toast({
         title: "Status Updated",
-        description: `Candidate status has been ${!currentValue ? 'set to' : 'removed from'} ${statusKey}.`,
+        description: `Candidate status has been ${!currentValue ? 'set to' : 'removed from'} ${String(statusKey)}.`,
       });
       
     } catch (error) {

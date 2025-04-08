@@ -1,10 +1,9 @@
-
 import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Job, JobStatus, Locale, Flavor } from "@/types/job";
 import { JobsState } from "@/types/contextTypes";
-import { Candidate } from "@/components/candidates/CandidateEntry";
+import { Candidate } from "@/components/candidates/types";
 
 export function useSupabaseData() {
   const [state, setState] = useState<JobsState>({
