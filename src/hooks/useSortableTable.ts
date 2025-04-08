@@ -26,6 +26,20 @@ export function useSortableTable<T extends Record<string, any>, K extends keyof 
     if (!data.length) return [];
     
     return [...data].sort((a, b) => {
+      // Special case for ID fields that might contain numbers (like G1, G10)
+      if (sortField === 'id' as K && typeof a[sortField] === 'string' && typeof b[sortField] === 'string') {
+        const aMatch = (a[sortField] as string).match(/([A-Za-z]+)(\d+)/);
+        const bMatch = (b[sortField] as string).match(/([A-Za-z]+)(\d+)/);
+        
+        if (aMatch && bMatch && aMatch[1] === bMatch[1]) {
+          // If prefixes match, compare the numeric parts
+          const aNum = parseInt(aMatch[2]);
+          const bNum = parseInt(bMatch[2]);
+          return sortDirection === 'asc' ? aNum - bNum : bNum - aNum;
+        }
+      }
+      
+      // Default string comparison for other cases
       const aValue = a[sortField] ? String(a[sortField]).toLowerCase() : '';
       const bValue = b[sortField] ? String(b[sortField]).toLowerCase() : '';
       

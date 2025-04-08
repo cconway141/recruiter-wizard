@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { MessageTemplate } from '@/types/messageTemplate';
 import { useToast } from './use-toast';
 
-// Sample initial data based on user's requested templates
+// All message templates (40 in total)
 const initialTemplates: MessageTemplate[] = [
   {
     id: "G1",
@@ -117,7 +117,7 @@ NAME/ROLE - Needs <blank> or we will fall behind, can you push forward tonight?`
   },
   {
     id: "G19",
-    category: "",
+    category: "Client",
     situation: "Follow Up 2.5-3.5 days",
     message: "Hi {Name} - just checking in to see if you would like to speak with Maria? If not, let us know any feedback so we can hone in who we are sending over to you. Thanks!"
   },
@@ -249,8 +249,8 @@ NAME/ROLE - Needs <blank> or we will fall behind, can you push forward tonight?`
   },
   {
     id: "G41",
-    category: "",
-    situation: "Long waiting wihtout notice",
+    category: "General",
+    situation: "Long waiting without notice",
     message: "Hi, {firstName}, I hope you're doing well! I wanted to reach out and acknowledge that it's been a while since we last connected. First, my sincere apologies for the delay—we've had a lot of movement on our end, and the process took longer than expected.\n\nThat said, we really appreciate your patience and continued interest. If you're still open to it, we'd love to pick things back up and move forward in the process. Let me know your availability, and we can set up the next steps.\n\nLooking forward to hearing from you!"
   }
 ];
