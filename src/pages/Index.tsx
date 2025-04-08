@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { JobsFilter } from "@/components/jobs/JobsFilter";
 import { JobsTable } from "@/components/jobs/JobsTable";
 import { Navbar } from "@/components/layout/Navbar";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useJobs } from "@/contexts/JobContext";
 
@@ -11,6 +11,7 @@ const Index = () => {
   const location = useLocation();
   const { loadFromSupabase } = useJobs();
   const refreshingRef = useRef(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   
   // Refresh data when navigating to the home page
   useEffect(() => {
@@ -26,11 +27,16 @@ const Index = () => {
         console.error("Error refreshing data:", error);
       } finally {
         refreshingRef.current = false;
+        setIsInitialized(true);
       }
     };
     
     refreshData();
   }, [location.key, loadFromSupabase]);
+
+  if (!isInitialized) {
+    return null; // Don't render anything until initial data is loaded
+  }
 
   return (
     <div className="flex flex-col min-h-screen">

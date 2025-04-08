@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Job, JobStatus, Locale, Flavor } from "@/types/job";
@@ -13,18 +13,19 @@ export function useSupabaseData() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [lastLoadTime, setLastLoadTime] = useState(0);
+  const loadingRef = useRef(false);
 
   const loadFromSupabase = useCallback(async () => {
     // Prevent excessive reloading (throttle to once per second)
     const now = Date.now();
-    if (now - lastLoadTime < 1000) {
+    if (now - lastLoadTime < 1000 || loadingRef.current) {
       return;
     }
     
     console.log("Loading data from Supabase...");
     try {
       // Set loading state to true while fetching
-      setIsLoading(true);
+      loadingRef.current = true;
       setLastLoadTime(now);
       
       // Load jobs with related data from Supabase
@@ -96,6 +97,7 @@ export function useSupabaseData() {
       });
     } finally {
       // Always set loading to false when done
+      loadingRef.current = false;
       setIsLoading(false);
     }
   }, [lastLoadTime]);
@@ -105,19 +107,19 @@ export function useSupabaseData() {
     loadFromSupabase();
   }, [loadFromSupabase]);
 
-  const setJobs = (jobs: Job[]) => {
+  const setJobs = useCallback((jobs: Job[]) => {
     setState(prevState => ({
       ...prevState,
       jobs
     }));
-  };
+  }, []);
 
-  const setCandidates = (candidates: Record<string, Candidate[]>) => {
+  const setCandidates = useCallback((candidates: Record<string, Candidate[]>) => {
     setState(prevState => ({
       ...prevState,
       candidates
     }));
-  };
+  }, []);
 
   return { 
     state, 

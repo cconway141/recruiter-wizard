@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Job, JobStatus, Locale } from "@/types/job";
 import { JobFilters } from "@/types/contextTypes";
 
@@ -12,11 +12,7 @@ export function useJobFilters(jobs: Job[]) {
   });
 
   // Apply filters effect
-  useEffect(() => {
-    applyFilters();
-  }, [jobs, filters]);
-
-  const applyFilters = () => {
+  const applyFilters = useMemo(() => {
     let result = [...jobs];
 
     // Apply search filter
@@ -41,8 +37,13 @@ export function useJobFilters(jobs: Job[]) {
       result = result.filter((job) => job.locale === filters.locale);
     }
 
-    setFilteredJobs(result);
-  };
+    return result;
+  }, [jobs, filters]);
+
+  // Update filtered jobs when filters or jobs change
+  useEffect(() => {
+    setFilteredJobs(applyFilters);
+  }, [applyFilters]);
 
   const setFilters = (newFilters: JobFilters) => {
     setFiltersState(newFilters);

@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useMemo } from "react";
 import { JobContextType } from "@/types/contextTypes";
 import { useSupabaseData } from "@/hooks/useSupabaseData";
 import { useJobFilters } from "@/hooks/useJobFilters";
@@ -18,6 +18,37 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Flag for Airtable integration - currently disabled
   const [isAirtableEnabled] = useState(false);
 
+  // Memoize the context value to prevent unnecessary rerenders
+  const contextValue = useMemo<JobContextType>(() => ({
+    jobs: state.jobs,
+    addJob,
+    updateJob,
+    deleteJob,
+    getJob,
+    filteredJobs,
+    setFilters,
+    addCandidate,
+    removeCandidate,
+    updateCandidateStatus,
+    getCandidates,
+    isAirtableEnabled,
+    loadFromSupabase
+  }), [
+    state.jobs,
+    addJob,
+    updateJob,
+    deleteJob,
+    getJob,
+    filteredJobs,
+    setFilters,
+    addCandidate,
+    removeCandidate,
+    updateCandidateStatus,
+    getCandidates,
+    isAirtableEnabled,
+    loadFromSupabase
+  ]);
+
   // Create a loading placeholder to show while data is being fetched
   if (isLoading) {
     return (
@@ -33,22 +64,6 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       </div>
     );
   }
-
-  const contextValue: JobContextType = {
-    jobs: state.jobs,
-    addJob,
-    updateJob,
-    deleteJob,
-    getJob,
-    filteredJobs,
-    setFilters,
-    addCandidate,
-    removeCandidate,
-    updateCandidateStatus,
-    getCandidates,
-    isAirtableEnabled,
-    loadFromSupabase
-  };
 
   return (
     <JobContext.Provider value={contextValue}>
