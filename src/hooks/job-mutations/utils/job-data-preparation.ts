@@ -1,6 +1,6 @@
-
 import { uuid } from "@/utils/uuid";
 import { Job } from "@/types/job";
+import { calculateRates } from "@/utils/rateUtils";
 
 /**
  * Prepare job data for creation in the database
@@ -13,11 +13,9 @@ export const prepareJobForCreate = (
 
   const internalTitle = job.candidateFacingTitle || "New Job"; // Default title
   
-  // Calculate rates based on the main rate
+  // Calculate rates based on the main rate using our utility function
   const rate = Number(job.rate) || 0;
-  const highRate = rate * 1.2; // 20% above base rate
-  const mediumRate = rate; // Base rate
-  const lowRate = rate * 0.9; // 10% below base rate
+  const { high: highRate, medium: mediumRate, low: lowRate } = calculateRates(rate);
 
   return {
     ...job,
