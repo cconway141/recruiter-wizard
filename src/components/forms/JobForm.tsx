@@ -39,7 +39,7 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
 
   const isLoading = clientsLoading || flavorsLoading || localesLoading || statusesLoading || usersLoading;
 
-  // Add a null check for form before accessing getValues
+  // Effect to handle form value updates for message generation
   useEffect(() => {
     if (!form || !form.getValues) {
       console.warn("Form context is not properly initialized");
@@ -51,12 +51,8 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
       const candidateFacingTitle = form.getValues("candidateFacingTitle");
       const compDesc = form.getValues("compDesc");
       const skillsSought = form.getValues("skillsSought");
-      const videoQuestions = form.getValues("videoQuestions");
       
-      if (locale && candidateFacingTitle && compDesc && skillsSought) {
-        // All required fields are filled, we could generate messages in background
-        // but don't need to show them to user
-      }
+      console.log("Form values loaded:", { locale, candidateFacingTitle, compDesc, skillsSought });
     } catch (err) {
       console.error("Error accessing form values:", err);
     }
@@ -88,31 +84,26 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
     );
   }
 
-  // Add a safeguard for form.handleSubmit to prevent null errors
-  const onSubmitForm = form && typeof form.handleSubmit === 'function' 
-    ? form.handleSubmit(handleSubmit)
-    : (e: React.FormEvent) => { 
-        e.preventDefault(); 
-        console.error("Form context not properly initialized"); 
-      };
+  if (!form) {
+    return (
+      <div className="text-center p-4">
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400 mb-2"></div>
+        <p>Form context not available. Please refresh the page.</p>
+      </div>
+    );
+  }
+
+  // Now we can safely use form methods
+  const onSubmitForm = form.handleSubmit(handleSubmit);
 
   return (
     <div>
       <form onSubmit={onSubmitForm} className="space-y-6">
-        {form ? (
-          <>
-            <JobFormBasicInfo handleClientSelection={handleClientSelection} />
-            <JobFormCompanyDesc />
-            <JobFormDetails form={form} />
-            <JobFormLinks />
-            <FormActions isEditing={isEditing} />
-          </>
-        ) : (
-          <div className="text-center p-4">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto text-gray-500 mb-2" />
-            <p>Initializing form...</p>
-          </div>
-        )}
+        <JobFormBasicInfo handleClientSelection={handleClientSelection} />
+        <JobFormCompanyDesc />
+        <JobFormDetails form={form} />
+        <JobFormLinks />
+        <FormActions isEditing={isEditing} />
       </form>
     </div>
   );

@@ -2,7 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 
-// Define a specific return type to avoid the infinite type instantiation error
+// Define a specific return type with explicit properties
 type InsertedJobType = {
   id: string;
   internal_title: string;
