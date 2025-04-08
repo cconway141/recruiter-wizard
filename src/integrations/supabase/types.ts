@@ -420,6 +420,33 @@ export type Database = {
         }
         Relationships: []
       }
+      prompts: {
+        Row: {
+          created_at: string
+          description: string
+          id: number
+          name: string
+          prompt_text: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id: number
+          name: string
+          prompt_text: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: number
+          name?: string
+          prompt_text?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       role_abbreviations: {
         Row: {
           abbreviation: string

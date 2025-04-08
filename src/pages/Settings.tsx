@@ -59,7 +59,7 @@ const Settings = () => {
             <MessageTemplatesManager />
           </TabsContent>
           
-          <TabsContent value="prompts" className="p-4 border rounded-md mt-4">
+          <TabsContent value="prompts" className="p-4 border rounded-md mt-4 bg-white">
             <PromptsManager />
           </TabsContent>
         </Tabs>

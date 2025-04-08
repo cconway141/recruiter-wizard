@@ -32,16 +32,22 @@ export function PromptsManager() {
   const fetchPrompts = async () => {
     setIsLoading(true);
     try {
+      // Use type assertion to work around TypeScript limitation
       const { data, error } = await supabase
         .from('prompts')
         .select('*')
-        .order('name');
+        .order('name') as {
+          data: Prompt[] | null;
+          error: any;
+        };
 
       if (error) throw error;
       
-      setPrompts(data || []);
-      if (data && data.length > 0) {
-        setCurrentPrompt(data[0]);
+      if (data) {
+        setPrompts(data);
+        if (data.length > 0) {
+          setCurrentPrompt(data[0]);
+        }
       }
     } catch (error) {
       console.error('Error fetching prompts:', error);
@@ -60,6 +66,7 @@ export function PromptsManager() {
     
     setIsSaving(true);
     try {
+      // Use type assertion to work around TypeScript limitation
       const { error } = await supabase
         .from('prompts')
         .update({
@@ -68,7 +75,9 @@ export function PromptsManager() {
           prompt_text: currentPrompt.prompt_text,
           updated_at: new Date().toISOString()
         })
-        .eq('id', currentPrompt.id);
+        .eq('id', currentPrompt.id) as {
+          error: any;
+        };
 
       if (error) throw error;
       
