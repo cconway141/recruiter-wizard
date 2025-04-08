@@ -54,7 +54,8 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
       
       const { high, medium, low } = calculateRates(values.rate);
       
-      const internalTitle = generateInternalTitle(
+      // Generate the internal title using the correct format
+      const internalTitle = await generateInternalTitle(
         values.client,
         values.candidateFacingTitle,
         values.flavor,

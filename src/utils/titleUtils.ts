@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Locale } from "@/types/job";
 
@@ -106,4 +105,3 @@ export async function getAllRoleAbbreviations(): Promise<Record<string, string>>
     return {};
   }
 }
-

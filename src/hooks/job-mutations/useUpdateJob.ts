@@ -52,7 +52,7 @@ export function useUpdateJob(jobs: Job[], setJobs: (jobs: Job[]) => void) {
           flavor: updatedJob.flavor,
           flavor_id: updatedJob.flavorId,
           status_id: updatedJob.statusId,
-          linkedin_search: updatedJob.linkedinSearch // Now properly typed
+          linkedin_search: updatedJob.linkedinSearch
         })
         .eq('id', updatedJob.id);
 

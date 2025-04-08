@@ -1,17 +1,25 @@
+
 import { uuid } from "@/utils/uuid";
 import { Job } from "@/types/job";
 import { calculateRates } from "@/utils/rateUtils";
+import { generateInternalTitle } from "@/utils/titleUtils";
 
 /**
  * Prepare job data for creation in the database
  */
-export const prepareJobForCreate = (
+export const prepareJobForCreate = async (
   job: Omit<Job, "id" | "internalTitle" | "highRate" | "mediumRate" | "lowRate" | "workDetails" | "payDetails" | "m1" | "m2" | "m3">
-): Omit<Job, "workDetails" | "payDetails" | "m1" | "m2" | "m3"> => {
+): Promise<Omit<Job, "workDetails" | "payDetails" | "m1" | "m2" | "m3">> => {
   const now = new Date();
   const date = now.toISOString().split("T")[0]; // YYYY-MM-DD
 
-  const internalTitle = job.candidateFacingTitle || "New Job"; // Default title
+  // Generate the internal title using the correct format: ClientAbbr RoleAbbr - Flavor LocaleAbbr
+  const internalTitle = await generateInternalTitle(
+    job.client,
+    job.candidateFacingTitle,
+    job.flavor,
+    job.locale
+  );
   
   // Calculate rates based on the main rate using our utility function
   const rate = Number(job.rate) || 0;
