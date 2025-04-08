@@ -8,6 +8,13 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Save } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
+interface MessageTemplate {
+  id: number;
+  m1_template: string;
+  m2_template: string;
+  m3_template: string;
+}
+
 export function MessageTemplatesManager() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -27,6 +34,7 @@ export function MessageTemplatesManager() {
       const { data, error } = await supabase
         .from('message_templates')
         .select('*')
+        .eq('id', 1)
         .maybeSingle();
       
       if (error) throw error;
@@ -53,14 +61,14 @@ export function MessageTemplatesManager() {
   const saveTemplates = async () => {
     setIsSaving(true);
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('message_templates')
-        .upsert({
-          id: 1, // We'll always use ID 1 for simplicity
+        .update({
           m1_template: templates.m1_template,
           m2_template: templates.m2_template,
           m3_template: templates.m3_template
-        });
+        })
+        .eq('id', 1);
       
       if (error) throw error;
       

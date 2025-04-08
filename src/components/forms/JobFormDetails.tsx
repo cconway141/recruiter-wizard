@@ -68,19 +68,18 @@ export function JobFormDetails({ form }: JobFormDetailsProps) {
           form.setValue("workDetails", workDetails);
           form.setValue("payDetails", payDetails);
           
-          const m1 = generateM1("[First Name]", watchedFields.candidateFacingTitle, watchedFields.compDesc);
-          const m2 = generateM2(watchedFields.candidateFacingTitle, payDetails, workDetails, watchedFields.skillsSought);
+          // Generate messages and update form
+          const m1 = await generateM1("[First Name]", watchedFields.candidateFacingTitle, watchedFields.compDesc);
+          const m2 = await generateM2(watchedFields.candidateFacingTitle, payDetails, workDetails, watchedFields.skillsSought);
           
-          // Only generate m3 if videoQuestions has content
-          let m3 = "";
-          if (watchedFields.videoQuestions) {
-            m3 = generateM3(watchedFields.videoQuestions);
-          }
-          
-          // Update the form values with the generated messages
           form.setValue("m1", m1);
           form.setValue("m2", m2);
-          if (m3) form.setValue("m3", m3);
+          
+          // Only generate m3 if videoQuestions has content
+          if (watchedFields.videoQuestions) {
+            const m3 = await generateM3(watchedFields.videoQuestions);
+            form.setValue("m3", m3);
+          }
         } catch (err) {
           console.error("Error generating messages:", err);
         }

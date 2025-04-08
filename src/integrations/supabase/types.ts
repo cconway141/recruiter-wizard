@@ -258,6 +258,33 @@ export type Database = {
         }
         Relationships: []
       }
+      message_templates: {
+        Row: {
+          created_at: string
+          id: number
+          m1_template: string
+          m2_template: string
+          m3_template: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id: number
+          m1_template: string
+          m2_template: string
+          m3_template: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          m1_template?: string
+          m2_template?: string
+          m3_template?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
