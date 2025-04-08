@@ -17,10 +17,15 @@ export interface JobContextType {
   updateJob: (job: Job) => Promise<void>;
   deleteJob: (id: string) => Promise<void>;
   getJob: (id: string) => Job | undefined;
-  addCandidate: (jobId: string, candidate: Candidate) => void;
-  removeCandidate: (jobId: string, candidateId: string) => void;
-  updateCandidateStatus: (jobId: string, candidateId: string, status: string) => void;
+  
+  // Candidate operations
+  addCandidate: (jobId: string, candidate: Omit<Candidate, 'id' | 'status' | 'applicationId'>) => Promise<void>;
+  removeCandidate: (jobId: string, candidateId: string) => Promise<void>;
+  updateCandidateStatus: (jobId: string, candidateId: string, status: keyof Candidate['status']) => Promise<void>;
   getCandidates: (jobId: string) => Candidate[];
+  loadCandidatesForJob: (jobId: string) => Promise<void>;
+  candidatesLoading: boolean;
+  
   isAirtableEnabled: boolean;
   loadFromSupabase: () => Promise<void>;
 }

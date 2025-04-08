@@ -9,6 +9,105 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      applications: {
+        Row: {
+          approved: boolean
+          candidate_id: string
+          created_at: string
+          hold: boolean
+          id: string
+          interview_failed: boolean
+          interview_request: boolean
+          job_id: string
+          offer: boolean
+          pending_approval: boolean
+          placed: boolean
+          preparing: boolean
+          status: string
+          submitted: boolean
+          updated_at: string
+        }
+        Insert: {
+          approved?: boolean
+          candidate_id: string
+          created_at?: string
+          hold?: boolean
+          id?: string
+          interview_failed?: boolean
+          interview_request?: boolean
+          job_id: string
+          offer?: boolean
+          pending_approval?: boolean
+          placed?: boolean
+          preparing?: boolean
+          status?: string
+          submitted?: boolean
+          updated_at?: string
+        }
+        Update: {
+          approved?: boolean
+          candidate_id?: string
+          created_at?: string
+          hold?: boolean
+          id?: string
+          interview_failed?: boolean
+          interview_request?: boolean
+          job_id?: string
+          offer?: boolean
+          pending_approval?: boolean
+          placed?: boolean
+          preparing?: boolean
+          status?: string
+          submitted?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "applications_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "applications_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      candidates: {
+        Row: {
+          created_at: string
+          email: string
+          first_name: string
+          id: string
+          last_name: string
+          linkedin_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          first_name: string
+          id?: string
+          last_name: string
+          linkedin_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          first_name?: string
+          id?: string
+          last_name?: string
+          linkedin_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       clients: {
         Row: {
           abbreviation: string

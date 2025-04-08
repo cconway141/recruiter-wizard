@@ -14,7 +14,14 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const { state, isLoading, setJobs, setCandidates, loadFromSupabase } = useSupabaseData();
   const { filteredJobs, filters, setFilters } = useJobFilters(state.jobs);
   const { addJob, updateJob, deleteJob, getJob } = useJobMutations(state.jobs, setJobs);
-  const { addCandidate, removeCandidate, updateCandidateStatus, getCandidates } = useCandidateOperations(state.candidates, setCandidates);
+  const { 
+    addCandidate, 
+    removeCandidate, 
+    updateCandidateStatus, 
+    getCandidates,
+    loadCandidatesForJob,
+    isLoading: candidatesLoading
+  } = useCandidateOperations(state.candidates, setCandidates);
   
   // Flag for Airtable integration - currently disabled
   const [isAirtableEnabled] = useState(false);
@@ -33,8 +40,10 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     removeCandidate,
     updateCandidateStatus,
     getCandidates,
+    loadCandidatesForJob,
     isAirtableEnabled,
-    loadFromSupabase
+    loadFromSupabase,
+    candidatesLoading
   }), [
     state.jobs,
     addJob,
@@ -48,8 +57,10 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     removeCandidate,
     updateCandidateStatus,
     getCandidates,
+    loadCandidatesForJob,
     isAirtableEnabled,
-    loadFromSupabase
+    loadFromSupabase,
+    candidatesLoading
   ]);
 
   // Create a loading placeholder to show while data is being fetched
