@@ -1,14 +1,21 @@
 
 import { useState, useEffect, useMemo } from "react";
-import { Job, JobStatus, Locale } from "@/types/job";
-import { JobFilters } from "@/types/contextTypes";
+import { Job, JobStatus, Locale, Flavor } from "@/types/job";
+
+export interface JobFilters {
+  search: string;
+  status: JobStatus | "All";
+  locale: Locale | "All";
+  flavor: Flavor | string;
+}
 
 export function useJobFilters(jobs: Job[]) {
   const [filteredJobs, setFilteredJobs] = useState<Job[]>([]);
   const [filters, setFiltersState] = useState<JobFilters>({
     search: "",
     status: "All",
-    locale: "All"
+    locale: "All",
+    flavor: ""
   });
 
   // Apply filters effect
@@ -37,6 +44,11 @@ export function useJobFilters(jobs: Job[]) {
       result = result.filter((job) => job.locale === filters.locale);
     }
 
+    // Apply flavor filter
+    if (filters.flavor) {
+      result = result.filter((job) => job.flavor === filters.flavor);
+    }
+
     return result;
   }, [jobs, filters]);
 
@@ -45,9 +57,12 @@ export function useJobFilters(jobs: Job[]) {
     setFilteredJobs(applyFilters);
   }, [applyFilters]);
 
-  const setFilters = (newFilters: JobFilters) => {
-    setFiltersState(newFilters);
+  const setFilters = (newFilters: Partial<JobFilters>) => {
+    setFiltersState(prevFilters => ({
+      ...prevFilters,
+      ...newFilters
+    }));
   };
 
-  return { filteredJobs, setFilters };
+  return { filteredJobs, filters, setFilters };
 }

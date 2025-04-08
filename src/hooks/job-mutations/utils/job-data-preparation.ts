@@ -1,3 +1,4 @@
+
 import { Job, Locale } from "@/types/job";
 import { lookupEntityByName } from "./job-db-operations";
 import { calculateRates } from "@/utils/rateUtils";
@@ -72,23 +73,12 @@ export async function prepareJobForInsertion(
     m1,
     m2,
     m3,
-    linkedin_search: '' // Required by database schema
+    linkedin_search: jobData.linkedinSearch || ''
   };
 }
 
 /**
  * Transforms the raw database job data to match our Job interface
- * @param data The raw database job data
- * @param internalTitle The generated internal title
- * @param high The high rate
- * @param medium The medium rate
- * @param low The low rate
- * @param workDetails The work details
- * @param payDetails The pay details
- * @param m1 The first message template
- * @param m2 The second message template
- * @param m3 The third message template
- * @returns A job object matching our Job interface
  */
 export function transformDatabaseJobToJobObject(
   data: any,
@@ -133,6 +123,7 @@ export function transformDatabaseJobToJobObject(
     statusId: data.status_id,
     m1: data.m1 || m1,
     m2: data.m2 || m2,
-    m3: data.m3 || m3
+    m3: data.m3 || m3,
+    linkedinSearch: data.linkedin_search || ''
   };
 }

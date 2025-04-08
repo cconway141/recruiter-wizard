@@ -40,10 +40,6 @@ type InsertedJobType = {
 
 /**
  * Looks up the ID of an entity by its name in a specific table
- * @param table The table to search in
- * @param nameCol The column that contains the name to look up
- * @param name The name to search for
- * @returns The ID of the entity if found, or null if not found
  */
 export async function lookupEntityByName(
   table: "clients" | "flavors" | "job_statuses" | "locales",
@@ -71,9 +67,10 @@ export async function lookupEntityByName(
 
 export async function insertJobToDatabase(preparedJob: Record<string, any>): Promise<InsertedJobType> {
   try {
+    // Ensure we're passing a properly typed object
     const { data, error } = await supabase
       .from('jobs')
-      .insert(preparedJob)
+      .insert([preparedJob]) // Use array to avoid type issues
       .select('*')
       .single();
     

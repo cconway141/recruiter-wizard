@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useMemo } from "react";
 import { JobContextType } from "@/types/contextTypes";
 import { useSupabaseData } from "@/hooks/useSupabaseData";
-import { useJobFilters } from "@/hooks/useJobFilters";
+import { useJobFilters, JobFilters } from "@/hooks/useJobFilters";
 import { useJobMutations } from "@/hooks/useJobMutations";
 import { useCandidateOperations } from "@/hooks/useCandidateOperations";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,7 +11,7 @@ const JobContext = createContext<JobContextType | undefined>(undefined);
 
 export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { state, isLoading, setJobs, setCandidates, loadFromSupabase } = useSupabaseData();
-  const { filteredJobs, setFilters } = useJobFilters(state.jobs);
+  const { filteredJobs, filters, setFilters } = useJobFilters(state.jobs);
   const { addJob, updateJob, deleteJob, getJob } = useJobMutations(state.jobs, setJobs);
   const { addCandidate, removeCandidate, updateCandidateStatus, getCandidates } = useCandidateOperations(state.candidates, setCandidates);
   
@@ -26,6 +26,7 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     deleteJob,
     getJob,
     filteredJobs,
+    filters,
     setFilters,
     addCandidate,
     removeCandidate,
@@ -40,6 +41,7 @@ export const JobProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     deleteJob,
     getJob,
     filteredJobs,
+    filters,
     setFilters,
     addCandidate,
     removeCandidate,

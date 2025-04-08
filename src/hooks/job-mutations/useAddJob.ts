@@ -36,7 +36,8 @@ export function useAddJob(jobs: Job[], setJobs: (jobs: Job[]) => void) {
         payDetails,
         m1,
         m2,
-        m3
+        m3,
+        linkedinSearch: jobData.linkedinSearch || ''
       });
       
       // Insert job into database
@@ -76,7 +77,8 @@ export function useAddJob(jobs: Job[], setJobs: (jobs: Job[]) => void) {
         statusId: insertedJob.status_id,
         m1: insertedJob.m1,
         m2: insertedJob.m2,
-        m3: insertedJob.m3
+        m3: insertedJob.m3,
+        linkedinSearch: insertedJob.linkedin_search || ''
       };
 
       // Update local state

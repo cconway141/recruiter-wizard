@@ -1,6 +1,7 @@
 
-import { Job, JobStatus, Locale } from "@/types/job";
+import { Job, JobStatus, Locale, Flavor } from "@/types/job";
 import { Candidate, CandidateStatus } from "@/components/candidates/CandidateEntry";
+import { JobFilters } from "@/hooks/useJobFilters";
 
 export interface JobContextType {
   jobs: Job[];
@@ -9,7 +10,8 @@ export interface JobContextType {
   deleteJob: (id: string) => void;
   getJob: (id: string) => Job | undefined;
   filteredJobs: Job[];
-  setFilters: (filters: { search: string; status: JobStatus | "All"; locale: Locale | "All" }) => void;
+  filters: JobFilters;
+  setFilters: (filters: Partial<JobFilters>) => void;
   addCandidate: (jobId: string, name: string) => void;
   removeCandidate: (jobId: string, candidateId: string) => void;
   updateCandidateStatus: (jobId: string, candidateId: string, statusKey: keyof CandidateStatus, value: boolean) => void;
@@ -21,10 +23,4 @@ export interface JobContextType {
 export interface JobsState {
   jobs: Job[];
   candidates: Record<string, Candidate[]>; // jobId -> candidates[]
-}
-
-export interface JobFilters {
-  search: string;
-  status: JobStatus | "All";
-  locale: Locale | "All";
 }

@@ -1,3 +1,4 @@
+
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Plus } from "lucide-react";
@@ -6,10 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
 export function JobsFilter() {
-  const { filters, setFilters } = useJobs();
+  const { filteredJobs, setFilters } = useJobs();
 
   const updateFilter = (key: string, value: string) => {
-    setFilters(prevFilters => ({
+    setFilters((prevFilters) => ({
       ...prevFilters,
       [key]: value
     }));
@@ -22,21 +23,19 @@ export function JobsFilter() {
         <Input 
           placeholder="Search jobs..." 
           className="pl-8"
-          value={filters.searchTerm || ""}
-          onChange={(e) => updateFilter("searchTerm", e.target.value)}
+          onChange={(e) => updateFilter("search", e.target.value)}
         />
       </div>
       
       <div className="flex gap-2 w-full md:w-auto">
         <Select 
-          value={filters.status || ""} 
           onValueChange={(value) => updateFilter("status", value)}
         >
           <SelectTrigger className="w-full md:w-[180px]">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Statuses</SelectItem>
+            <SelectItem value="All">All Statuses</SelectItem>
             <SelectItem value="Active">Active</SelectItem>
             <SelectItem value="Aquarium">Aquarium</SelectItem>
             <SelectItem value="Inactive">Inactive</SelectItem>
@@ -45,7 +44,6 @@ export function JobsFilter() {
         </Select>
         
         <Select 
-          value={filters.flavor || ""} 
           onValueChange={(value) => updateFilter("flavor", value)}
         >
           <SelectTrigger className="w-full md:w-[180px]">
