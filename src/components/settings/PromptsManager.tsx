@@ -7,8 +7,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/components/ui/use-toast";
-import { Loader2, Save } from "lucide-react";
+import { Loader2, Save, PlusCircle, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Prompt {
   id: number;
@@ -36,7 +37,7 @@ export function PromptsManager() {
       const { data, error } = await (supabase
         .from('prompts') as any)
         .select('*')
-        .order('name');
+        .order('id');
 
       if (error) {
         console.error('Error fetching prompts:', error);
@@ -116,6 +117,31 @@ export function PromptsManager() {
     });
   };
 
+  // Function to get variable hints for the current prompt
+  const getVariableHints = (promptId: number) => {
+    switch (promptId) {
+      case 1: // Video Questions
+      case 2: // Screening Questions
+        return [
+          { name: "${minSkills}", description: "Minimum skills required for the role" }
+        ];
+      case 3: // Other Information
+        return [
+          { name: "${jobDescription}", description: "Full job description text" }
+        ];
+      case 4: // Extract Skills
+        return [
+          { name: "${jobDescription}", description: "Full job description text" }
+        ];
+      case 5: // Extract Minimum Skills
+        return [
+          { name: "${jobDescription}", description: "Full job description text" }
+        ];
+      default:
+        return [];
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center py-12">
@@ -154,7 +180,7 @@ export function PromptsManager() {
                 defaultValue={currentPrompt?.id.toString()} 
                 onValueChange={(value) => handlePromptChange(parseInt(value))}
               >
-                <TabsList className="grid grid-cols-3 mb-6">
+                <TabsList className="grid grid-cols-5 mb-6">
                   {prompts.map(prompt => (
                     <TabsTrigger key={prompt.id} value={prompt.id.toString()}>
                       {prompt.name}
@@ -186,7 +212,30 @@ export function PromptsManager() {
                       </div>
                       
                       <div className="space-y-2">
-                        <Label htmlFor="prompt_text">Prompt Text</Label>
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="prompt_text">Prompt Text</Label>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="flex items-center text-sm text-muted-foreground">
+                                  <Info className="h-4 w-4 mr-1" />
+                                  Available Variables
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent className="w-80 p-4">
+                                <h4 className="font-semibold mb-2">Variables you can use:</h4>
+                                <ul className="space-y-2">
+                                  {getVariableHints(prompt.id).map((variable, idx) => (
+                                    <li key={idx} className="flex flex-col">
+                                      <span className="font-mono text-sm">{variable.name}</span>
+                                      <span className="text-xs text-muted-foreground">{variable.description}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
                         <Textarea
                           id="prompt_text"
                           name="prompt_text"
