@@ -1,6 +1,6 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Locale } from "@/types/job";
+import { getRoleAbbreviation } from "./jobUtils";
 
 /**
  * Generate internal title for a job
@@ -12,7 +12,22 @@ export async function generateInternalTitle(
   locale: Locale
 ): Promise<string> {
   try {
-    // Get locale abbreviation from database
+    // Get client abbreviation
+    const { data: clientData, error: clientError } = await supabase
+      .from('clients')
+      .select('abbreviation')
+      .eq('name', client)
+      .single();
+    
+    if (clientError || !clientData) {
+      console.error("Error fetching client abbreviation:", clientError);
+      return `${client} | ${candidateFacingTitle} | ${flavor}`;
+    }
+    
+    // Get role abbreviation
+    const roleAbbr = await getRoleAbbreviation(candidateFacingTitle);
+    
+    // Get locale abbreviation
     const { data: localeData, error: localeError } = await supabase
       .from('locales')
       .select('abbreviation')
@@ -21,29 +36,24 @@ export async function generateInternalTitle(
     
     if (localeError || !localeData) {
       console.error("Error fetching locale abbreviation:", localeError);
-      // Fallback to hardcoded abbreviations
+      
+      // Fallback abbreviations
       const fallbackAbbreviations: Record<Locale, string> = {
         "Onshore": "On",
-        "Nearshore": "Near",
+        "Nearshore": "Near", 
         "Offshore": "Off"
       };
       
-      // Get role abbreviation from the title (simplified approach)
-      // Assuming candidateFacingTitle contains the role
-      const roleWords = candidateFacingTitle.split(' ');
-      const firstWord = roleWords[0]; // e.g., "Sr.", "Full", etc.
-      
-      return `${client} | ${fallbackAbbreviations[locale]} | ${candidateFacingTitle} | ${flavor}`;
+      return `${clientData.abbreviation} - ${roleAbbr} - ${flavor} ${fallbackAbbreviations[locale]}`;
     }
     
-    // Use the abbreviation from the database
-    const localeAbbreviation = localeData.abbreviation;
-    
-    return `${client} | ${localeAbbreviation} | ${candidateFacingTitle} | ${flavor}`;
+    // Construct the title with the desired format
+    return `${clientData.abbreviation} - ${roleAbbr} - ${flavor} ${localeData.abbreviation}`;
   } catch (err) {
     console.error("Error generating internal title:", err);
-    // Return a fallback title
-    return `${client} | ${candidateFacingTitle} | ${flavor}`;
+    
+    // Fallback to a simple format
+    return `${client} - ${candidateFacingTitle} - ${flavor}`;
   }
 }
 
