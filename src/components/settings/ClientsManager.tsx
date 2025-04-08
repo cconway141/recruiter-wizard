@@ -55,12 +55,12 @@ export function ClientsManager() {
   };
 
   const handleEdit = () => {
-    // This would be implemented when editing functionality is needed
+    // This will refresh the list after editing
     fetchClients();
+    refetch();
   };
 
   const handleDelete = () => {
-    // This would be implemented when delete functionality is needed
     fetchClients();
     refetch();
   };
