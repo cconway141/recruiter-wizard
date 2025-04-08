@@ -1,10 +1,9 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
-import { Database } from "@/integrations/supabase/types";
 
-// Define a simpler type for table names to avoid excessive type instantiation
-type TableName = 'clients' | 'flavors' | 'job_statuses' | 'jobs' | 'locales' | 'profiles';
+// Define a simplified type for table names to avoid excessive type instantiation
+type TableName = string;
 
 /**
  * Looks up an entity in the database by name
@@ -51,7 +50,7 @@ export async function insertJobToDatabase(jobData: Record<string, any>) {
   // Type assertion to match the expected insert type
   const { data, error } = await supabase
     .from('jobs')
-    .insert(jobData as any)
+    .insert(jobData)
     .select();
 
   if (error) {

@@ -13,6 +13,7 @@ import {
   generateM3
 } from "@/utils/jobUtils";
 import { toast } from "@/components/ui/use-toast";
+import { useSupabaseData } from "@/hooks/useSupabaseData";
 
 interface FormProcessorProps {
   onSubmit: (values: JobFormValues) => void;
@@ -23,6 +24,7 @@ interface FormProcessorProps {
 export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEditing?: boolean }) {
   const { addJob, updateJob } = useJobs();
   const navigate = useNavigate();
+  const { loadFromSupabase } = useSupabaseData();
   
   const handleSubmit = async (values: JobFormValues) => {
     try {
@@ -114,6 +116,9 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
             variant: "default",
             className: "bg-green-500 text-white border-green-600",
           });
+          
+          // Refresh data from Supabase before navigating
+          await loadFromSupabase();
           
           // Navigate to home page after successful creation
           navigate("/");

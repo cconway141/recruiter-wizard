@@ -4,9 +4,24 @@ import { JobsFilter } from "@/components/jobs/JobsFilter";
 import { JobsTable } from "@/components/jobs/JobsTable";
 import { Navbar } from "@/components/layout/Navbar";
 import { useJobs } from "@/contexts/JobContext";
+import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
+import { useSupabaseData } from "@/hooks/useSupabaseData";
 
 const Index = () => {
   const { isAirtableEnabled } = useJobs();
+  const location = useLocation();
+  const { loadFromSupabase } = useSupabaseData();
+  
+  // Refresh data when navigating to the home page
+  useEffect(() => {
+    const refreshData = async () => {
+      console.log("Refreshing job dashboard data...");
+      await loadFromSupabase();
+    };
+    
+    refreshData();
+  }, [location.key, loadFromSupabase]);
 
   return (
     <div className="flex flex-col min-h-screen">

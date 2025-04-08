@@ -36,6 +36,7 @@ export function useSupabaseData() {
   }, []);
 
   const loadFromSupabase = async () => {
+    console.log("Loading data from Supabase...");
     // Load jobs with related data from Supabase
     const { data: jobsData, error: jobsError } = await supabase
       .from('jobs')
@@ -88,11 +89,13 @@ export function useSupabaseData() {
         flavorId: job.flavor_id,
         statusId: job.status_id
       }));
+      
+      console.log(`Loaded ${transformedJobs.length} jobs from Supabase`);
 
-      setState({
-        jobs: transformedJobs,
-        candidates: {}
-      });
+      setState(prevState => ({
+        ...prevState,
+        jobs: transformedJobs
+      }));
     }
   };
 
@@ -114,6 +117,7 @@ export function useSupabaseData() {
     state, 
     isLoading, 
     setJobs,
-    setCandidates
+    setCandidates,
+    loadFromSupabase
   };
 }
