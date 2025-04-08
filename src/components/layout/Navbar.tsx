@@ -19,13 +19,12 @@ export function Navbar() {
   return (
     <div className="border-b bg-white">
       <div className="container flex h-16 items-center px-4">
-        <Link to="/" className="flex items-center gap-2 font-semibold text-lg text-recruiter-primary">
+        <Link to="/" className="flex items-center justify-center mx-auto">
           <img 
             src="/lovable-uploads/4add4393-d8ec-4a30-970d-3bc3ad2bcd83.png" 
             alt="The IT Bootcamp Logo" 
-            className="max-w-full max-h-full object-contain"
+            className="w-4/5 h-4/5 object-contain" 
           />
-          <span>The ITBC Recruitment Wizard</span>
         </Link>
         <div className="ml-auto flex items-center gap-4">
           {user && (
