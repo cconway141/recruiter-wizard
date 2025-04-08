@@ -1,0 +1,143 @@
+
+import { Job, Locale } from "@/types/job";
+import { lookupEntityByName } from "./job-db-operations";
+import { 
+  calculateRates, 
+  generateInternalTitle, 
+  getWorkDetails, 
+  getPayDetails, 
+  generateM1, 
+  generateM2, 
+  generateM3 
+} from "@/utils/jobUtils";
+
+/**
+ * Prepares a job for database insertion by gathering all required data
+ * @param jobData Basic job data provided from the form
+ * @returns Fully prepared job data ready for database insertion
+ */
+export async function prepareJobForInsertion(
+  jobData: Omit<Job, "id" | "internalTitle" | "highRate" | "mediumRate" | "lowRate" | "workDetails" | "payDetails" | "m1" | "m2" | "m3">
+) {
+  // Generate the internal title and calculate rates
+  const internalTitle = generateInternalTitle(
+    jobData.client, 
+    jobData.candidateFacingTitle, 
+    jobData.flavor, 
+    jobData.locale
+  );
+  
+  const { high, medium, low } = calculateRates(jobData.rate);
+  
+  // Get locale-specific details
+  const workDetails = await getWorkDetails(jobData.locale);
+  const payDetails = await getPayDetails(jobData.locale);
+  
+  // Generate message templates
+  const m1 = generateM1("[First Name]", jobData.candidateFacingTitle, jobData.compDesc);
+  const m2 = generateM2(jobData.candidateFacingTitle, payDetails, workDetails, jobData.skillsSought);
+  const m3 = generateM3(jobData.videoQuestions);
+
+  // Look up all the necessary foreign keys
+  const clientData = await lookupEntityByName('clients', 'name', jobData.client);
+  const localeData = await lookupEntityByName('locales', 'name', jobData.locale);
+  const flavorData = await lookupEntityByName('flavors', 'name', jobData.flavor);
+  const statusData = await lookupEntityByName('job_statuses', 'name', jobData.status);
+  const ownerData = await lookupEntityByName('profiles', 'display_name', jobData.owner);
+
+  // Prepare the database entry
+  return {
+    internal_title: internalTitle,
+    candidate_facing_title: jobData.candidateFacingTitle,
+    jd: jobData.jd,
+    status: jobData.status,
+    skills_sought: jobData.skillsSought,
+    min_skills: jobData.minSkills,
+    lir: jobData.lir,
+    client: jobData.client,
+    client_id: clientData?.id,
+    comp_desc: jobData.compDesc,
+    rate: jobData.rate,
+    high_rate: high,
+    medium_rate: medium,
+    low_rate: low,
+    locale: jobData.locale,
+    locale_id: localeData?.id,
+    owner: jobData.owner,
+    owner_id: ownerData?.id,
+    date: jobData.date,
+    work_details: workDetails,
+    pay_details: payDetails,
+    other: jobData.other,
+    video_questions: jobData.videoQuestions,
+    screening_questions: jobData.screeningQuestions,
+    flavor: jobData.flavor,
+    flavor_id: flavorData?.id,
+    status_id: statusData?.id,
+    m1,
+    m2,
+    m3,
+    linkedin_search: '' // Required by database schema
+  };
+}
+
+/**
+ * Transforms the raw database job data to match our Job interface
+ * @param data The raw database job data
+ * @param internalTitle The generated internal title
+ * @param high The high rate
+ * @param medium The medium rate
+ * @param low The low rate
+ * @param workDetails The work details
+ * @param payDetails The pay details
+ * @param m1 The first message template
+ * @param m2 The second message template
+ * @param m3 The third message template
+ * @returns A job object matching our Job interface
+ */
+export function transformDatabaseJobToJobObject(
+  data: any,
+  internalTitle: string,
+  high: number,
+  medium: number,
+  low: number,
+  workDetails: string,
+  payDetails: string,
+  m1: string,
+  m2: string,
+  m3: string
+): Job {
+  return {
+    id: data.id,
+    internalTitle,
+    candidateFacingTitle: data.candidate_facing_title,
+    jd: data.jd,
+    status: data.status,
+    skillsSought: data.skills_sought,
+    minSkills: data.min_skills,
+    lir: data.lir,
+    client: data.client,
+    clientId: data.client_id,
+    compDesc: data.comp_desc,
+    rate: data.rate,
+    highRate: high,
+    mediumRate: medium,
+    lowRate: low,
+    locale: data.locale,
+    localeId: data.locale_id,
+    owner: data.owner,
+    ownerId: data.owner_id,
+    date: data.date,
+    workDetails,
+    payDetails,
+    other: data.other || "",
+    videoQuestions: data.video_questions,
+    screeningQuestions: data.screening_questions,
+    flavor: data.flavor,
+    flavorId: data.flavor_id,
+    statusId: data.status_id,
+    m1,
+    m2,
+    m3
+  };
+}
