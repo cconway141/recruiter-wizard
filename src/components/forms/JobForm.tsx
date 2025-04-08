@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useFormContext } from "react-hook-form";
@@ -15,15 +14,7 @@ import {
 } from "@/utils/jobUtils";
 import { useJobs } from "@/contexts/JobContext";
 import { Loader2 } from "lucide-react";
-
-// Import the new component files
-import { JobFormBasicInfo } from "./JobFormBasicInfo";
-import { JobFormCompanyDesc } from "./JobFormCompanyDesc";
-import { JobFormDetails } from "./JobFormDetails";
-import { JobFormLinks } from "./JobFormLinks";
-import { JobFormQuestions } from "./JobFormQuestions";
-import { FormRatePreview } from "./FormRatePreview";
-import { MessagePreviewSection } from "./MessagePreviewSection";
+import { getClientByName } from "@/utils/clientData";
 
 import { 
   useClientOptions, 
@@ -60,11 +51,6 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
   const isLoading = clientsLoading || flavorsLoading || localesLoading || statusesLoading || usersLoading;
 
   const handleClientSelection = (clientName: string) => {
-    const getClientByName = (name: string) => {
-      const { getClientByName } = require("@/utils/clientData");
-      return getClientByName(name);
-    };
-    
     const clientData = getClientByName(clientName);
     if (clientData) {
       form.setValue("compDesc", clientData.description);
@@ -73,11 +59,6 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
 
   useEffect(() => {
     if (watchedFields.client && watchedFields.candidateFacingTitle && watchedFields.flavor && watchedFields.locale) {
-      const getClientByName = (name: string) => {
-        const { getClientByName } = require("@/utils/clientData");
-        return getClientByName(name);
-      };
-
       const clientData = getClientByName(watchedFields.client);
       const clientIdentifier = clientData ? clientData.abbreviation : watchedFields.client;
       
@@ -111,11 +92,6 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
     const locale = values.locale as Locale;
     const workDetails = getWorkDetails(locale);
     const payDetails = getPayDetails(locale);
-    
-    const getClientByName = (name: string) => {
-      const { getClientByName } = require("@/utils/clientData");
-      return getClientByName(name);
-    };
     
     const clientData = getClientByName(values.client);
     const clientIdentifier = clientData ? clientData.abbreviation : values.client;
