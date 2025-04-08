@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { Locale } from "@/types/job";

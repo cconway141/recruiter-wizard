@@ -31,7 +31,7 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
   const form = useFormContext<JobFormValues>();
   const { handleSubmit } = useFormProcessor({ job, isEditing });
   const { handleClientSelection } = useClientSelection(form);
-  const { messages, watchedFields } = useFormPreview(form);
+  const { messages } = useFormPreview(form);
 
   const { isLoading: clientsLoading } = useClientOptions();
   const { isLoading: flavorsLoading } = useFlavorOptions();
@@ -79,3 +79,4 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
     </div>
   );
 }
+
