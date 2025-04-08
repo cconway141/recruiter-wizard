@@ -46,7 +46,7 @@ type InsertedJobType = {
  * @returns The ID of the entity if found, or null if not found
  */
 export async function lookupEntityByName(
-  table: string,
+  table: "clients" | "flavors" | "job_statuses" | "locales",
   nameCol: string,
   name: string
 ): Promise<string | null> {
@@ -62,7 +62,7 @@ export async function lookupEntityByName(
       return null;
     }
     
-    return data?.id || null;
+    return data?.id?.toString() || null;
   } catch (error) {
     console.error(`Failed to lookup entity ${name} in ${table}:`, error);
     return null;
