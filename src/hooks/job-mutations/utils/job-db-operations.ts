@@ -18,7 +18,7 @@ export async function lookupEntityByName(
     console.log(`Looking up ${tableName}.${columnName} with value "${value}"`);
     
     const { data, error } = await supabase
-      .from(tableName as any)
+      .from(tableName)
       .select('id')
       .eq(columnName, value)
       .single();
@@ -96,7 +96,7 @@ export async function prepareJobForInsertion(jobData: any) {
     const ownerId = null; // We're not looking up real users anymore
     
     return {
-      internal_title: "TBD", // Will be set later
+      internal_title: jobData.internalTitle || "TBD",
       candidate_facing_title: jobData.candidateFacingTitle,
       jd: jobData.jd || "",
       status: jobData.status,
@@ -108,9 +108,9 @@ export async function prepareJobForInsertion(jobData: any) {
       client_id: clientId,
       comp_desc: jobData.compDesc || "",
       rate: jobData.rate || 0,
-      high_rate: 0, // Will be calculated later
-      medium_rate: 0, // Will be calculated later
-      low_rate: 0, // Will be calculated later
+      high_rate: jobData.highRate || 0,
+      medium_rate: jobData.mediumRate || 0,
+      low_rate: jobData.lowRate || 0,
       locale: jobData.locale,
       locale_id: localeId,
       owner: jobData.owner || "",
@@ -124,11 +124,11 @@ export async function prepareJobForInsertion(jobData: any) {
       flavor: jobData.flavor,
       flavor_id: flavorId,
       
-      // These will be generated later, but we need placeholders for the database
-      m1: "",
-      m2: "",
-      m3: "",
-      linkedin_search: ""
+      // Add message templates
+      m1: jobData.m1 || "",
+      m2: jobData.m2 || "",
+      m3: jobData.m3 || "",
+      linkedin_search: jobData.linkedinSearch || ""
     };
   } catch (err) {
     console.error("Error preparing job data:", err);

@@ -30,6 +30,7 @@ import {
 interface Locale {
   id: string;
   name: string;
+  abbreviation: string | null;
   work_details: string | null;
   pay_details: string | null;
   created_at?: string;
@@ -40,6 +41,7 @@ export function LocalesManager() {
   const [locales, setLocales] = useState<Locale[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [newLocale, setNewLocale] = useState("");
+  const [newAbbreviation, setNewAbbreviation] = useState("");
   const [newWorkDetails, setNewWorkDetails] = useState("");
   const [newPayDetails, setNewPayDetails] = useState("");
   const [editingLocale, setEditingLocale] = useState<Locale | null>(null);
@@ -90,6 +92,7 @@ export function LocalesManager() {
         .from("locales")
         .insert({ 
           name: newLocale,
+          abbreviation: newAbbreviation.trim() || null,
           work_details: newWorkDetails,
           pay_details: newPayDetails 
         });
@@ -104,6 +107,7 @@ export function LocalesManager() {
       });
       
       setNewLocale("");
+      setNewAbbreviation("");
       setNewWorkDetails("");
       setNewPayDetails("");
       fetchLocales();
@@ -133,6 +137,7 @@ export function LocalesManager() {
         .from("locales")
         .update({ 
           name: editingLocale.name,
+          abbreviation: editingLocale.abbreviation,
           work_details: editingLocale.work_details,
           pay_details: editingLocale.pay_details 
         })
@@ -196,13 +201,23 @@ export function LocalesManager() {
         <div className="space-y-6">
           <div className="space-y-4">
             <div className="grid gap-4">
-              <div>
-                <label className="text-sm font-medium">Location Name</label>
-                <Input 
-                  placeholder="Location Name" 
-                  value={newLocale} 
-                  onChange={(e) => setNewLocale(e.target.value)} 
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium">Location Name</label>
+                  <Input 
+                    placeholder="Location Name" 
+                    value={newLocale} 
+                    onChange={(e) => setNewLocale(e.target.value)} 
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Abbreviation</label>
+                  <Input 
+                    placeholder="Abbreviation (e.g., On, Near, Off)" 
+                    value={newAbbreviation} 
+                    onChange={(e) => setNewAbbreviation(e.target.value)} 
+                  />
+                </div>
               </div>
               <div>
                 <label className="text-sm font-medium">Work Details</label>
@@ -231,6 +246,7 @@ export function LocalesManager() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
+                  <TableHead>Abbreviation</TableHead>
                   <TableHead>Work Details</TableHead>
                   <TableHead>Pay Details</TableHead>
                   <TableHead className="w-[100px]">Actions</TableHead>
@@ -239,7 +255,7 @@ export function LocalesManager() {
               <TableBody>
                 {locales.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground py-6">
+                    <TableCell colSpan={5} className="text-center text-muted-foreground py-6">
                       No locales found
                     </TableCell>
                   </TableRow>
@@ -252,6 +268,12 @@ export function LocalesManager() {
                             <Input 
                               value={editingLocale.name}
                               onChange={(e) => setEditingLocale({...editingLocale, name: e.target.value})}
+                            />
+                          </TableCell>
+                          <TableCell className="align-top">
+                            <Input 
+                              value={editingLocale.abbreviation || ''}
+                              onChange={(e) => setEditingLocale({...editingLocale, abbreviation: e.target.value})}
                             />
                           </TableCell>
                           <TableCell className="align-top">
@@ -282,6 +304,7 @@ export function LocalesManager() {
                       ) : (
                         <>
                           <TableCell className="align-top font-medium">{locale.name}</TableCell>
+                          <TableCell className="align-top">{locale.abbreviation || "—"}</TableCell>
                           <TableCell className="max-w-xs">
                             <div className="line-clamp-3 whitespace-normal">
                               {locale.work_details || "Not set"}

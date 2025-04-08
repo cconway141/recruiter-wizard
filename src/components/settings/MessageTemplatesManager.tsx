@@ -32,7 +32,7 @@ export function MessageTemplatesManager() {
     setIsLoading(true);
     try {
       const { data, error } = await supabase
-        .from('message_templates' as any)
+        .from('message_templates')
         .select('*')
         .eq('id', 1)
         .maybeSingle();
@@ -41,9 +41,9 @@ export function MessageTemplatesManager() {
       
       if (data) {
         setTemplates({
-          m1_template: data.m1_template,
-          m2_template: data.m2_template,
-          m3_template: data.m3_template
+          m1_template: data.m1_template || "",
+          m2_template: data.m2_template || "",
+          m3_template: data.m3_template || ""
         });
       }
     } catch (error) {
@@ -62,7 +62,7 @@ export function MessageTemplatesManager() {
     setIsSaving(true);
     try {
       const { error } = await supabase
-        .from('message_templates' as any)
+        .from('message_templates')
         .update({
           m1_template: templates.m1_template,
           m2_template: templates.m2_template,

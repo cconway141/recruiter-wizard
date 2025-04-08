@@ -8,6 +8,7 @@ import { FlavorsManager } from "@/components/settings/FlavorsManager";
 import { LocalesManager } from "@/components/settings/LocalesManager";
 import { StatusesManager } from "@/components/settings/StatusesManager";
 import { MessageTemplatesManager } from "@/components/settings/MessageTemplatesManager";
+import { RoleAbbreviationsManager } from "@/components/settings/RoleAbbreviationsManager";
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState<string>("clients");
@@ -26,11 +27,12 @@ const Settings = () => {
         />
 
         <Tabs defaultValue="clients" className="mt-6" onValueChange={handleTabChange}>
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="clients">Clients</TabsTrigger>
             <TabsTrigger value="statuses">Statuses</TabsTrigger>
             <TabsTrigger value="locales">Locales</TabsTrigger>
             <TabsTrigger value="flavors">Job Flavors</TabsTrigger>
+            <TabsTrigger value="roles">Role Abbreviations</TabsTrigger>
             <TabsTrigger value="messages">Message Templates</TabsTrigger>
           </TabsList>
           
@@ -48,6 +50,10 @@ const Settings = () => {
           
           <TabsContent value="flavors" className="p-4 border rounded-md mt-4">
             <FlavorsManager />
+          </TabsContent>
+          
+          <TabsContent value="roles" className="p-4 border rounded-md mt-4">
+            <RoleAbbreviationsManager />
           </TabsContent>
           
           <TabsContent value="messages" className="p-4 border rounded-md mt-4">

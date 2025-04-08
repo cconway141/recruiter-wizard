@@ -1,66 +1,89 @@
-
 import { Job, Locale, DEFAULT_WORK_DETAILS, DEFAULT_PAY_DETAILS } from "@/types/job";
 import { supabase } from "@/integrations/supabase/client";
 
-// Update Role to abbreviation mapping
-export const ROLE_ABBREVIATIONS: Record<string, string> = {
-  "Account Manager": "AM",
-  "Business Analyst": "BA",
-  "Classroom TA": "TA",
-  "Cyber & Compliance Consultant": "DEV",
-  "Dev Ops Engineer": "DOP",
-  "Entry Level Developer": "DEV",
-  "Full Stack Engineer": "DEV",
-  "Lead Engineer": "DEV",
-  "AI-Driven Marketing Integration Specialist": "MKT",
-  "Operations Specialist": "OPS",
-  "Power BI Engineer": "PBI",
-  "Product Manager": "PDM",
-  "Product Owner": "PO",
-  "Quality Assurance Analyst": "QA",
-  "Marketing Integrator": "MKT",
-  "Sr. Android Developer": "DEV",
-  "Sales & Marketing": "MKT",
-  "SharePoint Specialist": "DEV",
-  "Social Media Manager": "MKT",
-  "Software Engineer": "DEV",
-  "Sr. Business Analyst": "BA",
-  "Sr. Data Engineer": "DEV",
-  "Sr. Data Modeler": "DEV",
-  "Sr. Engineer": "DEV",
-  "Sr. Full Stack Engineer": "DEV",
-  "Sr. iOS Engineer": "DEV",
-  "Sr. IT Recruiter": "REC",
-  "Sr. Java Engineer": "DEV",
-  "Sr. Performance Marketer": "MKT",
-  "Sr. Scrum Master": "SM",
-  "Agile Coach": "AGC",
-  "Fractional CTO": "fCTO",
-  "UI/UX Designer": "UIUX",
-  "QA": "QA",
-  "Power Apps Engineer": "DEV",
-  "Frontend Developer": "DEV",
-  "Backend Developer": "DEV",
-  "Full Stack Developer": "DEV",
-  "Mobile Developer": "DEV",
-  "DevOps Engineer": "DOP",
-  "Data Engineer": "DEV",
-  "Machine Learning Engineer": "DEV",
-};
+// Function to get locale abbreviations from database
+export async function getLocaleAbbreviations(): Promise<Record<Locale, string>> {
+  try {
+    const { data, error } = await supabase
+      .from("locales")
+      .select("name, abbreviation");
+    
+    if (error) {
+      console.error("Error fetching locale abbreviations:", error);
+      // Fall back to default if there's an error
+      return {
+        "Onshore": "On",
+        "Nearshore": "Near",
+        "Offshore": "Off"
+      };
+    }
+    
+    const abbreviations: Record<string, string> = {};
+    
+    // Convert the database results to a record
+    for (const locale of data || []) {
+      if (locale.name && locale.abbreviation) {
+        abbreviations[locale.name] = locale.abbreviation;
+      }
+    }
+    
+    // Ensure all locales have an abbreviation
+    const result: Record<Locale, string> = {
+      "Onshore": abbreviations["Onshore"] || "On",
+      "Nearshore": abbreviations["Nearshore"] || "Near", 
+      "Offshore": abbreviations["Offshore"] || "Off"
+    };
+    
+    return result;
+  } catch (error) {
+    console.error("Error in getLocaleAbbreviations:", error);
+    // Fall back to default if there's an exception
+    return {
+      "Onshore": "On",
+      "Nearshore": "Near",
+      "Offshore": "Off"
+    };
+  }
+}
 
-// Locale to abbreviation mapping
-export const LOCALE_ABBREVIATIONS: Record<Locale, string> = {
-  "Onshore": "On",
-  "Nearshore": "Near",
-  "Offshore": "Off"
-};
+// Function to get role abbreviations from database
+export async function getRoleAbbreviations(): Promise<Record<string, string>> {
+  try {
+    const { data, error } = await supabase
+      .from("role_abbreviations")
+      .select("role_name, abbreviation");
+    
+    if (error) {
+      console.error("Error fetching role abbreviations:", error);
+      // We'll return an empty object and the generateInternalTitle function will use DEV as default
+      return {};
+    }
+    
+    const abbreviations: Record<string, string> = {};
+    
+    // Convert the database results to a record
+    for (const role of data || []) {
+      if (role.role_name && role.abbreviation) {
+        abbreviations[role.role_name] = role.abbreviation;
+      }
+    }
+    
+    return abbreviations;
+  } catch (error) {
+    console.error("Error in getRoleAbbreviations:", error);
+    return {};
+  }
+}
 
-export function generateInternalTitle(client: string, title: string, flavor: string, locale: Locale): string {
-  // Get role abbreviation or default to "DEV" if not found
-  const roleAbbreviation = ROLE_ABBREVIATIONS[title] || "DEV";
-  
+export async function generateInternalTitle(client: string, title: string, flavor: string, locale: Locale): Promise<string> {
   // Get locale abbreviation
-  const localeAbbreviation = LOCALE_ABBREVIATIONS[locale];
+  const localeAbbreviations = await getLocaleAbbreviations();
+  const localeAbbreviation = localeAbbreviations[locale];
+  
+  // Get role abbreviation
+  const roleAbbreviations = await getRoleAbbreviations();
+  // Get role abbreviation or default to "DEV" if not found
+  const roleAbbreviation = roleAbbreviations[title] || "DEV";
   
   return `${client} ${roleAbbreviation} - ${flavor} ${localeAbbreviation}`;
 }
@@ -128,7 +151,7 @@ export async function getPayDetails(locale: Locale): Promise<string> {
 // Default templates as fallbacks
 const DEFAULT_M1_TEMPLATE = `Hi [First Name]!
 
-I'm from The ITBC.
+I'm [Owner] from The ITBC.
 
 Your background caught my eye.
 
@@ -200,13 +223,14 @@ async function getMessageTemplate(templateField: string, defaultTemplate: string
   }
 }
 
-export async function generateM1(firstName: string, title: string, compDesc: string): Promise<string> {
+export async function generateM1(firstName: string, title: string, compDesc: string, owner: string = ""): Promise<string> {
   const template = await getMessageTemplate('m1_template', DEFAULT_M1_TEMPLATE);
   
   return template
     .replace(/\[First Name\]/g, firstName)
     .replace(/\[Title\]/g, title)
-    .replace(/\[Company Description\]/g, compDesc);
+    .replace(/\[Company Description\]/g, compDesc)
+    .replace(/\[Owner\]/g, owner);
 }
 
 export async function generateM2(title: string, payDetails: string, workDetails: string, skillsSought: string): Promise<string> {

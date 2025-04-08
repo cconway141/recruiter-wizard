@@ -2,7 +2,7 @@
 import { Job } from "@/types/job";
 import { prepareJobForInsertion, transformDatabaseJobToJobObject } from "./utils/job-data-preparation";
 import { insertJobToDatabase } from "./utils/job-db-operations";
-import { calculateRates, generateInternalTitle } from "@/utils/jobUtils";
+import { calculateRates, generateInternalTitle, getWorkDetails, getPayDetails, generateM1, generateM2, generateM3 } from "@/utils/jobUtils";
 
 export function useAddJob(jobs: Job[], setJobs: (jobs: Job[]) => void) {
   const addJob = async (jobData: Omit<Job, "id" | "internalTitle" | "highRate" | "mediumRate" | "lowRate" | "workDetails" | "payDetails" | "m1" | "m2" | "m3">) => {
@@ -10,13 +10,30 @@ export function useAddJob(jobs: Job[], setJobs: (jobs: Job[]) => void) {
       console.log("Starting addJob with data:", jobData);
       
       // Calculate the values we'll need for the final Job object
-      const internalTitle = generateInternalTitle(jobData.client, jobData.candidateFacingTitle, jobData.flavor, jobData.locale);
+      const internalTitle = await generateInternalTitle(jobData.client, jobData.candidateFacingTitle, jobData.flavor, jobData.locale);
       const { high, medium, low } = calculateRates(jobData.rate);
+      
+      // Get work and pay details
+      const workDetails = await getWorkDetails(jobData.locale);
+      const payDetails = await getPayDetails(jobData.locale);
+      
+      // Generate message templates
+      const m1 = await generateM1("[First Name]", jobData.candidateFacingTitle, jobData.compDesc, jobData.owner);
+      const m2 = await generateM2(jobData.candidateFacingTitle, payDetails, workDetails, jobData.skillsSought);
+      const m3 = await generateM3(jobData.videoQuestions);
       
       // Prepare job data for insertion including the calculated values
       const preparedJobData = await prepareJobForInsertion({
         ...jobData,
-        internalTitle, // Add internal title to the job data
+        internalTitle,
+        highRate: high,
+        mediumRate: medium,
+        lowRate: low,
+        workDetails,
+        payDetails,
+        m1,
+        m2,
+        m3
       });
       
       // Insert job into database
@@ -25,12 +42,12 @@ export function useAddJob(jobs: Job[], setJobs: (jobs: Job[]) => void) {
       console.log("Job added successfully:", insertedJob);
       
       // Transform the returned data to match our Job interface
-      const newJob = {
+      const newJob: Job = {
         id: insertedJob.id,
         internalTitle: insertedJob.internal_title || internalTitle,
         candidateFacingTitle: insertedJob.candidate_facing_title,
         jd: insertedJob.jd,
-        status: insertedJob.status,
+        status: insertedJob.status as Job["status"],
         skillsSought: insertedJob.skills_sought,
         minSkills: insertedJob.min_skills,
         lir: insertedJob.lir,
@@ -41,7 +58,7 @@ export function useAddJob(jobs: Job[], setJobs: (jobs: Job[]) => void) {
         highRate: insertedJob.high_rate || high,
         mediumRate: insertedJob.medium_rate || medium,
         lowRate: insertedJob.low_rate || low,
-        locale: insertedJob.locale,
+        locale: insertedJob.locale as Job["locale"],
         localeId: insertedJob.locale_id,
         owner: insertedJob.owner,
         ownerId: insertedJob.owner_id,
@@ -51,7 +68,7 @@ export function useAddJob(jobs: Job[], setJobs: (jobs: Job[]) => void) {
         other: insertedJob.other || "",
         videoQuestions: insertedJob.video_questions,
         screeningQuestions: insertedJob.screening_questions,
-        flavor: insertedJob.flavor,
+        flavor: insertedJob.flavor as Job["flavor"],
         flavorId: insertedJob.flavor_id,
         statusId: insertedJob.status_id,
         m1: insertedJob.m1,

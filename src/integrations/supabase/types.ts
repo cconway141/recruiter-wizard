@@ -233,6 +233,7 @@ export type Database = {
       }
       locales: {
         Row: {
+          abbreviation: string | null
           created_at: string
           id: string
           name: string
@@ -241,6 +242,7 @@ export type Database = {
           work_details: string | null
         }
         Insert: {
+          abbreviation?: string | null
           created_at?: string
           id?: string
           name: string
@@ -249,6 +251,7 @@ export type Database = {
           work_details?: string | null
         }
         Update: {
+          abbreviation?: string | null
           created_at?: string
           id?: string
           name?: string
@@ -314,6 +317,30 @@ export type Database = {
           id?: string
           last_name?: string | null
           role?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      role_abbreviations: {
+        Row: {
+          abbreviation: string
+          created_at: string
+          id: string
+          role_name: string
+          updated_at: string
+        }
+        Insert: {
+          abbreviation: string
+          created_at?: string
+          id?: string
+          role_name: string
+          updated_at?: string
+        }
+        Update: {
+          abbreviation?: string
+          created_at?: string
+          id?: string
+          role_name?: string
           updated_at?: string
         }
         Relationships: []

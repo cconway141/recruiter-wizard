@@ -25,6 +25,7 @@ export interface JobFormValues {
   m1: string;
   m2: string;
   m3: string;
+  owner: string;
   [key: string]: any;
 }
 
@@ -40,7 +41,8 @@ export function JobFormDetails({ form }: JobFormDetailsProps) {
     compDesc: form.watch("compDesc"),
     locale: form.watch("locale"),
     skillsSought: form.watch("skillsSought"),
-    videoQuestions: form.watch("videoQuestions")
+    videoQuestions: form.watch("videoQuestions"),
+    owner: form.watch("owner")
   };
 
   // Update messages with debounce to prevent too frequent updates
@@ -69,7 +71,7 @@ export function JobFormDetails({ form }: JobFormDetailsProps) {
           form.setValue("payDetails", payDetails);
           
           // Generate messages and update form
-          const m1 = await generateM1("[First Name]", watchedFields.candidateFacingTitle, watchedFields.compDesc);
+          const m1 = await generateM1("[First Name]", watchedFields.candidateFacingTitle, watchedFields.compDesc, watchedFields.owner);
           const m2 = await generateM2(watchedFields.candidateFacingTitle, payDetails, workDetails, watchedFields.skillsSought);
           
           form.setValue("m1", m1);
