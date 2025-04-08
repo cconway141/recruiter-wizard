@@ -32,21 +32,20 @@ export function PromptsManager() {
   const fetchPrompts = async () => {
     setIsLoading(true);
     try {
-      // Use type assertion to work around TypeScript limitation
-      const { data, error } = await supabase
-        .from('prompts')
+      // Use type assertion to work with the prompts table
+      const { data, error } = await (supabase
+        .from('prompts') as any)
         .select('*')
-        .order('name') as {
-          data: Prompt[] | null;
-          error: any;
-        };
+        .order('name');
 
       if (error) throw error;
       
       if (data) {
-        setPrompts(data);
-        if (data.length > 0) {
-          setCurrentPrompt(data[0]);
+        // Cast the data to our Prompt interface
+        const typedPrompts = data as Prompt[];
+        setPrompts(typedPrompts);
+        if (typedPrompts.length > 0) {
+          setCurrentPrompt(typedPrompts[0]);
         }
       }
     } catch (error) {
@@ -66,18 +65,16 @@ export function PromptsManager() {
     
     setIsSaving(true);
     try {
-      // Use type assertion to work around TypeScript limitation
-      const { error } = await supabase
-        .from('prompts')
+      // Use type assertion to work with the prompts table
+      const { error } = await (supabase
+        .from('prompts') as any)
         .update({
           name: currentPrompt.name,
           description: currentPrompt.description,
           prompt_text: currentPrompt.prompt_text,
           updated_at: new Date().toISOString()
         })
-        .eq('id', currentPrompt.id) as {
-          error: any;
-        };
+        .eq('id', currentPrompt.id);
 
       if (error) throw error;
       
