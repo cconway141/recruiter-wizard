@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Locale } from "@/types/job";
 
@@ -21,7 +20,7 @@ export async function generateInternalTitle(
     
     if (clientError || !clientData) {
       console.error("Error fetching client abbreviation:", clientError);
-      return `${client} - ${candidateFacingTitle} - ${flavor}`;
+      return `${client} ${candidateFacingTitle} - ${flavor} ${locale}`;
     }
     
     // Get role abbreviation
@@ -44,16 +43,16 @@ export async function generateInternalTitle(
         "Offshore": "Off"
       };
       
-      return `${clientData.abbreviation} - ${roleAbbr} - ${flavor} ${fallbackAbbreviations[locale]}`;
+      return `${clientData.abbreviation} ${roleAbbr} - ${flavor} ${fallbackAbbreviations[locale]}`;
     }
     
     // Construct the title with the desired format
-    return `${clientData.abbreviation} - ${roleAbbr} - ${flavor} ${localeData.abbreviation}`;
+    return `${clientData.abbreviation} ${roleAbbr} - ${flavor} ${localeData.abbreviation}`;
   } catch (err) {
     console.error("Error generating internal title:", err);
     
     // Fallback to a simple format
-    return `${client} - ${candidateFacingTitle} - ${flavor}`;
+    return `${client} ${candidateFacingTitle} - ${flavor} ${locale}`;
   }
 }
 
