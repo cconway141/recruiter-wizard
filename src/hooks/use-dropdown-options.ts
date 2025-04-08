@@ -128,26 +128,56 @@ export const useUserOptions = () => {
   return useQuery({
     queryKey: ["userOptions"],
     queryFn: async (): Promise<UserOption[]> => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*");
-      
-      if (error) {
-        throw error;
-      }
-      
-      // Make sure we handle both cases - whether display_name exists or not
-      return (data || []).map(user => ({
-        id: user.id,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        email: user.email,
-        // Fallback chain in case display_name isn't set
-        display_name: user.display_name || 
+      try {
+        console.log("useUserOptions: Fetching users from Supabase...");
+        
+        // First verify Supabase connection
+        const { error: connectionError } = await supabase.from("profiles").select("count");
+        
+        if (connectionError) {
+          console.error("useUserOptions: Connection test failed:", connectionError);
+          throw new Error(`Connection error: ${connectionError.message}`);
+        }
+        
+        console.log("useUserOptions: Connection test passed, fetching users...");
+        
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("*");
+        
+        if (error) {
+          console.error("useUserOptions: Error fetching users:", error);
+          throw error;
+        }
+        
+        console.log("useUserOptions: Fetched users raw data:", data);
+        
+        // Make sure we handle both cases - whether display_name exists or not
+        const formattedData = (data || []).map(user => ({
+          id: user.id,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          email: user.email,
+          // Fallback chain in case display_name isn't set
+          display_name: user.display_name || 
                      `${user.first_name || ''} ${user.last_name || ''}`.trim() || 
                      user.email?.split('@')[0] || 
                      'Unknown User'
-      }));
+        }));
+        
+        console.log("useUserOptions: Formatted user data:", formattedData);
+        return formattedData;
+      } catch (error) {
+        console.error("Error in useUserOptions:", error);
+        throw error;
+      }
     },
+    // Force refetch on component mount
+    refetchOnMount: true,
+    // Add stale time to avoid too frequent refetches
+    staleTime: 30000,
+    // Add retry for better error handling
+    retry: 2,
+    retryDelay: 1000,
   });
 };

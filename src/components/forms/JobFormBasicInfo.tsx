@@ -35,13 +35,11 @@ export function JobFormBasicInfo({ handleClientSelection }: JobFormBasicInfoProp
   const { data: flavorOptions } = useFlavorOptions();
   const { data: localeOptions } = useLocaleOptions();
   const { data: statusOptions } = useStatusOptions();
-  const { data: userOptions } = useUserOptions();
+  const { data: userOptions, isLoading: usersLoading } = useUserOptions();
 
   useEffect(() => {
-    console.log("Client options loading:", clientsLoading);
-    console.log("Client options error:", clientsError);
-    console.log("Client options data:", clientOptions);
-  }, [clientOptions, clientsLoading, clientsError]);
+    console.log("User options:", userOptions);
+  }, [userOptions]);
 
   return (
     <>
@@ -190,12 +188,18 @@ export function JobFormBasicInfo({ handleClientSelection }: JobFormBasicInfoProp
                     <SelectValue placeholder="Select recruiter" />
                   </SelectTrigger>
                 </FormControl>
-                <SelectContent>
-                  {userOptions?.map((user) => (
-                    <SelectItem key={user.id} value={user.display_name}>
-                      {user.display_name}
-                    </SelectItem>
-                  ))}
+                <SelectContent className="max-h-80 overflow-y-auto">
+                  {usersLoading ? (
+                    <SelectItem value="loading" disabled>Loading recruiters...</SelectItem>
+                  ) : userOptions && userOptions.length > 0 ? (
+                    userOptions.map((user) => (
+                      <SelectItem key={user.id} value={user.display_name || `${user.first_name || ''} ${user.last_name || ''}`.trim()}>
+                        {user.display_name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email?.split('@')[0] || 'Unknown User'}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="none" disabled>No recruiters found</SelectItem>
+                  )}
                 </SelectContent>
               </Select>
               <FormMessage />

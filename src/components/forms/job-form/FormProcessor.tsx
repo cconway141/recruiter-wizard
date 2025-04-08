@@ -7,18 +7,17 @@ import {
   calculateRates, 
   generateInternalTitle, 
   getWorkDetails, 
-  getPayDetails
+  getPayDetails,
+  generateM1,
+  generateM2,
+  generateM3
 } from "@/utils/jobUtils";
+import { toast } from "@/components/ui/use-toast";
 
 interface FormProcessorProps {
   onSubmit: (values: JobFormValues) => void;
   job?: Job;
   isEditing?: boolean;
-  messages: {
-    m1: string;
-    m2: string;
-    m3: string;
-  };
 }
 
 export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEditing?: boolean }) {
@@ -27,13 +26,13 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
   
   const handleSubmit = async (values: JobFormValues) => {
     try {
-      const { previewName, ...jobData } = values;
-      
-      const { high, medium, low } = calculateRates(values.rate);
+      console.log("Form submitted with values:", values);
       
       const locale = values.locale as Locale;
       const workDetails = await getWorkDetails(locale);
       const payDetails = await getPayDetails(locale);
+      
+      const { high, medium, low } = calculateRates(values.rate);
       
       const internalTitle = generateInternalTitle(
         values.client,
@@ -42,47 +41,66 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
         locale
       );
       
+      // Generate message templates
+      const m1 = generateM1("[First Name]", values.candidateFacingTitle, values.compDesc);
+      const m2 = generateM2(values.candidateFacingTitle, payDetails, workDetails, values.skillsSought);
+      const m3 = generateM3(values.videoQuestions);
+      
       if (isEditing && job) {
         updateJob({
           ...job,
-          ...jobData,
-          locale: jobData.locale as Locale,
-          status: jobData.status,
-          flavor: jobData.flavor,
+          ...values,
+          locale: locale,
           internalTitle,
           highRate: high,
           mediumRate: medium,
           lowRate: low,
           workDetails,
           payDetails,
-          m1: values.m1,
-          m2: values.m2,
-          m3: values.m3
+          m1,
+          m2,
+          m3
+        });
+        
+        toast({
+          title: "Job Updated",
+          description: `${internalTitle} has been updated successfully.`,
         });
       } else {
+        console.log("Adding new job");
         addJob({
-          jd: jobData.jd,
-          candidateFacingTitle: jobData.candidateFacingTitle,
-          status: jobData.status,
-          skillsSought: jobData.skillsSought,
-          minSkills: jobData.minSkills, 
-          lir: jobData.lir,
-          client: jobData.client,
-          compDesc: jobData.compDesc,
-          rate: jobData.rate,
-          locale: jobData.locale as Locale,
-          owner: jobData.owner,
-          date: jobData.date,
-          other: jobData.other || "",
-          videoQuestions: jobData.videoQuestions,
-          screeningQuestions: jobData.screeningQuestions,
-          flavor: jobData.flavor,
+          jd: values.jd,
+          candidateFacingTitle: values.candidateFacingTitle,
+          status: values.status,
+          skillsSought: values.skillsSought,
+          minSkills: values.minSkills, 
+          lir: values.lir,
+          client: values.client,
+          compDesc: values.compDesc,
+          rate: values.rate,
+          locale: locale,
+          owner: values.owner,
+          date: values.date,
+          other: values.other || "",
+          videoQuestions: values.videoQuestions,
+          screeningQuestions: values.screeningQuestions,
+          flavor: values.flavor,
+        });
+        
+        toast({
+          title: "Job Added",
+          description: `${internalTitle} has been added successfully.`,
         });
       }
       
       navigate("/");
     } catch (err) {
       console.error("Error in form submission:", err);
+      toast({
+        title: "Error",
+        description: `Failed to ${isEditing ? "update" : "create"} job: ${err instanceof Error ? err.message : String(err)}`,
+        variant: "destructive",
+      });
     }
   };
 

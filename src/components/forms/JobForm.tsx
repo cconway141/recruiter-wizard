@@ -41,7 +41,7 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
 
   const isLoading = clientsLoading || flavorsLoading || localesLoading || statusesLoading || usersLoading;
 
-  // Set form values for messages
+  // Set form values for messages (in background)
   useEffect(() => {
     if (messages.m1 && messages.m2 && messages.m3) {
       form.setValue("m1", messages.m1);
@@ -79,4 +79,3 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
     </div>
   );
 }
-
