@@ -12,7 +12,7 @@ interface JobMessagesProps {
 }
 
 export const JobMessages: React.FC<JobMessagesProps> = ({ job }) => {
-  const { getCandidates } = useJobs();
+  const { getCandidates, loadCandidatesForJob, candidatesLoading } = useJobs();
   const candidates = getCandidates(job.id);
   const [selectedCandidate, setSelectedCandidate] = useState<string>("");
   const [messages, setMessages] = useState({
@@ -20,6 +20,11 @@ export const JobMessages: React.FC<JobMessagesProps> = ({ job }) => {
     m2: job.m2 || "",
     m3: job.m3 || ""
   });
+  
+  // Load candidates when component mounts
+  useEffect(() => {
+    loadCandidatesForJob(job.id);
+  }, [job.id, loadCandidatesForJob]);
   
   // Load fresh templates from the database when component mounts or job changes
   useEffect(() => {
@@ -68,7 +73,7 @@ export const JobMessages: React.FC<JobMessagesProps> = ({ job }) => {
                 <SelectValue placeholder="Select a candidate" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Generic template</SelectItem>
+                <SelectItem value="generic">Generic template</SelectItem>
                 {candidates.map(candidate => (
                   <SelectItem key={candidate.id} value={candidate.name}>
                     {candidate.name}

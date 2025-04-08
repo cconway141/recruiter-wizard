@@ -11,7 +11,7 @@ import { JobMessages } from "@/components/jobs/JobMessages";
 
 const ViewJob = () => {
   const { id } = useParams<{ id: string }>();
-  const { getJob } = useJobs();
+  const { getJob, loadCandidatesForJob } = useJobs();
   const navigate = useNavigate();
   const job = id ? getJob(id) : undefined;
 
@@ -19,8 +19,11 @@ const ViewJob = () => {
     if (id && !job) {
       // Job not found, redirect to dashboard
       navigate("/");
+    } else if (id) {
+      // Load candidates for this job
+      loadCandidatesForJob(id);
     }
-  }, [id, job, navigate]);
+  }, [id, job, navigate, loadCandidatesForJob]);
 
   if (!job) {
     return null;
