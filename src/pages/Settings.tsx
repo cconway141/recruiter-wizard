@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -18,8 +17,8 @@ import { Info } from "lucide-react";
 
 const Settings = () => {
   const { isAirtableEnabled } = useJobs();
-  const [activeTab, setActiveTab] = useState("clients");
-  const [connectionStatus, setConnectionStatus] = useState("Checking...");
+  const [activeTab, setActiveTab] = useState<string>("clients");
+  const [connectionStatus, setConnectionStatus] = useState<string>("Checking...");
   const [dbTables, setDbTables] = useState<string[]>([]);
   const [dbDetails, setDbDetails] = useState<any>(null);
   const queryClient = useQueryClient();

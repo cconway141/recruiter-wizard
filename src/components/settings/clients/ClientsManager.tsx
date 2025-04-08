@@ -14,7 +14,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 export function ClientsManager() {
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState("Unknown");
+  const [connectionStatus, setConnectionStatus] = useState<string>("Unknown");
   const [lastError, setLastError] = useState<string | null>(null);
   const [tableInfo, setTableInfo] = useState<any>(null);
   const queryClient = useQueryClient();
