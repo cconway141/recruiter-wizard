@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { useFormContext } from "react-hook-form";
@@ -15,9 +15,14 @@ export function JobFormDescription() {
   const [skillsExtracted, setSkillsExtracted] = useState(false);
   const [minSkillsExtracted, setMinSkillsExtracted] = useState(false);
   const [videoQuestionsGenerated, setVideoQuestionsGenerated] = useState(false);
+  
+  // Track if functions have already been called to prevent multiple calls
+  const skillsExtractedRef = useRef(false);
+  const minSkillsExtractedRef = useRef(false);
+  const videoQuestionsGeneratedRef = useRef(false);
 
   const extractSkillsFromDescription = async (description: string) => {
-    if (!description.trim()) return;
+    if (!description.trim() || skillsExtractedRef.current) return;
     
     setIsGeneratingSkills(true);
     setSkillsExtracted(false);
@@ -38,6 +43,7 @@ export function JobFormDescription() {
         });
         
         setSkillsExtracted(true);
+        skillsExtractedRef.current = true;
         
         toast({
           title: "Skills extracted",
@@ -60,7 +66,7 @@ export function JobFormDescription() {
   };
 
   const extractMinimumSkills = async (skillsSought: string, jobDescription: string) => {
-    if (!skillsSought.trim() || !jobDescription.trim()) return;
+    if (!skillsSought.trim() || !jobDescription.trim() || minSkillsExtractedRef.current) return;
     
     setIsGeneratingMinSkills(true);
     setMinSkillsExtracted(false);
@@ -81,6 +87,7 @@ export function JobFormDescription() {
         });
         
         setMinSkillsExtracted(true);
+        minSkillsExtractedRef.current = true;
         
         toast({
           title: "Minimum skills extracted",
@@ -103,7 +110,7 @@ export function JobFormDescription() {
   };
 
   const generateVideoQuestions = async (minSkills: string) => {
-    if (!minSkills.trim()) return;
+    if (!minSkills.trim() || videoQuestionsGeneratedRef.current) return;
     
     setIsGeneratingVideoQuestions(true);
     setVideoQuestionsGenerated(false);
@@ -124,6 +131,7 @@ export function JobFormDescription() {
         });
         
         setVideoQuestionsGenerated(true);
+        videoQuestionsGeneratedRef.current = true;
         
         toast({
           title: "Video questions generated",

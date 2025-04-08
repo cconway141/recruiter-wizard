@@ -4,7 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useFormContext } from "react-hook-form";
 import { Loader2, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { toast } from "@/components/ui/use-toast";
 
 export function JobFormQuestionDetails() {
@@ -14,11 +14,20 @@ export function JobFormQuestionDetails() {
   const minSkillsValue = form.watch("minSkills");
   const isVideoQuestionsGenerated = videoQuestionsValue && videoQuestionsValue.trim().length > 0;
   const [screeningQuestionsGenerated, setScreeningQuestionsGenerated] = useState(false);
+  
+  // Track if screening questions have already been generated
+  const screeningQuestionsGeneratedRef = useRef(false);
 
   // Generate screening questions when video questions are populated
   useEffect(() => {
     const generateScreeningQuestions = async () => {
-      if (videoQuestionsValue && minSkillsValue && !isGeneratingScreeningQuestions) {
+      // Check if video questions exist, minimum skills exist, not currently generating, and haven't already generated
+      if (
+        videoQuestionsValue && 
+        minSkillsValue && 
+        !isGeneratingScreeningQuestions && 
+        !screeningQuestionsGeneratedRef.current
+      ) {
         setIsGeneratingScreeningQuestions(true);
         try {
           const { data, error } = await supabase.functions.invoke('generate-screening-questions', {
@@ -34,6 +43,9 @@ export function JobFormQuestionDetails() {
               shouldValidate: true 
             });
             setScreeningQuestionsGenerated(true);
+            // Mark as generated to prevent multiple calls
+            screeningQuestionsGeneratedRef.current = true;
+            
             toast({
               title: "Screening questions generated",
               description: "Screening questions have been automatically generated based on the skills.",
@@ -53,7 +65,7 @@ export function JobFormQuestionDetails() {
     };
 
     generateScreeningQuestions();
-  }, [videoQuestionsValue, minSkillsValue, form]);
+  }, [videoQuestionsValue, minSkillsValue, form, isGeneratingScreeningQuestions]);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
