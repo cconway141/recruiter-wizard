@@ -32,16 +32,19 @@ export function PromptsManager() {
   const fetchPrompts = async () => {
     setIsLoading(true);
     try {
-      // Use type assertion to work with the prompts table
+      console.log('Fetching prompts...'); // Added logging
       const { data, error } = await (supabase
         .from('prompts') as any)
         .select('*')
         .order('name');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching prompts:', error);
+        throw error;
+      }
       
       if (data) {
-        // Cast the data to our Prompt interface
+        console.log('Fetched prompts:', data); // Added logging
         const typedPrompts = data as Prompt[];
         setPrompts(typedPrompts);
         if (typedPrompts.length > 0) {
