@@ -220,7 +220,8 @@ export async function generateM2(title: string, payDetails: string, workDetails:
       .replace(/\[Title\]/g, title)
       .replace(/\[Pay Details\]/g, payDetails)
       .replace(/\[Work Details\]/g, workDetails)
-      .replace(/\[Skills\]/g, skills);
+      .replace(/\[Skills Sought\]/g, skills)
+      .replace(/\[Skills\]/g, skills); // Add this line to handle both [Skills Sought] and [Skills]
     
     return message;
   } catch (err) {

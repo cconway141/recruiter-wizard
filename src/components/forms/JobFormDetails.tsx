@@ -37,7 +37,7 @@ export function JobFormDetails({ form }: JobFormDetailsProps) {
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Safely watch fields with null checks
-  const safeWatch = (fieldName: keyof JobFormValues) => {
+  const safeWatch = (fieldName: string) => {
     try {
       return form.watch(fieldName);
     } catch (err) {
@@ -87,13 +87,18 @@ export function JobFormDetails({ form }: JobFormDetailsProps) {
           
           // Generate messages and update form
           const firstName = "[First Name]";
-          const m1 = await generateM1(firstName, watchedFields.candidateFacingTitle!, watchedFields.compDesc!, watchedFields.owner as string);
+          const candidateFacingTitle = watchedFields.candidateFacingTitle as string;
+          const compDesc = watchedFields.compDesc as string;
+          const owner = watchedFields.owner as string || '';
+          const skills = watchedFields.skillsSought as string;
+          
+          const m1 = await generateM1(firstName, candidateFacingTitle, compDesc, owner);
           
           const m2 = await generateM2(
-            watchedFields.candidateFacingTitle!, 
+            candidateFacingTitle, 
             payDetails, 
             workDetails, 
-            watchedFields.skillsSought!
+            skills
           );
           
           form.setValue("m1", m1);
@@ -101,7 +106,7 @@ export function JobFormDetails({ form }: JobFormDetailsProps) {
           
           // Only generate m3 if videoQuestions has content
           if (watchedFields.videoQuestions) {
-            const m3 = await generateM3(watchedFields.videoQuestions);
+            const m3 = await generateM3(watchedFields.videoQuestions as string);
             form.setValue("m3", m3);
           }
         } catch (err) {

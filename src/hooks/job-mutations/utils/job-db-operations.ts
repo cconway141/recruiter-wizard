@@ -14,6 +14,9 @@ type TableName =
   | "message_templates" 
   | "role_abbreviations";
 
+// Define a specific return type for the lookup function
+type EntityId = string | null;
+
 /**
  * Look up an entity ID by its name from a specific table
  */
@@ -21,7 +24,7 @@ export async function lookupEntityByName(
   tableName: TableName,
   columnName: "name" | "display_name",
   value: string
-): Promise<string | null> {
+): Promise<EntityId> {
   try {
     console.log(`Looking up ${tableName}.${columnName} with value "${value}"`);
     
