@@ -18,7 +18,7 @@ import {
 interface ClientsListProps {
   clients: Client[];
   isLoading: boolean;
-  onEdit: (client: Client) => void;
+  onEdit: () => void;
   onDelete: (id: string) => void;
 }
 
@@ -28,7 +28,6 @@ export function ClientsList({ clients, isLoading, onEdit, onDelete }: ClientsLis
 
   const handleStartEditing = (client: Client) => {
     setEditingClient({ ...client });
-    onEdit(client);
   };
 
   const handleCancelEditing = () => {
@@ -62,6 +61,7 @@ export function ClientsList({ clients, isLoading, onEdit, onDelete }: ClientsLis
       
       // Refresh data after updating
       queryClient.invalidateQueries({ queryKey: ["clientOptions"] });
+      onEdit();
     } catch (error) {
       console.error("Error updating client:", error);
       toast({
@@ -128,12 +128,21 @@ export function ClientsList({ clients, isLoading, onEdit, onDelete }: ClientsLis
             </TableRow>
           ) : (
             clients.map((client) => (
-              <ClientItem 
-                key={client.id}
-                client={client}
-                onEdit={handleStartEditing}
-                onDelete={handleDeleteClient}
-              />
+              editingClient && editingClient.id === client.id ? (
+                <EditableClientItem 
+                  key={client.id}
+                  client={editingClient}
+                  onUpdate={handleUpdateClient}
+                  onCancel={handleCancelEditing}
+                />
+              ) : (
+                <ClientItem 
+                  key={client.id}
+                  client={client}
+                  onEdit={handleStartEditing}
+                  onDelete={handleDeleteClient}
+                />
+              )
             ))
           )}
         </TableBody>
