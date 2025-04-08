@@ -4,7 +4,7 @@
  */
 
 import { Job, Locale, JobStatus, Flavor } from "@/types/job";
-import { Candidate } from "@/components/candidates/CandidateEntry";
+import { Candidate } from "@/components/candidates/types";
 
 const AIRTABLE_API_KEY = ""; // This should be provided by the user
 const AIRTABLE_BASE_ID = ""; // This should be provided by the user

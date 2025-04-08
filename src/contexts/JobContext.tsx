@@ -6,7 +6,7 @@ import { useJobFilters, JobFilters } from "@/hooks/useJobFilters";
 import { useJobMutations } from "@/hooks/useJobMutations";
 import { useCandidateOperations } from "@/hooks/useCandidateOperations";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Candidate } from "@/components/candidates/CandidateEntry";
+import { Candidate } from "@/components/candidates/types";
 
 const JobContext = createContext<JobContextType | undefined>(undefined);
 
