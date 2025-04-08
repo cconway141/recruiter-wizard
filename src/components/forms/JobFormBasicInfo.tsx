@@ -22,6 +22,7 @@ import {
   useStatusOptions,
 } from "@/hooks/use-dropdown-options";
 import { useUserOptions } from "@/hooks/useUserOptions";
+import { useRoleAbbreviations } from "@/hooks/useRoleAbbreviations";
 import { useEffect } from "react";
 
 interface JobFormBasicInfoProps {
@@ -36,10 +37,12 @@ export function JobFormBasicInfo({ handleClientSelection }: JobFormBasicInfoProp
   const { data: localeOptions } = useLocaleOptions();
   const { data: statusOptions } = useStatusOptions();
   const { data: userOptions, isLoading: usersLoading } = useUserOptions();
+  const { data: roleOptions, isLoading: rolesLoading } = useRoleAbbreviations();
 
   useEffect(() => {
     console.log("User options:", userOptions);
-  }, [userOptions]);
+    console.log("Role options:", roleOptions);
+  }, [userOptions, roleOptions]);
 
   // If form context is not available, show a placeholder
   if (!form || !form.control) {
@@ -98,9 +101,29 @@ export function JobFormBasicInfo({ handleClientSelection }: JobFormBasicInfoProp
           render={({ field }) => (
             <FormItem>
               <FormLabel>Job Title</FormLabel>
-              <FormControl>
-                <Input placeholder="Enter job title" {...field} />
-              </FormControl>
+              <Select 
+                onValueChange={field.onChange} 
+                defaultValue={field.value}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select job role" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent className="max-h-80 overflow-y-auto">
+                  {rolesLoading ? (
+                    <SelectItem value="loading" disabled>Loading roles...</SelectItem>
+                  ) : roleOptions && roleOptions.length > 0 ? (
+                    roleOptions.map((role) => (
+                      <SelectItem key={role.id} value={role.role_name}>
+                        {role.role_name}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value="none" disabled>No roles found. Please add roles in Settings.</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}
