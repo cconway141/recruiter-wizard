@@ -1,80 +1,114 @@
 
 import { useState, useEffect } from "react";
-import { Locale } from "@/types/job";
 import { UseFormReturn } from "react-hook-form";
-import { JobFormValues } from "../JobFormDetails"; 
-import {
-  generateInternalTitle,
-  getWorkDetails,
-  getPayDetails,
-  generateM1,
-  generateM2,
-  generateM3
-} from "@/utils/jobUtils";
+import { Locale } from "@/types/job";
+import { JobFormValues } from "../JobFormDetails";
+import { generateInternalTitle, calculateRates, generateM1, generateM2, generateM3 } from "@/utils/jobUtils";
 
 export function useFormPreview(form: UseFormReturn<JobFormValues>) {
   const [previewTitle, setPreviewTitle] = useState("");
+  const [previewHighRate, setPreviewHighRate] = useState(0);
+  const [previewMediumRate, setPreviewMediumRate] = useState(0);
+  const [previewLowRate, setPreviewLowRate] = useState(0);
   const [messages, setMessages] = useState({
     m1: "",
     m2: "",
-    m3: "",
+    m3: ""
   });
-  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
 
-  const watchedFields = form.watch();
+  // Watch the form values to update the preview
+  const watchedFields = {
+    client: form.watch("client"),
+    candidateFacingTitle: form.watch("candidateFacingTitle"),
+    flavor: form.watch("flavor"),
+    locale: form.watch("locale"),
+    rate: form.watch("rate"),
+    compDesc: form.watch("compDesc"),
+    skillsSought: form.watch("skillsSought"),
+    videoQuestions: form.watch("videoQuestions"),
+    payDetails: form.watch("payDetails"),
+    workDetails: form.watch("workDetails"),
+  };
 
   useEffect(() => {
-    // Generate internal title preview when relevant fields change
+    // Update internal title preview
     if (watchedFields.client && watchedFields.candidateFacingTitle && watchedFields.flavor && watchedFields.locale) {
-      try {
-        const newTitle = generateInternalTitle(
-          watchedFields.client,
-          watchedFields.candidateFacingTitle,
-          watchedFields.flavor,
-          watchedFields.locale as Locale
-        );
-        setPreviewTitle(newTitle);
-      } catch (err) {
-        console.error("Error generating internal title:", err);
-      }
+      const newTitle = generateInternalTitle(
+        watchedFields.client,
+        watchedFields.candidateFacingTitle,
+        watchedFields.flavor,
+        watchedFields.locale as Locale
+      );
+      setPreviewTitle(newTitle);
     }
 
-    // Generate message previews when relevant fields change
-    const generateMessages = async () => {
-      if (watchedFields.candidateFacingTitle && watchedFields.locale && watchedFields.skillsSought && watchedFields.videoQuestions) {
+    // Update rate previews
+    if (watchedFields.rate) {
+      const rate = Number(watchedFields.rate);
+      const { high, medium, low } = calculateRates(rate);
+      setPreviewHighRate(high);
+      setPreviewMediumRate(medium);
+      setPreviewLowRate(low);
+    }
+  }, [
+    watchedFields.client,
+    watchedFields.candidateFacingTitle,
+    watchedFields.flavor,
+    watchedFields.locale,
+    watchedFields.rate,
+  ]);
+
+  // Update message previews
+  useEffect(() => {
+    const updateMessages = async () => {
+      // Only update if we have all required fields
+      if (
+        watchedFields.candidateFacingTitle &&
+        watchedFields.compDesc &&
+        watchedFields.locale &&
+        watchedFields.skillsSought
+      ) {
         try {
-          setIsLoadingMessages(true);
-          const locale = watchedFields.locale as Locale;
+          // Generate preview messages
+          const firstName = form.watch("previewName") || "[First Name]";
+          const m1 = await generateM1(firstName, watchedFields.candidateFacingTitle, watchedFields.compDesc);
+          const m2 = await generateM2(
+            watchedFields.candidateFacingTitle,
+            watchedFields.payDetails || "",
+            watchedFields.workDetails || "",
+            watchedFields.skillsSought
+          );
           
-          // Fetch work and pay details from the database based on locale
-          const workDetails = await getWorkDetails(locale);
-          const payDetails = await getPayDetails(locale);
-          
-          // Update the form with the fetched details
-          form.setValue("workDetails", workDetails);
-          form.setValue("payDetails", payDetails);
-          
-          // Generate messages using the fetched details and form values
-          const m1 = generateM1("[First Name]", watchedFields.candidateFacingTitle, watchedFields.compDesc);
-          const m2 = generateM2(watchedFields.candidateFacingTitle, payDetails, workDetails, watchedFields.skillsSought);
-          const m3 = generateM3(watchedFields.videoQuestions);
+          let m3 = "";
+          if (watchedFields.videoQuestions) {
+            m3 = await generateM3(watchedFields.videoQuestions);
+          }
           
           setMessages({ m1, m2, m3 });
         } catch (err) {
-          console.error("Error generating messages:", err);
-        } finally {
-          setIsLoadingMessages(false);
+          console.error("Error generating message previews:", err);
         }
       }
     };
 
-    generateMessages();
-  }, [watchedFields, form]);
+    updateMessages();
+  }, [
+    form,
+    watchedFields.candidateFacingTitle,
+    watchedFields.compDesc,
+    watchedFields.locale,
+    watchedFields.skillsSought,
+    watchedFields.videoQuestions,
+    watchedFields.payDetails,
+    watchedFields.workDetails,
+  ]);
 
-  return { 
-    previewTitle, 
-    messages, 
-    isLoadingMessages, 
-    watchedFields 
+  return {
+    previewTitle,
+    previewHighRate,
+    previewMediumRate,
+    previewLowRate,
+    watchedFields,
+    messages
   };
 }

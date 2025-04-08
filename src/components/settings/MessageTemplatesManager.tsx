@@ -32,7 +32,7 @@ export function MessageTemplatesManager() {
     setIsLoading(true);
     try {
       const { data, error } = await supabase
-        .from('message_templates')
+        .from('message_templates' as any)
         .select('*')
         .eq('id', 1)
         .maybeSingle();
@@ -62,7 +62,7 @@ export function MessageTemplatesManager() {
     setIsSaving(true);
     try {
       const { error } = await supabase
-        .from('message_templates')
+        .from('message_templates' as any)
         .update({
           m1_template: templates.m1_template,
           m2_template: templates.m2_template,

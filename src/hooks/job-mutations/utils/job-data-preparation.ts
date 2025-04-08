@@ -17,16 +17,17 @@ import {
  * @returns Fully prepared job data ready for database insertion
  */
 export async function prepareJobForInsertion(
-  jobData: Omit<Job, "id" | "internalTitle" | "highRate" | "mediumRate" | "lowRate" | "workDetails" | "payDetails" | "m1" | "m2" | "m3">
+  jobData: Omit<Job, "id">
 ) {
-  // Generate the internal title and calculate rates
-  const internalTitle = generateInternalTitle(
+  // Generate the internal title if not provided
+  const internalTitle = jobData.internalTitle || generateInternalTitle(
     jobData.client, 
     jobData.candidateFacingTitle, 
     jobData.flavor, 
     jobData.locale
   );
   
+  // Calculate rates
   const { high, medium, low } = calculateRates(jobData.rate);
   
   // Get locale-specific details
@@ -34,9 +35,9 @@ export async function prepareJobForInsertion(
   const payDetails = await getPayDetails(jobData.locale);
   
   // Generate message templates
-  const m1 = generateM1("[First Name]", jobData.candidateFacingTitle, jobData.compDesc);
-  const m2 = generateM2(jobData.candidateFacingTitle, payDetails, workDetails, jobData.skillsSought);
-  const m3 = generateM3(jobData.videoQuestions);
+  const m1 = await generateM1("[First Name]", jobData.candidateFacingTitle, jobData.compDesc);
+  const m2 = await generateM2(jobData.candidateFacingTitle, payDetails, workDetails, jobData.skillsSought);
+  const m3 = await generateM3(jobData.videoQuestions);
 
   // Look up all the necessary foreign keys
   const clientId = await lookupEntityByName('clients', 'name', jobData.client);
@@ -109,7 +110,7 @@ export function transformDatabaseJobToJobObject(
 ): Job {
   return {
     id: data.id,
-    internalTitle,
+    internalTitle: data.internal_title || internalTitle,
     candidateFacingTitle: data.candidate_facing_title,
     jd: data.jd,
     status: data.status,
@@ -120,24 +121,24 @@ export function transformDatabaseJobToJobObject(
     clientId: data.client_id,
     compDesc: data.comp_desc,
     rate: data.rate,
-    highRate: high,
-    mediumRate: medium,
-    lowRate: low,
+    highRate: data.high_rate || high,
+    mediumRate: data.medium_rate || medium,
+    lowRate: data.low_rate || low,
     locale: data.locale,
     localeId: data.locale_id,
     owner: data.owner,
     ownerId: data.owner_id,
     date: data.date,
-    workDetails,
-    payDetails,
+    workDetails: data.work_details || workDetails,
+    payDetails: data.pay_details || payDetails,
     other: data.other || "",
     videoQuestions: data.video_questions,
     screeningQuestions: data.screening_questions,
     flavor: data.flavor,
     flavorId: data.flavor_id,
     statusId: data.status_id,
-    m1,
-    m2,
-    m3
+    m1: data.m1 || m1,
+    m2: data.m2 || m2,
+    m3: data.m3 || m3
   };
 }

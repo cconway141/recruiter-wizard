@@ -179,7 +179,7 @@ I'll also be sending you a right-to-represent document so we can proceed.`;
 async function getMessageTemplate(templateField: string, defaultTemplate: string): Promise<string> {
   try {
     const { data, error } = await supabase
-      .from('message_templates')
+      .from('message_templates' as any)
       .select(templateField)
       .eq('id', 1)
       .maybeSingle();

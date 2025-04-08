@@ -4,7 +4,7 @@ import { toast } from "@/components/ui/use-toast";
 import { Locale, Flavor, JobStatus } from "@/types/job";
 
 // Define valid table names to fix type errors
-type ValidTableName = "clients" | "flavors" | "locales" | "job_statuses" | "profiles" | "message_templates";
+type ValidTableName = "clients" | "flavors" | "locales" | "job_statuses" | "profiles" | "jobs" | "message_templates";
 
 /**
  * Look up an entity ID by its name from a specific table
@@ -17,9 +17,8 @@ export async function lookupEntityByName(
   try {
     console.log(`Looking up ${tableName}.${columnName} with value "${value}"`);
     
-    // Use explicit typing on supabase.from to avoid deep instantiation issues
     const { data, error } = await supabase
-      .from(tableName)
+      .from(tableName as any)
       .select('id')
       .eq(columnName, value)
       .single();
