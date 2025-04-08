@@ -10,7 +10,9 @@ import { toast } from "@/components/ui/use-toast";
 export function JobFormDescription() {
   const form = useFormContext();
   const [isGeneratingSkills, setIsGeneratingSkills] = useState(false);
+  const [isGeneratingMinSkills, setIsGeneratingMinSkills] = useState(false);
   const [skillsExtracted, setSkillsExtracted] = useState(false);
+  const [minSkillsExtracted, setMinSkillsExtracted] = useState(false);
 
   const extractSkillsFromDescription = async (description: string) => {
     if (!description.trim()) return;
@@ -39,6 +41,9 @@ export function JobFormDescription() {
           title: "Skills extracted",
           description: "Skills have been automatically extracted from the job description.",
         });
+
+        // After skills are extracted, generate minimum skills
+        await extractMinimumSkills(data.skills, description);
       }
     } catch (error) {
       console.error("Error extracting skills:", error);
@@ -49,6 +54,46 @@ export function JobFormDescription() {
       });
     } finally {
       setIsGeneratingSkills(false);
+    }
+  };
+
+  const extractMinimumSkills = async (skillsSought: string, jobDescription: string) => {
+    if (!skillsSought.trim() || !jobDescription.trim()) return;
+    
+    setIsGeneratingMinSkills(true);
+    setMinSkillsExtracted(false);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('extract-minimum-skills', {
+        body: { skillsSought, jobDescription },
+      });
+
+      if (error) throw error;
+
+      // Update the minimum skills field with the generated content
+      if (data?.minSkills) {
+        form.setValue('minSkills', data.minSkills, { 
+          shouldDirty: true,
+          shouldTouch: true,
+          shouldValidate: true 
+        });
+        
+        setMinSkillsExtracted(true);
+        
+        toast({
+          title: "Minimum skills extracted",
+          description: "Minimum skills with experience levels have been generated.",
+        });
+      }
+    } catch (error) {
+      console.error("Error extracting minimum skills:", error);
+      toast({
+        title: "Error extracting minimum skills",
+        description: "Could not generate minimum skills requirements.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingMinSkills(false);
     }
   };
 
@@ -111,7 +156,18 @@ export function JobFormDescription() {
           name="minSkills"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Minimum Skills</FormLabel>
+              <FormLabel className="flex items-center gap-2">
+                Minimum Skills
+                {isGeneratingMinSkills && (
+                  <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+                )}
+                {minSkillsExtracted && !isGeneratingMinSkills && (
+                  <span className="flex items-center text-green-500 text-sm font-medium">
+                    <Check className="h-4 w-4 mr-1" />
+                    Success!
+                  </span>
+                )}
+              </FormLabel>
               <FormControl>
                 <Textarea
                   placeholder="List the minimum required skills"
