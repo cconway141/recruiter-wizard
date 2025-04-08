@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,6 +21,11 @@ export function JobFormDescription() {
   const skillsExtractedRef = useRef(false);
   const minSkillsExtractedRef = useRef(false);
   const videoQuestionsGeneratedRef = useRef(false);
+  
+  // Track timeouts for each API call
+  const skillsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const minSkillsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const videoQuestionsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const extractSkillsFromDescription = async (description: string) => {
     if (!description.trim()) return;
@@ -27,10 +33,26 @@ export function JobFormDescription() {
     setIsGeneratingSkills(true);
     setSkillsExtracted(false);
     
+    // Set a timeout for the API call (60 seconds)
+    skillsTimeoutRef.current = setTimeout(() => {
+      setIsGeneratingSkills(false);
+      toast({
+        title: "Skills extraction timed out",
+        description: "The request took too long. You can try again or enter skills manually.",
+        variant: "destructive",
+      });
+    }, 60000);
+    
     try {
       const { data, error } = await supabase.functions.invoke('extract-skills', {
         body: { jobDescription: description },
       });
+
+      // Clear timeout since we got a response
+      if (skillsTimeoutRef.current) {
+        clearTimeout(skillsTimeoutRef.current);
+        skillsTimeoutRef.current = null;
+      }
 
       if (error) throw error;
 
@@ -50,8 +72,11 @@ export function JobFormDescription() {
           description: "Skills have been automatically extracted from the job description.",
         });
 
-        // After skills are extracted, generate minimum skills
-        await extractMinimumSkills(data.skills, description);
+        // Only proceed to extract minimum skills after skills are successfully extracted
+        // No need to await here as we want this to run sequentially but not block the UI
+        setTimeout(() => {
+          extractMinimumSkills(data.skills, description);
+        }, 500);
       }
     } catch (error) {
       console.error("Error extracting skills:", error);
@@ -61,20 +86,41 @@ export function JobFormDescription() {
         variant: "destructive",
       });
     } finally {
+      // Clear timeout if it's still active
+      if (skillsTimeoutRef.current) {
+        clearTimeout(skillsTimeoutRef.current);
+        skillsTimeoutRef.current = null;
+      }
       setIsGeneratingSkills(false);
     }
   };
 
   const extractMinimumSkills = async (skillsSought: string, jobDescription: string) => {
-    if (!skillsSought.trim() || !jobDescription.trim()) return;
+    if (!skillsSought.trim() || !jobDescription.trim() || isGeneratingMinSkills) return;
     
     setIsGeneratingMinSkills(true);
     setMinSkillsExtracted(false);
+    
+    // Set a timeout for the API call (60 seconds)
+    minSkillsTimeoutRef.current = setTimeout(() => {
+      setIsGeneratingMinSkills(false);
+      toast({
+        title: "Minimum skills extraction timed out",
+        description: "The request took too long. You can try again or enter minimum skills manually.",
+        variant: "destructive",
+      });
+    }, 60000);
     
     try {
       const { data, error } = await supabase.functions.invoke('extract-minimum-skills', {
         body: { skillsSought, jobDescription },
       });
+
+      // Clear timeout since we got a response
+      if (minSkillsTimeoutRef.current) {
+        clearTimeout(minSkillsTimeoutRef.current);
+        minSkillsTimeoutRef.current = null;
+      }
 
       if (error) throw error;
 
@@ -94,8 +140,11 @@ export function JobFormDescription() {
           description: "Minimum skills with experience levels have been generated.",
         });
 
-        // After minimum skills are generated, generate video questions
-        await generateVideoQuestions(data.minSkills);
+        // Only proceed to generate video questions after minimum skills are successfully extracted
+        // No need to await here as we want this to run sequentially but not block the UI
+        setTimeout(() => {
+          generateVideoQuestions(data.minSkills);
+        }, 500);
       }
     } catch (error) {
       console.error("Error extracting minimum skills:", error);
@@ -105,20 +154,41 @@ export function JobFormDescription() {
         variant: "destructive",
       });
     } finally {
+      // Clear timeout if it's still active
+      if (minSkillsTimeoutRef.current) {
+        clearTimeout(minSkillsTimeoutRef.current);
+        minSkillsTimeoutRef.current = null;
+      }
       setIsGeneratingMinSkills(false);
     }
   };
 
   const generateVideoQuestions = async (minSkills: string) => {
-    if (!minSkills.trim()) return;
+    if (!minSkills.trim() || isGeneratingVideoQuestions) return;
     
     setIsGeneratingVideoQuestions(true);
     setVideoQuestionsGenerated(false);
+    
+    // Set a timeout for the API call (60 seconds)
+    videoQuestionsTimeoutRef.current = setTimeout(() => {
+      setIsGeneratingVideoQuestions(false);
+      toast({
+        title: "Video questions generation timed out",
+        description: "The request took too long. You can try again or enter video questions manually.",
+        variant: "destructive",
+      });
+    }, 60000);
     
     try {
       const { data, error } = await supabase.functions.invoke('generate-video-questions', {
         body: { minSkills },
       });
+
+      // Clear timeout since we got a response
+      if (videoQuestionsTimeoutRef.current) {
+        clearTimeout(videoQuestionsTimeoutRef.current);
+        videoQuestionsTimeoutRef.current = null;
+      }
 
       if (error) throw error;
 
@@ -147,6 +217,11 @@ export function JobFormDescription() {
         variant: "destructive",
       });
     } finally {
+      // Clear timeout if it's still active
+      if (videoQuestionsTimeoutRef.current) {
+        clearTimeout(videoQuestionsTimeoutRef.current);
+        videoQuestionsTimeoutRef.current = null;
+      }
       setIsGeneratingVideoQuestions(false);
     }
   };
@@ -198,6 +273,15 @@ export function JobFormDescription() {
     
     await generateVideoQuestions(minSkills);
   };
+
+  // Clean up timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (skillsTimeoutRef.current) clearTimeout(skillsTimeoutRef.current);
+      if (minSkillsTimeoutRef.current) clearTimeout(minSkillsTimeoutRef.current);
+      if (videoQuestionsTimeoutRef.current) clearTimeout(videoQuestionsTimeoutRef.current);
+    };
+  }, []);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

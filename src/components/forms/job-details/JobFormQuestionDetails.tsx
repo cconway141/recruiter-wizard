@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,6 +18,10 @@ export function JobFormQuestionDetails() {
   const videoQuestionsGeneratedRef = useRef(false);
   const [screeningQuestionsGenerated, setScreeningQuestionsGenerated] = useState(false);
   const screeningQuestionsGeneratedRef = useRef(false);
+  
+  // Track timeout for each API call
+  const screeningQuestionsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const videoQuestionsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const generateScreeningQuestions = async () => {
@@ -24,13 +29,31 @@ export function JobFormQuestionDetails() {
         videoQuestionsValue && 
         minSkillsValue && 
         !isGeneratingScreeningQuestions && 
-        !screeningQuestionsGeneratedRef.current
+        !screeningQuestionsGeneratedRef.current &&
+        !isGeneratingVideoQuestions  // Don't start if video questions are generating
       ) {
         setIsGeneratingScreeningQuestions(true);
+        
+        // Set a timeout for the API call (60 seconds)
+        screeningQuestionsTimeoutRef.current = setTimeout(() => {
+          setIsGeneratingScreeningQuestions(false);
+          toast({
+            title: "Screening questions generation timed out",
+            description: "The request took too long. You can try again or enter questions manually.",
+            variant: "destructive",
+          });
+        }, 60000);
+        
         try {
           const { data, error } = await supabase.functions.invoke('generate-screening-questions', {
             body: { minSkills: minSkillsValue }
           });
+
+          // Clear timeout since we got a response
+          if (screeningQuestionsTimeoutRef.current) {
+            clearTimeout(screeningQuestionsTimeoutRef.current);
+            screeningQuestionsTimeoutRef.current = null;
+          }
 
           if (error) throw error;
 
@@ -56,13 +79,28 @@ export function JobFormQuestionDetails() {
             variant: "destructive",
           });
         } finally {
+          // Clear timeout if it's still active
+          if (screeningQuestionsTimeoutRef.current) {
+            clearTimeout(screeningQuestionsTimeoutRef.current);
+            screeningQuestionsTimeoutRef.current = null;
+          }
           setIsGeneratingScreeningQuestions(false);
         }
       }
     };
 
     generateScreeningQuestions();
-  }, [videoQuestionsValue, minSkillsValue, form, isGeneratingScreeningQuestions]);
+    
+    // Cleanup timeouts on unmount
+    return () => {
+      if (screeningQuestionsTimeoutRef.current) {
+        clearTimeout(screeningQuestionsTimeoutRef.current);
+      }
+      if (videoQuestionsTimeoutRef.current) {
+        clearTimeout(videoQuestionsTimeoutRef.current);
+      }
+    };
+  }, [videoQuestionsValue, minSkillsValue, form, isGeneratingScreeningQuestions, isGeneratingVideoQuestions]);
 
   const handleRegenerateVideoQuestions = async () => {
     const minSkills = form.getValues('minSkills');
@@ -78,10 +116,26 @@ export function JobFormQuestionDetails() {
     
     setIsGeneratingVideoQuestions(true);
     
+    // Set a timeout for the API call (60 seconds)
+    videoQuestionsTimeoutRef.current = setTimeout(() => {
+      setIsGeneratingVideoQuestions(false);
+      toast({
+        title: "Video questions generation timed out",
+        description: "The request took too long. You can try again or enter questions manually.",
+        variant: "destructive",
+      });
+    }, 60000);
+    
     try {
       const { data, error } = await supabase.functions.invoke('generate-video-questions', {
         body: { minSkills },
       });
+
+      // Clear timeout since we got a response
+      if (videoQuestionsTimeoutRef.current) {
+        clearTimeout(videoQuestionsTimeoutRef.current);
+        videoQuestionsTimeoutRef.current = null;
+      }
 
       if (error) throw error;
 
@@ -108,6 +162,11 @@ export function JobFormQuestionDetails() {
         variant: "destructive",
       });
     } finally {
+      // Clear timeout if it's still active
+      if (videoQuestionsTimeoutRef.current) {
+        clearTimeout(videoQuestionsTimeoutRef.current);
+        videoQuestionsTimeoutRef.current = null;
+      }
       setIsGeneratingVideoQuestions(false);
     }
   };
@@ -126,10 +185,26 @@ export function JobFormQuestionDetails() {
     
     setIsGeneratingScreeningQuestions(true);
     
+    // Set a timeout for the API call (60 seconds)
+    screeningQuestionsTimeoutRef.current = setTimeout(() => {
+      setIsGeneratingScreeningQuestions(false);
+      toast({
+        title: "Screening questions generation timed out",
+        description: "The request took too long. You can try again or enter questions manually.",
+        variant: "destructive",
+      });
+    }, 60000);
+    
     try {
       const { data, error } = await supabase.functions.invoke('generate-screening-questions', {
         body: { minSkills }
       });
+
+      // Clear timeout since we got a response
+      if (screeningQuestionsTimeoutRef.current) {
+        clearTimeout(screeningQuestionsTimeoutRef.current);
+        screeningQuestionsTimeoutRef.current = null;
+      }
 
       if (error) throw error;
 
@@ -141,6 +216,7 @@ export function JobFormQuestionDetails() {
         });
         
         setScreeningQuestionsGenerated(true);
+        screeningQuestionsGeneratedRef.current = true;
         
         toast({
           title: "Screening questions regenerated",
@@ -155,6 +231,11 @@ export function JobFormQuestionDetails() {
         variant: "destructive",
       });
     } finally {
+      // Clear timeout if it's still active
+      if (screeningQuestionsTimeoutRef.current) {
+        clearTimeout(screeningQuestionsTimeoutRef.current);
+        screeningQuestionsTimeoutRef.current = null;
+      }
       setIsGeneratingScreeningQuestions(false);
     }
   };

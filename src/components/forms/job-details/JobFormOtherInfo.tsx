@@ -13,6 +13,7 @@ export function JobFormOtherInfo() {
   const [isGeneratingOtherInfo, setIsGeneratingOtherInfo] = useState(false);
   const [otherInfoGenerated, setOtherInfoGenerated] = useState(false);
   const otherInfoGeneratedRef = useRef(false);
+  const otherInfoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const jdValue = form.watch("jd");
   const screeningQuestionsValue = form.watch("screeningQuestions");
@@ -28,13 +29,32 @@ export function JobFormOtherInfo() {
       return;
     }
 
+    // Don't proceed if already generating
+    if (isGeneratingOtherInfo) return;
+
     setIsGeneratingOtherInfo(true);
     setOtherInfoGenerated(false);
+    
+    // Set a timeout for the API call (60 seconds)
+    otherInfoTimeoutRef.current = setTimeout(() => {
+      setIsGeneratingOtherInfo(false);
+      toast({
+        title: "Other information generation timed out",
+        description: "The request took too long. You can try again or enter information manually.",
+        variant: "destructive",
+      });
+    }, 60000);
     
     try {
       const { data, error } = await supabase.functions.invoke('generate-other-info', {
         body: { jobDescription: jdValue }
       });
+
+      // Clear timeout since we got a response
+      if (otherInfoTimeoutRef.current) {
+        clearTimeout(otherInfoTimeoutRef.current);
+        otherInfoTimeoutRef.current = null;
+      }
 
       if (error) throw error;
 
@@ -61,6 +81,11 @@ export function JobFormOtherInfo() {
         variant: "destructive",
       });
     } finally {
+      // Clear timeout if it's still active
+      if (otherInfoTimeoutRef.current) {
+        clearTimeout(otherInfoTimeoutRef.current);
+        otherInfoTimeoutRef.current = null;
+      }
       setIsGeneratingOtherInfo(false);
     }
   };
@@ -74,11 +99,21 @@ export function JobFormOtherInfo() {
         !otherInfoGeneratedRef.current && 
         !isGeneratingOtherInfo
       ) {
-        await generateOtherInfo();
+        // Add a small delay to ensure this happens after the screening questions are complete
+        setTimeout(() => {
+          generateOtherInfo();
+        }, 500);
       }
     };
 
     autoGenerateOtherInfo();
+    
+    // Clean up timeout on unmount
+    return () => {
+      if (otherInfoTimeoutRef.current) {
+        clearTimeout(otherInfoTimeoutRef.current);
+      }
+    };
   }, [screeningQuestionsValue, isGeneratingOtherInfo]);
 
   return (
