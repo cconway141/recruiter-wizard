@@ -1,6 +1,6 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Locale } from "@/types/job";
-import { getRoleAbbreviation } from "./jobUtils";
 
 /**
  * Generate internal title for a job
@@ -21,7 +21,7 @@ export async function generateInternalTitle(
     
     if (clientError || !clientData) {
       console.error("Error fetching client abbreviation:", clientError);
-      return `${client} | ${candidateFacingTitle} | ${flavor}`;
+      return `${client} - ${candidateFacingTitle} - ${flavor}`;
     }
     
     // Get role abbreviation
