@@ -1,148 +1,68 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
-import { Locale, Flavor, JobStatus } from "@/types/job";
 
-// Define specific table types to avoid circular references
-type TableName = 
-  | "clients" 
-  | "flavors" 
-  | "locales" 
-  | "job_statuses" 
-  | "profiles" 
-  | "jobs" 
-  | "message_templates" 
-  | "role_abbreviations";
+// Define a specific return type to avoid the infinite type instantiation error
+type InsertedJobType = {
+  id: string;
+  internal_title: string;
+  candidate_facing_title: string;
+  jd: string;
+  status: string;
+  m1: string;
+  m2: string;
+  m3: string;
+  skills_sought: string;
+  min_skills: string;
+  linkedin_search: string;
+  lir: string;
+  client: string;
+  client_id: string;
+  comp_desc: string;
+  rate: number;
+  high_rate: number;
+  medium_rate: number;
+  low_rate: number;
+  locale: string;
+  locale_id: string;
+  owner: string;
+  owner_id: string;
+  date: string;
+  work_details: string;
+  pay_details: string;
+  other: string;
+  video_questions: string;
+  screening_questions: string;
+  flavor: string;
+  flavor_id: string;
+  status_id: string;
+};
 
-// Define a specific return type for the lookup function
-type EntityId = string | null;
-
-/**
- * Look up an entity ID by its name from a specific table
- */
-export async function lookupEntityByName(
-  tableName: TableName,
-  columnName: "name" | "display_name",
-  value: string
-): Promise<EntityId> {
+export async function insertJobToDatabase(preparedJob: any): Promise<InsertedJobType> {
   try {
-    console.log(`Looking up ${tableName}.${columnName} with value "${value}"`);
-    
-    const { data, error } = await supabase
-      .from(tableName)
-      .select('id')
-      .eq(columnName, value)
-      .single();
-    
-    if (error) {
-      console.error(`Error looking up ${tableName}.${columnName}:`, error);
-      return null;
-    }
-    
-    // Add null check for data before accessing it
-    if (!data) {
-      console.warn(`No match found for ${tableName}.${columnName} = "${value}"`);
-      return null;
-    }
-    
-    console.log(`Found ${tableName} id:`, data.id);
-    return data.id as string; // Explicitly cast to string to avoid type errors
-  } catch (err) {
-    console.error(`Exception in lookupEntityByName for ${tableName}:`, err);
-    return null;
-  }
-}
-
-/**
- * Inserts a job into the database and returns the inserted record
- */
-export async function insertJobToDatabase(jobData: any) {
-  try {
-    console.log("Inserting job with data:", jobData);
-    
     const { data, error } = await supabase
       .from('jobs')
-      .insert(jobData)
-      .select()
+      .insert(preparedJob)
+      .select('*')
       .single();
     
     if (error) {
-      console.error("Error inserting job:", error);
-      toast({
-        title: "Error Creating Job",
-        description: error.message,
-        variant: "destructive",
-      });
+      console.error("Error inserting job to database:", error);
       throw error;
     }
     
     if (!data) {
-      const errorMsg = "Job was inserted but no data was returned";
-      console.error(errorMsg);
-      throw new Error(errorMsg);
+      throw new Error("No data returned from insertion");
     }
     
-    console.log("Job inserted successfully:", data);
-    return data;
-  } catch (err) {
-    console.error("Exception in insertJobToDatabase:", err);
+    return data as InsertedJobType;
+  } catch (error) {
+    console.error("Database error:", error);
     toast({
-      title: "Error Creating Job",
-      description: err instanceof Error ? err.message : "Unknown error occurred",
+      title: "Database Error",
+      description: `Failed to save job: ${error instanceof Error ? error.message : String(error)}`,
       variant: "destructive",
     });
-    throw err;
-  }
-}
-
-/**
- * Prepares job data for insertion by mapping fields to database columns
- */
-export async function prepareJobForInsertion(jobData: any) {
-  try {
-    const localeId = await lookupEntityByName('locales', 'name', jobData.locale as Locale);
-    const flavorId = await lookupEntityByName('flavors', 'name', jobData.flavor as Flavor);
-    const statusId = await lookupEntityByName('job_statuses', 'name', jobData.status as JobStatus);
-    const clientId = await lookupEntityByName('clients', 'name', jobData.client);
-    const ownerId = null; // We're not looking up real users anymore
-    
-    return {
-      internal_title: jobData.internalTitle || "TBD",
-      candidate_facing_title: jobData.candidateFacingTitle,
-      jd: jobData.jd || "",
-      status: jobData.status,
-      status_id: statusId,
-      skills_sought: jobData.skillsSought || "",
-      min_skills: jobData.minSkills || "",
-      lir: jobData.lir || "",
-      client: jobData.client,
-      client_id: clientId,
-      comp_desc: jobData.compDesc || "",
-      rate: jobData.rate || 0,
-      high_rate: jobData.highRate || 0,
-      medium_rate: jobData.mediumRate || 0,
-      low_rate: jobData.lowRate || 0,
-      locale: jobData.locale,
-      locale_id: localeId,
-      owner: jobData.owner || "",
-      owner_id: ownerId,
-      date: jobData.date || new Date().toISOString().split('T')[0],
-      work_details: jobData.workDetails || "",
-      pay_details: jobData.payDetails || "",
-      other: jobData.other || "",
-      video_questions: jobData.videoQuestions || "",
-      screening_questions: jobData.screeningQuestions || "",
-      flavor: jobData.flavor,
-      flavor_id: flavorId,
-      
-      // Add message templates
-      m1: jobData.m1 || "",
-      m2: jobData.m2 || "",
-      m3: jobData.m3 || "",
-      linkedin_search: jobData.linkedinSearch || ""
-    };
-  } catch (err) {
-    console.error("Error preparing job data:", err);
-    throw err;
+    throw error;
   }
 }

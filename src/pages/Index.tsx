@@ -5,11 +5,11 @@ import { JobsTable } from "@/components/jobs/JobsTable";
 import { Navbar } from "@/components/layout/Navbar";
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { useSupabaseData } from "@/hooks/useSupabaseData";
+import { useJobs } from "@/contexts/JobContext";
 
 const Index = () => {
   const location = useLocation();
-  const { loadFromSupabase } = useSupabaseData();
+  const { loadFromSupabase } = useJobs();
   
   // Refresh data when navigating to the home page
   useEffect(() => {

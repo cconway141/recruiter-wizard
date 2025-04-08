@@ -16,6 +16,9 @@ export function useSupabaseData() {
   const loadFromSupabase = useCallback(async () => {
     console.log("Loading data from Supabase...");
     try {
+      // Set loading state to true while fetching
+      setIsLoading(true);
+      
       // Load jobs with related data from Supabase
       const { data: jobsData, error: jobsError } = await supabase
         .from('jobs')
@@ -83,29 +86,15 @@ export function useSupabaseData() {
         description: "Failed to load data from the database. Please refresh the page.",
         variant: "destructive",
       });
+    } finally {
+      // Always set loading to false when done
+      setIsLoading(false);
     }
   }, []);
 
   // Initialize data from Supabase
   useEffect(() => {
-    const initializeData = async () => {
-      setIsLoading(true);
-      
-      try {
-        await loadFromSupabase();
-      } catch (error) {
-        console.error("Error loading data from Supabase:", error);
-        toast({
-          title: "Error Loading Data",
-          description: "Failed to load data from the database. Please refresh the page.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    initializeData();
+    loadFromSupabase();
   }, [loadFromSupabase]);
 
   const setJobs = (jobs: Job[]) => {
