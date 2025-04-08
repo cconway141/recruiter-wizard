@@ -235,7 +235,12 @@ export function PromptsManager() {
                                 <ul className="space-y-2">
                                   {getVariableHints(prompt.id).map((variable, idx) => (
                                     <li key={idx} className="flex flex-col">
-                                      <span className="font-mono text-sm text-primary">{variable.name}</span>
+                                      <span 
+                                        className="font-mono text-sm font-bold" 
+                                        style={{ color: '#8B5CF6' }}
+                                      >
+                                        {variable.name}
+                                      </span>
                                       <span className="text-xs text-muted-foreground">{variable.description}</span>
                                     </li>
                                   ))}
