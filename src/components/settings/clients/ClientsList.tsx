@@ -106,10 +106,10 @@ export function ClientsList({ clients, isLoading, onEdit, onDelete }: ClientsLis
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[20%]">Name</TableHead>
+            <TableHead className="w-[15%]">Name</TableHead>
             <TableHead className="w-[10%]">Abbreviation</TableHead>
             <TableHead className="w-[15%]">Manager</TableHead>
-            <TableHead className="w-[45%]">Description</TableHead>
+            <TableHead className="w-[50%]">Description</TableHead>
             <TableHead className="w-[10%]">Actions</TableHead>
           </TableRow>
         </TableHeader>

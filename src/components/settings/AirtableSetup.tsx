@@ -15,38 +15,30 @@ import {
 import { setupAirtable, getAirtableConfig, isAirtableConfigured } from "@/utils/airtableUtils";
 import { toast } from "@/hooks/use-toast";
 
-export const AirtableSetup = () => {
+interface AirtableSetupProps {
+  apiKey: string;
+  baseId: string;
+  setApiKey: React.Dispatch<React.SetStateAction<string>>;
+  setBaseId: React.Dispatch<React.SetStateAction<string>>;
+  handleSave: () => void;
+  isConfigured: boolean;
+}
+
+export const AirtableSetup = ({
+  apiKey,
+  baseId,
+  setApiKey,
+  setBaseId,
+  handleSave,
+  isConfigured
+}: AirtableSetupProps) => {
   const [open, setOpen] = useState(false);
-  const [apiKey, setApiKey] = useState(getAirtableConfig().apiKey);
-  const [baseId, setBaseId] = useState(getAirtableConfig().baseId);
-  const configured = isAirtableConfigured();
-
-  const handleSave = () => {
-    if (!apiKey || !baseId) {
-      toast({
-        title: "Error",
-        description: "Please enter both API key and Base ID",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setupAirtable(apiKey, baseId);
-    
-    toast({
-      title: "Airtable Configured",
-      description: "Your Airtable account has been successfully connected.",
-    });
-    
-    setOpen(false);
-    window.location.reload(); // Reload to fetch data from Airtable
-  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant={configured ? "outline" : "secondary"}>
-          {configured ? "Update Airtable Connection" : "Connect Airtable"}
+        <Button variant={isConfigured ? "outline" : "secondary"}>
+          {isConfigured ? "Update Airtable Connection" : "Connect Airtable"}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
