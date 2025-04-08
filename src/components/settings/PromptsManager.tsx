@@ -19,6 +19,26 @@ interface Prompt {
   updated_at: string;
 }
 
+const highlightVariables = (text: string) => {
+  const variableRegex = /\$\{[^}]+\}/g;
+  return text.split(variableRegex).map((part, index) => {
+    const match = text.match(variableRegex)?.[index];
+    return (
+      <>
+        {part}
+        {match && (
+          <span 
+            key={index} 
+            style={{ color: '#8B5CF6', fontWeight: 'bold' }}
+          >
+            {match}
+          </span>
+        )}
+      </>
+    );
+  });
+};
+
 export function PromptsManager() {
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [currentPrompt, setCurrentPrompt] = useState<Prompt | null>(null);
@@ -255,6 +275,7 @@ export function PromptsManager() {
                           value={currentPrompt?.prompt_text || ''}
                           onChange={handleInputChange}
                           className="min-h-[300px] font-mono"
+                          children={currentPrompt ? highlightVariables(currentPrompt.prompt_text) : undefined}
                         />
                       </div>
                     </div>
