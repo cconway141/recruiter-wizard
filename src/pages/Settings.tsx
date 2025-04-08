@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -8,24 +9,30 @@ import { LocalesManager } from "@/components/settings/LocalesManager";
 import { StatusesManager } from "@/components/settings/StatusesManager";
 import { MessageTemplatesManager } from "@/components/settings/MessageTemplatesManager";
 import { RoleAbbreviationsManager } from "@/components/settings/RoleAbbreviationsManager";
+import { PromptsManager } from "@/components/settings/PromptsManager";
+
 const Settings = () => {
   const [activeTab, setActiveTab] = useState<string>("clients");
+
   const handleTabChange = (value: string) => {
     setActiveTab(value);
   };
-  return <div className="flex flex-col min-h-screen">
+
+  return (
+    <div className="flex flex-col min-h-screen">
       <Navbar />
       <main className="flex-1 container py-10">
         <PageHeader title="Settings" description="Configure your application settings and manage data." />
 
         <Tabs defaultValue="clients" className="mt-6" onValueChange={handleTabChange}>
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="clients">Clients</TabsTrigger>
             <TabsTrigger value="statuses">Statuses</TabsTrigger>
             <TabsTrigger value="locales">Locales</TabsTrigger>
             <TabsTrigger value="flavors">Job Flavors</TabsTrigger>
             <TabsTrigger value="roles">Role Abbreviations</TabsTrigger>
             <TabsTrigger value="messages">Message Templates</TabsTrigger>
+            <TabsTrigger value="prompts">AI Prompts</TabsTrigger>
           </TabsList>
           
           <TabsContent value="clients" className="p-4 border rounded-md mt-4 bg-white">
@@ -51,8 +58,14 @@ const Settings = () => {
           <TabsContent value="messages" className="p-4 border rounded-md mt-4">
             <MessageTemplatesManager />
           </TabsContent>
+          
+          <TabsContent value="prompts" className="p-4 border rounded-md mt-4">
+            <PromptsManager />
+          </TabsContent>
         </Tabs>
       </main>
-    </div>;
+    </div>
+  );
 };
+
 export default Settings;

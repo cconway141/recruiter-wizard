@@ -102,6 +102,14 @@ export function JobFormQuestionDetails() {
     };
   }, [videoQuestionsValue, minSkillsValue, form, isGeneratingScreeningQuestions, isGeneratingVideoQuestions]);
 
+  // Make sure we update the flag based on the videoQuestions field content
+  useEffect(() => {
+    if (videoQuestionsValue && videoQuestionsValue.trim().length > 0 && !videoQuestionsGeneratedRef.current) {
+      setVideoQuestionsGenerated(true);
+      videoQuestionsGeneratedRef.current = true;
+    }
+  }, [videoQuestionsValue]);
+
   const handleRegenerateVideoQuestions = async () => {
     const minSkills = form.getValues('minSkills');
     
@@ -115,6 +123,7 @@ export function JobFormQuestionDetails() {
     }
     
     setIsGeneratingVideoQuestions(true);
+    setVideoQuestionsGenerated(false);
     
     // Set a timeout for the API call (60 seconds)
     videoQuestionsTimeoutRef.current = setTimeout(() => {
