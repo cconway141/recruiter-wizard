@@ -1,28 +1,28 @@
 
-import { supabase } from "@/integrations/supabase/client";
 import { UseFormReturn } from "react-hook-form";
+import { supabase } from "@/integrations/supabase/client";
 import { JobFormValues } from "../JobFormDetails";
 
 export function useClientSelection(form: UseFormReturn<JobFormValues>) {
   const handleClientSelection = async (clientName: string) => {
+    if (!clientName) return;
+    
     try {
-      // Fetch client data from Supabase to get the description
+      // Fetch the client details from the database
       const { data, error } = await supabase
-        .from('clients')
-        .select('description')
-        .eq('name', clientName)
+        .from("clients")
+        .select("description")
+        .eq("name", clientName)
         .single();
         
-      if (error) {
-        console.error("Error fetching client description:", error);
-        return;
-      }
+      if (error) throw error;
       
-      if (data && data.description) {
+      // Set the company description from the client data
+      if (data?.description) {
         form.setValue("compDesc", data.description);
       }
     } catch (err) {
-      console.error("Error in handleClientSelection:", err);
+      console.error("Error fetching client description:", err);
     }
   };
 

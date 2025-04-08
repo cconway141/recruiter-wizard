@@ -41,13 +41,20 @@ export function useFormPreview(form: UseFormReturn<JobFormValues>) {
 
     // Generate message previews when relevant fields change
     const generateMessages = async () => {
-      if (watchedFields.candidateFacingTitle && watchedFields.compDesc && watchedFields.locale && watchedFields.skillsSought && watchedFields.videoQuestions) {
+      if (watchedFields.candidateFacingTitle && watchedFields.locale && watchedFields.skillsSought && watchedFields.videoQuestions) {
         try {
           setIsLoadingMessages(true);
           const locale = watchedFields.locale as Locale;
+          
+          // Fetch work and pay details from the database based on locale
           const workDetails = await getWorkDetails(locale);
           const payDetails = await getPayDetails(locale);
           
+          // Update the form with the fetched details
+          form.setValue("workDetails", workDetails);
+          form.setValue("payDetails", payDetails);
+          
+          // Generate messages using the fetched details and form values
           const m1 = generateM1("[First Name]", watchedFields.candidateFacingTitle, watchedFields.compDesc);
           const m2 = generateM2(watchedFields.candidateFacingTitle, payDetails, workDetails, watchedFields.skillsSought);
           const m3 = generateM3(watchedFields.videoQuestions);
@@ -62,7 +69,7 @@ export function useFormPreview(form: UseFormReturn<JobFormValues>) {
     };
 
     generateMessages();
-  }, [watchedFields]);
+  }, [watchedFields, form]);
 
   return { 
     previewTitle, 

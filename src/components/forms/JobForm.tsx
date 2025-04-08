@@ -51,6 +51,14 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
     }
   }, [messages, form]);
 
+  // Handle initial client selection for company description
+  useEffect(() => {
+    const clientValue = form.getValues("client");
+    if (clientValue) {
+      handleClientSelection(clientValue);
+    }
+  }, [form, handleClientSelection]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-40">
