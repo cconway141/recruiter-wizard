@@ -1,16 +1,19 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
+import { Database } from "@/integrations/supabase/types";
+
+type TableName = keyof Database['public']['Tables'];
 
 /**
  * Looks up an entity in the database by name
- * @param table The table to look in
+ * @param table The table to look in (must be a valid table name)
  * @param nameField The field containing the name
  * @param nameValue The name value to search for
  * @returns The entity data or throws an error
  */
 export async function lookupEntityByName(
-  table: string, 
+  table: TableName, 
   nameField: string, 
   nameValue: string
 ) {
@@ -44,9 +47,10 @@ export async function lookupEntityByName(
  * @returns The inserted job data
  */
 export async function insertJobToDatabase(jobData: Record<string, any>) {
+  // Type assertion to match the expected insert type
   const { data, error } = await supabase
     .from('jobs')
-    .insert(jobData)
+    .insert(jobData as any)
     .select();
 
   if (error) {
