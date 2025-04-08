@@ -18,83 +18,86 @@ import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import MessageTemplates from "./pages/MessageTemplates";
 
-// Create a client
-const queryClient = new QueryClient();
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <BrowserRouter>
-        <AuthProvider>
-          <JobProvider>
-            <Toaster />
-            <Sonner />
-            <Routes>
-              <Route path="/auth" element={<Auth />} />
-              <Route 
-                path="/" 
-                element={
-                  <ProtectedRoute>
-                    <Index />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/jobs/new" 
-                element={
-                  <ProtectedRoute>
-                    <AddJob />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/jobs/:id" 
-                element={
-                  <ProtectedRoute>
-                    <ViewJob />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/jobs/:id/edit" 
-                element={
-                  <ProtectedRoute>
-                    <EditJob />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/settings" 
-                element={
-                  <ProtectedRoute>
-                    <Settings />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/profile" 
-                element={
-                  <ProtectedRoute>
-                    <Profile />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/message-templates" 
-                element={
-                  <ProtectedRoute>
-                    <MessageTemplates />
-                  </ProtectedRoute>
-                } 
-              />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </JobProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+// Create a new QueryClient instance inside the component
+const App = () => {
+  // Create a client inside the component to ensure it has the correct React context
+  const queryClient = new QueryClient();
+  
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <BrowserRouter>
+          <AuthProvider>
+            <JobProvider>
+              <Toaster />
+              <Sonner />
+              <Routes>
+                <Route path="/auth" element={<Auth />} />
+                <Route 
+                  path="/" 
+                  element={
+                    <ProtectedRoute>
+                      <Index />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/jobs/new" 
+                  element={
+                    <ProtectedRoute>
+                      <AddJob />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/jobs/:id" 
+                  element={
+                    <ProtectedRoute>
+                      <ViewJob />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/jobs/:id/edit" 
+                  element={
+                    <ProtectedRoute>
+                      <EditJob />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/settings" 
+                  element={
+                    <ProtectedRoute>
+                      <Settings />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/profile" 
+                  element={
+                    <ProtectedRoute>
+                      <Profile />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="/message-templates" 
+                  element={
+                    <ProtectedRoute>
+                      <MessageTemplates />
+                    </ProtectedRoute>
+                  } 
+                />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </JobProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
