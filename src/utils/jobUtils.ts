@@ -1,4 +1,3 @@
-
 import { Job, Locale, DEFAULT_WORK_DETAILS, DEFAULT_PAY_DETAILS } from "@/types/job";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -125,48 +124,86 @@ export async function getPayDetails(locale: Locale): Promise<string> {
   }
 }
 
-export function generateM1(firstName: string, title: string, compDesc: string): string {
-  return `Hi ${firstName}!
+async function getMessageTemplate(templateName: string, defaultTemplate: string): Promise<string> {
+  try {
+    const { data, error } = await supabase
+      .from('message_templates')
+      .select(templateName)
+      .maybeSingle();
+    
+    if (error) {
+      console.error(`Error fetching ${templateName}:`, error);
+      return defaultTemplate;
+    }
+    
+    if (!data || !data[templateName]) {
+      return defaultTemplate;
+    }
+    
+    return data[templateName];
+  } catch (error) {
+    console.error(`Error fetching ${templateName}:`, error);
+    return defaultTemplate;
+  }
+}
+
+export async function generateM1(firstName: string, title: string, compDesc: string): Promise<string> {
+  const defaultTemplate = `Hi [First Name]!
 
 I'm from The ITBC.
 
 Your background caught my eye.
 
-I have an open ${title} role at ${compDesc}
+I have an open [Title] role at [Company Description]
 
 Interested in learning more?
 
 Best,`;
+
+  let template = await getMessageTemplate('m1_template', defaultTemplate);
+  
+  return template
+    .replace(/\[First Name\]/g, firstName)
+    .replace(/\[Title\]/g, title)
+    .replace(/\[Company Description\]/g, compDesc);
 }
 
-export function generateM2(title: string, payDetails: string, workDetails: string, skillsSought: string): string {
-  return `Great! Here is some more information.
+export async function generateM2(title: string, payDetails: string, workDetails: string, skillsSought: string): Promise<string> {
+  const defaultTemplate = `Great! Here is some more information.
 
 I founded The ITBC ~ 10 years ago, today we specialize in placing candidates in targeted IT project roles as a staffing firm. I have a few messages I'll send starting with this one, each requiring a response from you.
 
 For this opening:
-${title} Role
-${payDetails}
+[Title] Role
+[Pay Details]
 
 Working Details:
-${workDetails}
+[Work Details]
 
 If that works, please review the skills below and reply with:
 1) Years of hands-on experience
 2) Expertise level for each skill
 
-${skillsSought}
+[Skills Sought]
 
 For level choose from beginner, advanced beginner, intermediate, advanced, and expert.
 
 Below that, please share your rate expectations.`;
+
+  let template = await getMessageTemplate('m2_template', defaultTemplate);
+  
+  return template
+    .replace(/\[Title\]/g, title)
+    .replace(/\[Pay Details\]/g, payDetails)
+    .replace(/\[Work Details\]/g, workDetails)
+    .replace(/\[Skills Sought\]/g, skillsSought);
 }
 
-export function generateM3(videoQuestions: string): string {
-  return `Awesome! To expedite things as I think you are a strong fit, could you record a brief intro video focusing on the skills mentioned and real project examples (only I will see it)?
+export async function generateM3(videoQuestions: string): Promise<string> {
+  const defaultTemplate = `Awesome! To expedite things as I think you are a strong fit, could you record a brief intro video focusing on the skills mentioned and real project examples (only I will see it)?
     
 Please also touch on:
-${videoQuestions}
+[Video Questions]
 
 Upload the video and share the link here.
 
@@ -179,4 +216,8 @@ Additionally, please send me the following:
 - Hourly rate in USD
 
 I'll also be sending you a right-to-represent document so we can proceed.`;
+
+  let template = await getMessageTemplate('m3_template', defaultTemplate);
+  
+  return template.replace(/\[Video Questions\]/g, videoQuestions);
 }

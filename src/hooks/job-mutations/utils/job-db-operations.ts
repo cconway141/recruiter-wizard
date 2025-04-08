@@ -17,7 +17,7 @@ export async function lookupEntityByName(
   try {
     console.log(`Looking up ${tableName}.${columnName} with value "${value}"`);
     
-    // Use explicit typing on supabase.from to avoid deep instantiation
+    // Use explicit typing on supabase.from to avoid deep instantiation issues
     const { data, error } = await supabase
       .from(tableName)
       .select('id')

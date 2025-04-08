@@ -7,6 +7,7 @@ import { ClientsManager } from "@/components/settings/ClientsManager";
 import { FlavorsManager } from "@/components/settings/FlavorsManager";
 import { LocalesManager } from "@/components/settings/LocalesManager";
 import { StatusesManager } from "@/components/settings/StatusesManager";
+import { MessageTemplatesManager } from "@/components/settings/MessageTemplatesManager";
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState<string>("clients");
@@ -25,11 +26,12 @@ const Settings = () => {
         />
 
         <Tabs defaultValue="clients" className="mt-6" onValueChange={handleTabChange}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="clients">Clients</TabsTrigger>
             <TabsTrigger value="statuses">Statuses</TabsTrigger>
             <TabsTrigger value="locales">Locales</TabsTrigger>
             <TabsTrigger value="flavors">Job Flavors</TabsTrigger>
+            <TabsTrigger value="messages">Message Templates</TabsTrigger>
           </TabsList>
           
           <TabsContent value="clients" className="p-4 border rounded-md mt-4">
@@ -46,6 +48,10 @@ const Settings = () => {
           
           <TabsContent value="flavors" className="p-4 border rounded-md mt-4">
             <FlavorsManager />
+          </TabsContent>
+          
+          <TabsContent value="messages" className="p-4 border rounded-md mt-4">
+            <MessageTemplatesManager />
           </TabsContent>
         </Tabs>
       </main>
