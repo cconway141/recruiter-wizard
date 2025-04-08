@@ -5,9 +5,9 @@ import { MessageCard } from "@/components/messages/MessageCard";
 
 interface MessagePreviewSectionProps {
   messages: {
-    m1: string;
-    m2: string;
-    m3: string;
+    m1: string | number | null | undefined;
+    m2: string | number | null | undefined;
+    m3: string | number | null | undefined;
   };
 }
 
@@ -17,7 +17,7 @@ export function MessagePreviewSection({ messages }: MessagePreviewSectionProps) 
   
   return (
     <div className="space-y-4">
-      {messages.m1 && (
+      {messages.m1 !== undefined && messages.m1 !== null && (
         <MessageCard
           title="M1 - Initial Outreach"
           message={messages.m1}
@@ -25,7 +25,7 @@ export function MessagePreviewSection({ messages }: MessagePreviewSectionProps) 
         />
       )}
       
-      {messages.m2 && (
+      {messages.m2 !== undefined && messages.m2 !== null && (
         <MessageCard
           title="M2 - Detailed Information"
           message={messages.m2}
@@ -33,7 +33,7 @@ export function MessagePreviewSection({ messages }: MessagePreviewSectionProps) 
         />
       )}
       
-      {messages.m3 && (
+      {messages.m3 !== undefined && messages.m3 !== null && (
         <MessageCard
           title="M3 - Video & Final Questions"
           message={messages.m3}

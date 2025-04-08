@@ -7,7 +7,7 @@ import { toast } from "@/hooks/use-toast";
 
 interface MessageCardProps {
   title: string;
-  message: string;
+  message: string | number | null | undefined;
   previewName?: string;
 }
 
@@ -15,8 +15,11 @@ export function MessageCard({ title, message, previewName = "Candidate" }: Messa
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
+    // Ensure message is a string before performing string operations
+    const messageString = String(message || '');
+    
     // Replace placeholder with preview name
-    const formattedMessage = message.replace("[First Name]", previewName);
+    const formattedMessage = messageString.replace("[First Name]", previewName);
     
     navigator.clipboard.writeText(formattedMessage);
     setCopied(true);
@@ -28,6 +31,9 @@ export function MessageCard({ title, message, previewName = "Candidate" }: Messa
     
     setTimeout(() => setCopied(false), 2000);
   };
+
+  // Convert message to string safely
+  const safeMessage = message === null || message === undefined ? '' : String(message);
 
   return (
     <Card className="mb-6">
@@ -50,7 +56,9 @@ export function MessageCard({ title, message, previewName = "Candidate" }: Messa
         </Button>
       </CardHeader>
       <CardContent className="pt-4">
-        <div className="whitespace-pre-line text-gray-700">{message.replace("[First Name]", previewName)}</div>
+        <div className="whitespace-pre-line text-gray-700">
+          {safeMessage.replace("[First Name]", previewName)}
+        </div>
       </CardContent>
     </Card>
   );

@@ -43,22 +43,18 @@ export const JobMessages: React.FC<JobMessagesProps> = ({ job }) => {
     refreshMessages();
   }, [job]);
   
-  // Personalize messages with candidate name
-  const personalizeMessage = (message: string, candidateName: string) => {
-    return message.replace(/\[First Name\]/g, candidateName.split(' ')[0]);
-  };
-
-  const m1 = selectedCandidate 
-    ? personalizeMessage(messages.m1, selectedCandidate) 
-    : messages.m1;
+  // Ensure we're handling messages safely
+  const m1 = selectedCandidate && messages.m1 
+    ? String(messages.m1).replace(/\[First Name\]/g, selectedCandidate.split(' ')[0]) 
+    : messages.m1 || "";
     
-  const m2 = selectedCandidate 
-    ? personalizeMessage(messages.m2, selectedCandidate) 
-    : messages.m2;
+  const m2 = selectedCandidate && messages.m2
+    ? String(messages.m2).replace(/\[First Name\]/g, selectedCandidate.split(' ')[0]) 
+    : messages.m2 || "";
     
-  const m3 = selectedCandidate 
-    ? personalizeMessage(messages.m3, selectedCandidate) 
-    : messages.m3;
+  const m3 = selectedCandidate && messages.m3
+    ? String(messages.m3).replace(/\[First Name\]/g, selectedCandidate.split(' ')[0]) 
+    : messages.m3 || "";
 
   return (
     <div className="bg-white p-6 rounded-lg border mt-6">
@@ -92,4 +88,4 @@ export const JobMessages: React.FC<JobMessagesProps> = ({ job }) => {
       </div>
     </div>
   );
-};
+}
