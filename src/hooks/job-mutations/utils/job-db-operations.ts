@@ -39,8 +39,12 @@ export async function lookupEntityByName(
   }
   
   // Validate that data exists and has an id property
-  if (!data || typeof data !== 'object' || !('id' in data)) {
-    throw new Error(`${table} lookup failed: Entity not found or invalid response`);
+  if (!data) {
+    throw new Error(`${table} lookup failed: No data returned`);
+  }
+  
+  if (typeof data !== 'object' || !('id' in data)) {
+    throw new Error(`${table} lookup failed: Invalid data structure`);
   }
   
   return { id: data.id };
