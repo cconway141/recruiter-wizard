@@ -69,7 +69,7 @@ export async function lookupEntityByName(
   }
 }
 
-export async function insertJobToDatabase(preparedJob: any): Promise<InsertedJobType> {
+export async function insertJobToDatabase(preparedJob: Record<string, any>): Promise<InsertedJobType> {
   try {
     const { data, error } = await supabase
       .from('jobs')

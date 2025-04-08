@@ -74,7 +74,7 @@ const EditJob = () => {
             description="Update job details and message templates."
           />
         </div>
-        <Form form={form}>
+        <Form {...form}>
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-center">

@@ -117,7 +117,7 @@ export function JobsTable() {
                     </TooltipProvider>
 
                     <TooltipProvider>
-                      <Tooltip className="remove this button, then refactor">
+                      <Tooltip>
                         <TooltipTrigger asChild>
                           <Button variant="outline" size="sm" onClick={() => copyToClipboard(job.id, "M2", job)} className={isMessageCopied(job.id, "M2") ? "bg-green-100" : ""}>
                             {isMessageCopied(job.id, "M2") ? <Check className="h-4 w-4 mr-1" /> : <Copy className="h-4 w-4 mr-1" />}

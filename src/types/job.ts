@@ -15,6 +15,7 @@ export interface Job {
   m3: string;
   skillsSought: string;
   minSkills: string;
+  linkedinSearch: string; // Added this property
   lir: string; // LinkedIn Recruiter project link
   client: string;
   clientId?: string;
