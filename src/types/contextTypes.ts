@@ -1,6 +1,6 @@
 
 import { Job } from "./job";
-import { Candidate } from "@/components/candidates/CandidateEntry";
+import { Candidate } from "@/components/candidates/types";
 import { JobFilters } from "@/hooks/useJobFilters";
 
 export interface JobsState {

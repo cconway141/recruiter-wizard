@@ -1,5 +1,5 @@
 
-import { Candidate, CandidateStatus } from "@/components/candidates/CandidateEntry";
+import { Candidate, CandidateStatus } from "@/components/candidates/types";
 
 // Database application type
 export type Application = {
