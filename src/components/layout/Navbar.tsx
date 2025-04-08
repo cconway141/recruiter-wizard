@@ -23,7 +23,7 @@ export function Navbar() {
           <img 
             src="/lovable-uploads/4add4393-d8ec-4a30-970d-3bc3ad2bcd83.png" 
             alt="The IT Bootcamp Logo" 
-            className="h-8 w-8"
+            className="max-w-full max-h-full object-contain"
           />
           <span>The ITBC Recruitment Wizard</span>
         </Link>
