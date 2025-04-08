@@ -39,11 +39,11 @@ export async function prepareJobForInsertion(
   const m3 = generateM3(jobData.videoQuestions);
 
   // Look up all the necessary foreign keys
-  const clientData = await lookupEntityByName('clients', 'name', jobData.client);
-  const localeData = await lookupEntityByName('locales', 'name', jobData.locale);
-  const flavorData = await lookupEntityByName('flavors', 'name', jobData.flavor);
-  const statusData = await lookupEntityByName('job_statuses', 'name', jobData.status);
-  const ownerData = await lookupEntityByName('profiles', 'display_name', jobData.owner);
+  const clientId = await lookupEntityByName('clients', 'name', jobData.client);
+  const localeId = await lookupEntityByName('locales', 'name', jobData.locale);
+  const flavorId = await lookupEntityByName('flavors', 'name', jobData.flavor);
+  const statusId = await lookupEntityByName('job_statuses', 'name', jobData.status);
+  const ownerData = null; // Not looking up real users anymore
 
   // Prepare the database entry
   return {
@@ -55,16 +55,16 @@ export async function prepareJobForInsertion(
     min_skills: jobData.minSkills,
     lir: jobData.lir,
     client: jobData.client,
-    client_id: clientData.id,
+    client_id: clientId,
     comp_desc: jobData.compDesc,
     rate: jobData.rate,
     high_rate: high,
     medium_rate: medium,
     low_rate: low,
     locale: jobData.locale,
-    locale_id: localeData.id,
+    locale_id: localeId,
     owner: jobData.owner,
-    owner_id: ownerData.id,
+    owner_id: ownerData,
     date: jobData.date,
     work_details: workDetails,
     pay_details: payDetails,
@@ -72,8 +72,8 @@ export async function prepareJobForInsertion(
     video_questions: jobData.videoQuestions,
     screening_questions: jobData.screeningQuestions,
     flavor: jobData.flavor,
-    flavor_id: flavorData.id,
-    status_id: statusData.id,
+    flavor_id: flavorId,
+    status_id: statusId,
     m1,
     m2,
     m3,

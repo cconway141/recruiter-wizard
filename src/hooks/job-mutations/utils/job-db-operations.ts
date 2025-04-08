@@ -3,11 +3,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import { Locale, Flavor, JobStatus } from "@/types/job";
 
+// Define valid table names to fix type errors
+type ValidTableName = "clients" | "flavors" | "locales" | "job_statuses" | "profiles";
+
 /**
  * Look up an entity ID by its name from a specific table
  */
 export async function lookupEntityByName(
-  tableName: string,
+  tableName: ValidTableName,
   columnName: "name" | "display_name",
   value: string
 ): Promise<string | null> {
