@@ -19,7 +19,7 @@ export function Navbar() {
   return (
     <div className="border-b bg-white">
       <div className="container flex h-16 items-center px-4">
-        <Link to="/" className="flex items-center justify-center mx-auto">
+        <Link to="/" className="flex items-center">
           <img 
             src="/lovable-uploads/4add4393-d8ec-4a30-970d-3bc3ad2bcd83.png" 
             alt="The IT Bootcamp Logo" 
