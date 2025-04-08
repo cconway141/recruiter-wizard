@@ -4,9 +4,16 @@ import { ClientForm } from "@/components/settings/clients/ClientForm";
 import { ClientsList } from "@/components/settings/clients/ClientsList";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
+import { useClientOptions } from "@/hooks/use-dropdown-options";
 
 export function ClientsManager() {
   const [isAdding, setIsAdding] = useState(false);
+  const { data: clients, isLoading, refetch } = useClientOptions();
+
+  const handleSubmitSuccess = () => {
+    setIsAdding(false);
+    refetch();
+  };
 
   return (
     <div className="space-y-6">
@@ -21,9 +28,9 @@ export function ClientsManager() {
       </div>
 
       {isAdding ? (
-        <ClientForm onCancel={() => setIsAdding(false)} />
+        <ClientForm onCancel={() => setIsAdding(false)} onSubmit={handleSubmitSuccess} />
       ) : (
-        <ClientsList />
+        <ClientsList clients={clients || []} isLoading={isLoading} onEdit={() => {}} onDelete={() => {}} />
       )}
     </div>
   );
