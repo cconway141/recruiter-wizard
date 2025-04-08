@@ -1,10 +1,9 @@
-
+import { useState, useEffect, useRef } from "react";
 import { FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { useFormContext } from "react-hook-form";
 import { Loader2, Check, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect, useState, useRef } from "react";
 import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 
@@ -15,16 +14,12 @@ export function JobFormQuestionDetails() {
   const videoQuestionsValue = form.watch("videoQuestions");
   const minSkillsValue = form.watch("minSkills");
   const [videoQuestionsGenerated, setVideoQuestionsGenerated] = useState(false);
-  const [screeningQuestionsGenerated, setScreeningQuestionsGenerated] = useState(false);
-  
-  // Track if screening questions have already been generated
-  const screeningQuestionsGeneratedRef = useRef(false);
   const videoQuestionsGeneratedRef = useRef(false);
+  const [screeningQuestionsGenerated, setScreeningQuestionsGenerated] = useState(false);
+  const screeningQuestionsGeneratedRef = useRef(false);
 
-  // Generate screening questions when video questions are populated
   useEffect(() => {
     const generateScreeningQuestions = async () => {
-      // Check if video questions exist, minimum skills exist, not currently generating, and haven't already generated
       if (
         videoQuestionsValue && 
         minSkillsValue && 
@@ -46,7 +41,6 @@ export function JobFormQuestionDetails() {
               shouldValidate: true 
             });
             setScreeningQuestionsGenerated(true);
-            // Mark as generated to prevent multiple calls
             screeningQuestionsGeneratedRef.current = true;
             
             toast({
@@ -70,7 +64,6 @@ export function JobFormQuestionDetails() {
     generateScreeningQuestions();
   }, [videoQuestionsValue, minSkillsValue, form, isGeneratingScreeningQuestions]);
 
-  // Function to regenerate video questions
   const handleRegenerateVideoQuestions = async () => {
     const minSkills = form.getValues('minSkills');
     
@@ -84,7 +77,6 @@ export function JobFormQuestionDetails() {
     }
     
     setIsGeneratingVideoQuestions(true);
-    setVideoQuestionsGenerated(false);
     
     try {
       const { data, error } = await supabase.functions.invoke('generate-video-questions', {
@@ -104,7 +96,7 @@ export function JobFormQuestionDetails() {
         videoQuestionsGeneratedRef.current = true;
         
         toast({
-          title: "Video questions regenerated",
+          title: "Video questions generated",
           description: "Video questions have been regenerated based on the minimum skills.",
         });
       }
@@ -120,7 +112,6 @@ export function JobFormQuestionDetails() {
     }
   };
 
-  // Function to regenerate screening questions
   const handleRegenerateScreeningQuestions = async () => {
     const minSkills = form.getValues('minSkills');
     
