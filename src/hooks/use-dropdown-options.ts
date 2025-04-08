@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -99,34 +98,14 @@ export function useStatusOptions() {
   });
 }
 
-// Fetch user options
+// Updated to return a hardcoded list of recruiters
 export function useUserOptions() {
-  return useQuery({
-    queryKey: ['userOptions'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name, email, display_name');
-
-      if (error) {
-        console.error("Error fetching users:", error);
-        throw new Error(error.message);
-      }
-
-      console.log("useUserOptions: Fetched users raw data:", data);
-      
-      // Transform data to required format, ensuring display_name is used when available
-      const formattedData = data.map(user => ({
-        id: user.id,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        email: user.email,
-        display_name: user.display_name
-      }));
-
-      console.log("useUserOptions: Formatted user data:", formattedData);
-      
-      return formattedData as UserProfile[];
-    }
-  });
+  return {
+    data: [
+      { id: '1', first_name: 'Chris', last_name: null, email: 'chris@example.com', display_name: 'Chris' },
+      { id: '2', first_name: 'Brandon', last_name: null, email: 'brandon@example.com', display_name: 'Brandon' },
+      { id: '3', first_name: 'Rick', last_name: null, email: 'rick@example.com', display_name: 'Rick' }
+    ] as UserProfile[],
+    isLoading: false
+  };
 }
