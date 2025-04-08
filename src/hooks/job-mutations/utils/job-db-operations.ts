@@ -38,6 +38,37 @@ type InsertedJobType = {
   status_id: string;
 };
 
+/**
+ * Looks up the ID of an entity by its name in a specific table
+ * @param table The table to search in
+ * @param nameCol The column that contains the name to look up
+ * @param name The name to search for
+ * @returns The ID of the entity if found, or null if not found
+ */
+export async function lookupEntityByName(
+  table: string,
+  nameCol: string,
+  name: string
+): Promise<string | null> {
+  try {
+    const { data, error } = await supabase
+      .from(table)
+      .select('id')
+      .eq(nameCol, name)
+      .single();
+    
+    if (error) {
+      console.error(`Error looking up ${name} in ${table}:`, error);
+      return null;
+    }
+    
+    return data?.id || null;
+  } catch (error) {
+    console.error(`Failed to lookup entity ${name} in ${table}:`, error);
+    return null;
+  }
+}
+
 export async function insertJobToDatabase(preparedJob: any): Promise<InsertedJobType> {
   try {
     const { data, error } = await supabase
