@@ -16,8 +16,10 @@ export function useJobMutations(jobs: Job[], setJobs: (jobs: Job[]) => void) {
   const addJob = async (jobData: Omit<Job, "id" | "internalTitle" | "highRate" | "mediumRate" | "lowRate" | "workDetails" | "payDetails" | "m1" | "m2" | "m3">) => {
     const internalTitle = generateInternalTitle(jobData.client, jobData.candidateFacingTitle, jobData.flavor, jobData.locale);
     const { high, medium, low } = calculateRates(jobData.rate);
-    const workDetails = getWorkDetails(jobData.locale);
-    const payDetails = getPayDetails(jobData.locale);
+    
+    // Get data from database instead of using defaults
+    const workDetails = await getWorkDetails(jobData.locale);
+    const payDetails = await getPayDetails(jobData.locale);
     
     // Generate placeholder messages
     const m1 = generateM1("[First Name]", jobData.candidateFacingTitle, jobData.compDesc);

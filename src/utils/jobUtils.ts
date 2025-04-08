@@ -1,5 +1,5 @@
-
 import { Job, Locale, DEFAULT_WORK_DETAILS, DEFAULT_PAY_DETAILS } from "@/types/job";
+import { supabase } from "@/integrations/supabase/client";
 
 // Update Role to abbreviation mapping
 export const ROLE_ABBREVIATIONS: Record<string, string> = {
@@ -72,12 +72,44 @@ export function calculateRates(baseRate: number): { high: number; medium: number
   };
 }
 
-export function getWorkDetails(locale: Locale): string {
-  return DEFAULT_WORK_DETAILS[locale];
+export async function getWorkDetails(locale: Locale): Promise<string> {
+  try {
+    const { data, error } = await supabase
+      .from("locales")
+      .select("work_details")
+      .eq("name", locale)
+      .single();
+    
+    if (error || !data || !data.work_details) {
+      // Fallback to default if database lookup fails
+      return DEFAULT_WORK_DETAILS[locale];
+    }
+    
+    return data.work_details;
+  } catch (error) {
+    console.error("Error fetching work details:", error);
+    return DEFAULT_WORK_DETAILS[locale];
+  }
 }
 
-export function getPayDetails(locale: Locale): string {
-  return DEFAULT_PAY_DETAILS[locale];
+export async function getPayDetails(locale: Locale): Promise<string> {
+  try {
+    const { data, error } = await supabase
+      .from("locales")
+      .select("pay_details")
+      .eq("name", locale)
+      .single();
+    
+    if (error || !data || !data.pay_details) {
+      // Fallback to default if database lookup fails
+      return DEFAULT_PAY_DETAILS[locale];
+    }
+    
+    return data.pay_details;
+  } catch (error) {
+    console.error("Error fetching pay details:", error);
+    return DEFAULT_PAY_DETAILS[locale];
+  }
 }
 
 export function generateM1(firstName: string, title: string, compDesc: string): string {
