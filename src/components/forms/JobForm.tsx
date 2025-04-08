@@ -17,9 +17,9 @@ import {
   useClientOptions, 
   useFlavorOptions, 
   useLocaleOptions, 
-  useStatusOptions, 
-  useUserOptions 
+  useStatusOptions,
 } from "@/hooks/use-dropdown-options";
+import { useUserOptions } from "@/hooks/useUserOptions";
 
 interface JobFormProps {
   job?: Job;
