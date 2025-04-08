@@ -115,7 +115,7 @@ export function useUserOptions() {
 
       console.log("useUserOptions: Fetched users raw data:", data);
       
-      // Transform data to required format, ensuring display_name is used
+      // Transform data to required format, ensuring display_name is used when available
       const formattedData = data.map(user => ({
         id: user.id,
         first_name: user.first_name,

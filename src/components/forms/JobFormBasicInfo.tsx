@@ -1,4 +1,3 @@
-
 import { useFormContext } from "react-hook-form";
 import {
   FormControl,
@@ -192,11 +191,18 @@ export function JobFormBasicInfo({ handleClientSelection }: JobFormBasicInfoProp
                   {usersLoading ? (
                     <SelectItem value="loading" disabled>Loading recruiters...</SelectItem>
                   ) : userOptions && userOptions.length > 0 ? (
-                    userOptions.map((user) => (
-                      <SelectItem key={user.id} value={user.display_name || `${user.first_name || ''} ${user.last_name || ''}`.trim()}>
-                        {user.display_name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email?.split('@')[0] || 'Unknown User'}
-                      </SelectItem>
-                    ))
+                    userOptions.map((user) => {
+                      const displayName = user.display_name || 
+                        (user.first_name || user.last_name ? 
+                          `${user.first_name || ''} ${user.last_name || ''}`.trim() : 
+                          user.email?.split('@')[0]);
+                      
+                      return (
+                        <SelectItem key={user.id} value={displayName || 'Unknown'}>
+                          {displayName || 'Unknown User'}
+                        </SelectItem>
+                      );
+                    })
                   ) : (
                     <SelectItem value="none" disabled>No recruiters found</SelectItem>
                   )}
