@@ -4,17 +4,19 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/comp
 import { Textarea } from "@/components/ui/textarea";
 import { useFormContext } from "react-hook-form";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2 } from "lucide-react";
+import { Loader2, Check } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 
 export function JobFormDescription() {
   const form = useFormContext();
   const [isGeneratingSkills, setIsGeneratingSkills] = useState(false);
+  const [skillsExtracted, setSkillsExtracted] = useState(false);
 
   const extractSkillsFromDescription = async (description: string) => {
     if (!description.trim()) return;
     
     setIsGeneratingSkills(true);
+    setSkillsExtracted(false);
     
     try {
       const { data, error } = await supabase.functions.invoke('extract-skills', {
@@ -30,6 +32,8 @@ export function JobFormDescription() {
           shouldTouch: true,
           shouldValidate: true 
         });
+        
+        setSkillsExtracted(true);
         
         toast({
           title: "Skills extracted",
@@ -82,6 +86,12 @@ export function JobFormDescription() {
                 Skills Sought
                 {isGeneratingSkills && (
                   <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+                )}
+                {skillsExtracted && !isGeneratingSkills && (
+                  <span className="flex items-center text-green-500 text-sm font-medium">
+                    <Check className="h-4 w-4 mr-1" />
+                    Success!
+                  </span>
                 )}
               </FormLabel>
               <FormControl>

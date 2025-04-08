@@ -36,11 +36,24 @@ serve(async (req) => {
         messages: [
           { 
             role: 'system', 
-            content: 'You are a skilled technical recruiter. Extract a comprehensive list of technical skills from job descriptions.' 
+            content: 'You are a skilled technical recruiter. Extract technical skills from job descriptions precisely according to instructions.' 
           },
           { 
             role: 'user', 
-            content: `Please extract all technical skills, technologies, frameworks, and programming languages from this job description. Format them as a bulleted list separated by new lines. Only include the skills, no extra commentary:\n\n${jobDescription}` 
+            content: `Please extract and list explicit skills to get the unique explicit technical skills the candidate need in order to qualify for this role. I do not need information on pay, location, benefits, training, etc. Only the specific technical skills needed to qualify, prioritizing platforms, tools, programs, or certifications mentioned in the text that are essential for the candidate to qualify for the role.
+
+Only skills mentioned in the text. Prioritize technical requirements, coding languages, or technical skills for developers, and for non-developer roles you can include required skills that are not as technical like requirements gathering. You can focus on system types like CRM or CMS, only if specified in the text. Exclude any details related to salary, location, benefits, training, or personality traits.
+
+Provide a single keyword or skill per line, do not group or combine similar skills, make these logically sorted with the most critical skill for this role at the top, and condense the list to no more than 10 of the most critical technical skills and requirements from the text provided which are needed. Before you send anything back, double check that there is only a single keyword or skill on each line, and you did not combine any together. Return the list immediately in plain text formatted exactly like this:
+
+-Skill 1
+-Skill 2
+-Skill 3
+-Skill 4
+-Skill 5
+
+Here is the job description:
+${jobDescription}` 
           }
         ],
       }),
