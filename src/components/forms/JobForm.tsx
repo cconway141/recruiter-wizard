@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useFormContext } from "react-hook-form";
@@ -15,6 +16,15 @@ import {
 import { useJobs } from "@/contexts/JobContext";
 import { Loader2 } from "lucide-react";
 import { getClientByName } from "@/utils/clientData";
+
+// Import the component files
+import { JobFormBasicInfo } from "./JobFormBasicInfo";
+import { JobFormCompanyDesc } from "./JobFormCompanyDesc";
+import { JobFormDetails } from "./JobFormDetails";
+import { JobFormLinks } from "./JobFormLinks";
+import { JobFormQuestions } from "./JobFormQuestions";
+import { FormRatePreview } from "./FormRatePreview";
+import { MessagePreviewSection } from "./MessagePreviewSection";
 
 import { 
   useClientOptions, 
