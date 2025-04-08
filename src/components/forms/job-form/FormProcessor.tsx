@@ -22,13 +22,37 @@ interface FormProcessorProps {
 }
 
 export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEditing?: boolean }) {
-  const { addJob, updateJob } = useJobs();
+  // Check if useJobs() is returning null
+  let jobContext;
+  try {
+    jobContext = useJobs();
+  } catch (error) {
+    console.error("Error accessing JobContext:", error);
+    // Return a default object to prevent null errors
+    return {
+      handleSubmit: () => {
+        console.error("Job context not available. Cannot submit form.");
+        toast({
+          title: "Error",
+          description: "Unable to access job data. Please refresh the page.",
+          variant: "destructive",
+        });
+      }
+    };
+  }
+  
+  const { addJob, updateJob } = jobContext || {};
   const navigate = useNavigate();
   const { loadFromSupabase } = useSupabaseData();
   
   const handleSubmit = async (values: JobFormValues) => {
     try {
       console.log("Form submitted with values:", values);
+      
+      // Check if we have necessary functions from context
+      if (!addJob && !updateJob) {
+        throw new Error("Job context functions not available");
+      }
       
       const locale = values.locale as Locale;
       const workDetails = await getWorkDetails(locale);
@@ -48,7 +72,7 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
       const m2 = generateM2(values.candidateFacingTitle, payDetails, workDetails, values.skillsSought);
       const m3 = generateM3(values.videoQuestions);
       
-      if (isEditing && job) {
+      if (isEditing && job && updateJob) {
         console.log("Updating existing job");
         updateJob({
           ...job,
@@ -72,7 +96,7 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
         
         // Navigate after successful update
         navigate("/");
-      } else {
+      } else if (addJob) {
         console.log("Adding new job with values:", {
           ...values,
           internalTitle,
@@ -132,6 +156,8 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
           // Re-enable submit button on error
           document.querySelector('button[type="submit"]')?.removeAttribute('disabled');
         }
+      } else {
+        throw new Error("addJob function is not available");
       }
     } catch (err) {
       console.error("Error in form submission:", err);

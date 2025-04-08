@@ -28,7 +28,8 @@ interface JobFormProps {
 
 export function JobForm({ job, isEditing = false }: JobFormProps) {
   const form = useFormContext<JobFormValues>();
-  const { handleSubmit } = useFormProcessor({ job, isEditing });
+  // Add a null check here to prevent the error
+  const { handleSubmit } = useFormProcessor({ job, isEditing }) || { handleSubmit: () => {} };
   const { handleClientSelection } = useClientSelection(form);
 
   const { isLoading: clientsLoading } = useClientOptions();
@@ -70,10 +71,13 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
     );
   }
 
-  const onSubmitForm = form.handleSubmit(handleSubmit);
+  // Add a safeguard for form.handleSubmit to prevent null errors
+  const onSubmitForm = form && typeof form.handleSubmit === 'function' 
+    ? form.handleSubmit(handleSubmit)
+    : (e: React.FormEvent) => { e.preventDefault(); console.error("Form context not properly initialized"); };
 
-  console.log("Form is valid:", form.formState.isValid);
-  console.log("Form errors:", form.formState.errors);
+  console.log("Form is valid:", form?.formState?.isValid);
+  console.log("Form errors:", form?.formState?.errors);
 
   return (
     <div>
