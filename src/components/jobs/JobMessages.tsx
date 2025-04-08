@@ -5,6 +5,8 @@ import { Job } from "@/types/job";
 import { useJobs } from "@/contexts/JobContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { generateM1, generateM2, generateM3 } from "@/utils/jobUtils";
+import { useEffect } from "react";
 
 interface JobMessagesProps {
   job: Job;
@@ -14,6 +16,28 @@ export const JobMessages: React.FC<JobMessagesProps> = ({ job }) => {
   const { getCandidates } = useJobs();
   const candidates = getCandidates(job.id);
   const [selectedCandidate, setSelectedCandidate] = useState<string>("");
+  const [messages, setMessages] = useState({
+    m1: job.m1 || "",
+    m2: job.m2 || "",
+    m3: job.m3 || ""
+  });
+  
+  // Load fresh templates from the database when component mounts or job changes
+  useEffect(() => {
+    const refreshMessages = async () => {
+      try {
+        const m1 = await generateM1("[First Name]", job.candidateFacingTitle, job.compDesc, job.owner);
+        const m2 = await generateM2(job.candidateFacingTitle, job.payDetails, job.workDetails, job.skillsSought);
+        const m3 = await generateM3(job.videoQuestions);
+        
+        setMessages({ m1, m2, m3 });
+      } catch (err) {
+        console.error("Error refreshing messages:", err);
+      }
+    };
+    
+    refreshMessages();
+  }, [job]);
   
   // Personalize messages with candidate name
   const personalizeMessage = (message: string, candidateName: string) => {
@@ -21,16 +45,16 @@ export const JobMessages: React.FC<JobMessagesProps> = ({ job }) => {
   };
 
   const m1 = selectedCandidate 
-    ? personalizeMessage(job.m1, selectedCandidate) 
-    : job.m1;
+    ? personalizeMessage(messages.m1, selectedCandidate) 
+    : messages.m1;
     
   const m2 = selectedCandidate 
-    ? personalizeMessage(job.m2, selectedCandidate) 
-    : job.m2;
+    ? personalizeMessage(messages.m2, selectedCandidate) 
+    : messages.m2;
     
   const m3 = selectedCandidate 
-    ? personalizeMessage(job.m3, selectedCandidate) 
-    : job.m3;
+    ? personalizeMessage(messages.m3, selectedCandidate) 
+    : messages.m3;
 
   return (
     <div className="bg-white p-6 rounded-lg border mt-6">

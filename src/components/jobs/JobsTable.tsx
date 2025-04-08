@@ -31,6 +31,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { supabase } from "@/integrations/supabase/client";
+import { generateM1, generateM2, generateM3 } from "@/utils/jobUtils";
 
 const StatusBadgeColor = {
   Active: "bg-green-100 text-green-800 hover:bg-green-100",
@@ -51,18 +53,38 @@ export function JobsTable() {
   // Track both job ID and message type that was copied
   const [copiedMessage, setCopiedMessage] = useState<CopiedMessageInfo>(null);
 
-  const copyToClipboard = (jobId: string, text: string, messageType: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedMessage({ jobId, messageType });
-    
-    toast({
-      title: "Copied!",
-      description: `${messageType} has been copied to clipboard.`,
-    });
-    
-    setTimeout(() => {
-      setCopiedMessage(null);
-    }, 2000);
+  const copyToClipboard = async (jobId: string, messageType: string, job: any) => {
+    try {
+      let text = '';
+      
+      // Generate fresh messages using the latest templates from the database
+      if (messageType === "M1") {
+        text = await generateM1("[First Name]", job.candidateFacingTitle, job.compDesc, job.owner);
+      } else if (messageType === "M2") {
+        text = await generateM2(job.candidateFacingTitle, job.payDetails, job.workDetails, job.skillsSought);
+      } else if (messageType === "M3") {
+        text = await generateM3(job.videoQuestions);
+      }
+      
+      await navigator.clipboard.writeText(text);
+      setCopiedMessage({ jobId, messageType });
+      
+      toast({
+        title: "Copied!",
+        description: `${messageType} has been copied to clipboard.`,
+      });
+      
+      setTimeout(() => {
+        setCopiedMessage(null);
+      }, 2000);
+    } catch (err) {
+      console.error("Error copying message:", err);
+      toast({
+        title: "Error",
+        description: "Failed to copy message to clipboard.",
+        variant: "destructive"
+      });
+    }
   };
 
   // Helper to check if a specific job's message has been copied
@@ -111,7 +133,7 @@ export function JobsTable() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => copyToClipboard(job.id, job.m1, "M1")}
+                            onClick={() => copyToClipboard(job.id, "M1", job)}
                             className={isMessageCopied(job.id, "M1") ? "bg-green-100" : ""}
                           >
                             {isMessageCopied(job.id, "M1") ? (
@@ -134,7 +156,7 @@ export function JobsTable() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => copyToClipboard(job.id, job.m2, "M2")}
+                            onClick={() => copyToClipboard(job.id, "M2", job)}
                             className={isMessageCopied(job.id, "M2") ? "bg-green-100" : ""}
                           >
                             {isMessageCopied(job.id, "M2") ? (
@@ -157,7 +179,7 @@ export function JobsTable() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => copyToClipboard(job.id, job.m3, "M3")}
+                            onClick={() => copyToClipboard(job.id, "M3", job)}
                             className={isMessageCopied(job.id, "M3") ? "bg-green-100" : ""}
                           >
                             {isMessageCopied(job.id, "M3") ? (

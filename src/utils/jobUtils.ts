@@ -49,8 +49,10 @@ export async function getLocaleAbbreviations(): Promise<Record<Locale, string>> 
 // Function to get role abbreviations from database
 export async function getRoleAbbreviations(): Promise<Record<string, string>> {
   try {
+    // Cast the table name to any to bypass TypeScript checking for now
+    // This is a workaround until Supabase types get updated
     const { data, error } = await supabase
-      .from("role_abbreviations")
+      .from("role_abbreviations" as any)
       .select("role_name, abbreviation");
     
     if (error) {
@@ -62,9 +64,11 @@ export async function getRoleAbbreviations(): Promise<Record<string, string>> {
     const abbreviations: Record<string, string> = {};
     
     // Convert the database results to a record
-    for (const role of data || []) {
-      if (role.role_name && role.abbreviation) {
-        abbreviations[role.role_name] = role.abbreviation;
+    if (data) {
+      for (const role of data) {
+        if (role.role_name && role.abbreviation) {
+          abbreviations[role.role_name] = role.abbreviation;
+        }
       }
     }
     
