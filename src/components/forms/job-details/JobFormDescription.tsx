@@ -11,8 +11,10 @@ export function JobFormDescription() {
   const form = useFormContext();
   const [isGeneratingSkills, setIsGeneratingSkills] = useState(false);
   const [isGeneratingMinSkills, setIsGeneratingMinSkills] = useState(false);
+  const [isGeneratingVideoQuestions, setIsGeneratingVideoQuestions] = useState(false);
   const [skillsExtracted, setSkillsExtracted] = useState(false);
   const [minSkillsExtracted, setMinSkillsExtracted] = useState(false);
+  const [videoQuestionsGenerated, setVideoQuestionsGenerated] = useState(false);
 
   const extractSkillsFromDescription = async (description: string) => {
     if (!description.trim()) return;
@@ -84,6 +86,9 @@ export function JobFormDescription() {
           title: "Minimum skills extracted",
           description: "Minimum skills with experience levels have been generated.",
         });
+
+        // After minimum skills are generated, generate video questions
+        await generateVideoQuestions(data.minSkills);
       }
     } catch (error) {
       console.error("Error extracting minimum skills:", error);
@@ -94,6 +99,46 @@ export function JobFormDescription() {
       });
     } finally {
       setIsGeneratingMinSkills(false);
+    }
+  };
+
+  const generateVideoQuestions = async (minSkills: string) => {
+    if (!minSkills.trim()) return;
+    
+    setIsGeneratingVideoQuestions(true);
+    setVideoQuestionsGenerated(false);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-video-questions', {
+        body: { minSkills },
+      });
+
+      if (error) throw error;
+
+      // Update the video questions field with the generated content
+      if (data?.videoQuestions) {
+        form.setValue('videoQuestions', data.videoQuestions, { 
+          shouldDirty: true,
+          shouldTouch: true,
+          shouldValidate: true 
+        });
+        
+        setVideoQuestionsGenerated(true);
+        
+        toast({
+          title: "Video questions generated",
+          description: "Video questions have been automatically generated based on the minimum skills.",
+        });
+      }
+    } catch (error) {
+      console.error("Error generating video questions:", error);
+      toast({
+        title: "Error generating video questions",
+        description: "Could not generate video questions from the minimum skills.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingVideoQuestions(false);
     }
   };
 

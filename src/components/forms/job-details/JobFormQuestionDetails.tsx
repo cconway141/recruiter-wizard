@@ -2,9 +2,12 @@
 import { FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { useFormContext } from "react-hook-form";
+import { Loader2, Check } from "lucide-react";
 
 export function JobFormQuestionDetails() {
   const form = useFormContext();
+  const videoQuestionsValue = form.watch("videoQuestions");
+  const isVideoQuestionsGenerated = videoQuestionsValue && videoQuestionsValue.trim().length > 0;
   
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -13,7 +16,15 @@ export function JobFormQuestionDetails() {
         name="videoQuestions"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Video Questions</FormLabel>
+            <FormLabel className="flex items-center gap-2">
+              Video Questions
+              {isVideoQuestionsGenerated && (
+                <span className="flex items-center text-green-500 text-sm font-medium">
+                  <Check className="h-4 w-4 mr-1" />
+                  Success!
+                </span>
+              )}
+            </FormLabel>
             <FormControl>
               <Textarea
                 placeholder="Questions for the candidate's video response"
