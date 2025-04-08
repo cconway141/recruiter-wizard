@@ -15,6 +15,7 @@ export interface JobContextType {
   updateCandidateStatus: (jobId: string, candidateId: string, statusKey: keyof CandidateStatus, value: boolean) => void;
   getCandidates: (jobId: string) => Candidate[];
   isAirtableEnabled: boolean;
+  loadFromSupabase: () => Promise<void>;
 }
 
 export interface JobsState {

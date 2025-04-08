@@ -3,13 +3,11 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { JobsFilter } from "@/components/jobs/JobsFilter";
 import { JobsTable } from "@/components/jobs/JobsTable";
 import { Navbar } from "@/components/layout/Navbar";
-import { useJobs } from "@/contexts/JobContext";
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { useSupabaseData } from "@/hooks/useSupabaseData";
 
 const Index = () => {
-  const { isAirtableEnabled } = useJobs();
   const location = useLocation();
   const { loadFromSupabase } = useSupabaseData();
   
