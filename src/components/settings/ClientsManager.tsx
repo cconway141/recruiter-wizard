@@ -3,28 +3,8 @@ import { useState, useEffect } from "react";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Pencil, Trash, Save, X, RefreshCw } from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { 
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { RefreshCw } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Client } from "@/components/settings/clients/types";
 import { ClientForm } from "./clients/ClientForm";
@@ -33,10 +13,6 @@ import { ClientsList } from "./clients/ClientsList";
 export function ClientsManager() {
   const [clients, setClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [newClient, setNewClient] = useState("");
-  const [newManager, setNewManager] = useState("");
-  const [newAbbreviation, setNewAbbreviation] = useState("");
-  const [newDescription, setNewDescription] = useState("");
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const queryClient = useQueryClient();
 
@@ -211,7 +187,8 @@ export function ClientsManager() {
           )}
           
           <ClientsList 
-            clients={clients} 
+            clients={clients}
+            isLoading={isLoading}
             onEdit={setEditingClient} 
             onDelete={handleDeleteClient} 
           />

@@ -28,7 +28,7 @@ export function ClientItem({ client, onEdit, onDelete }: ClientItemProps) {
       <TableCell>{client.name}</TableCell>
       <TableCell>{client.abbreviation}</TableCell>
       <TableCell>{client.manager}</TableCell>
-      <TableCell className="max-w-[200px] truncate">{client.description}</TableCell>
+      <TableCell className="whitespace-normal break-words">{client.description}</TableCell>
       <TableCell>
         <div className="flex space-x-2">
           <Button size="sm" variant="outline" onClick={() => onEdit(client)}>

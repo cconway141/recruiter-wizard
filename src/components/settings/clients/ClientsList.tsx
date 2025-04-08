@@ -18,14 +18,17 @@ import {
 interface ClientsListProps {
   clients: Client[];
   isLoading: boolean;
+  onEdit: (client: Client) => void;
+  onDelete: (id: string) => void;
 }
 
-export function ClientsList({ clients, isLoading }: ClientsListProps) {
+export function ClientsList({ clients, isLoading, onEdit, onDelete }: ClientsListProps) {
   const [editingClient, setEditingClient] = useState<Client | null>(null);
   const queryClient = useQueryClient();
 
   const handleStartEditing = (client: Client) => {
     setEditingClient({ ...client });
+    onEdit(client);
   };
 
   const handleCancelEditing = () => {
@@ -87,6 +90,7 @@ export function ClientsList({ clients, isLoading }: ClientsListProps) {
       
       // Refresh data after deleting
       queryClient.invalidateQueries({ queryKey: ["clientOptions"] });
+      onDelete(id);
     } catch (error) {
       console.error("Error deleting client:", error);
       toast({
@@ -102,11 +106,11 @@ export function ClientsList({ clients, isLoading }: ClientsListProps) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Abbreviation</TableHead>
-            <TableHead>Manager</TableHead>
-            <TableHead>Description</TableHead>
-            <TableHead className="w-[100px]">Actions</TableHead>
+            <TableHead className="w-[20%]">Name</TableHead>
+            <TableHead className="w-[10%]">Abbreviation</TableHead>
+            <TableHead className="w-[15%]">Manager</TableHead>
+            <TableHead className="w-[45%]">Description</TableHead>
+            <TableHead className="w-[10%]">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -124,21 +128,12 @@ export function ClientsList({ clients, isLoading }: ClientsListProps) {
             </TableRow>
           ) : (
             clients.map((client) => (
-              editingClient && editingClient.id === client.id ? (
-                <EditableClientItem 
-                  key={client.id}
-                  client={editingClient}
-                  onUpdate={handleUpdateClient}
-                  onCancel={handleCancelEditing}
-                />
-              ) : (
-                <ClientItem 
-                  key={client.id}
-                  client={client}
-                  onEdit={handleStartEditing}
-                  onDelete={handleDeleteClient}
-                />
-              )
+              <ClientItem 
+                key={client.id}
+                client={client}
+                onEdit={handleStartEditing}
+                onDelete={handleDeleteClient}
+              />
             ))
           )}
         </TableBody>

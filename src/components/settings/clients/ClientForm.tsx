@@ -1,154 +1,129 @@
 
-import { useState } from "react";
-import { toast } from "@/components/ui/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useQueryClient } from "@tanstack/react-query";
+import { Textarea } from "@/components/ui/textarea";
+import { Client } from "./types";
 
-export function ClientForm() {
-  const [newClient, setNewClient] = useState("");
-  const [newManager, setNewManager] = useState("");
-  const [newAbbreviation, setNewAbbreviation] = useState("");
-  const [newDescription, setNewDescription] = useState("");
+interface ClientFormProps {
+  client?: Client;
+  onSubmit: (client: any) => void; // Using 'any' to accommodate both Client and Omit<Client, "id">
+  onCancel: () => void;
+}
+
+export function ClientForm({ client, onSubmit, onCancel }: ClientFormProps) {
+  const [name, setName] = useState("");
+  const [manager, setManager] = useState("");
+  const [abbreviation, setAbbreviation] = useState("");
+  const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [lastError, setLastError] = useState<string | null>(null);
-  const queryClient = useQueryClient();
 
-  const handleAddClient = async () => {
-    if (!newClient.trim() || !newManager.trim() || !newAbbreviation.trim() || !newDescription.trim()) {
-      toast({
-        title: "Error",
-        description: "All fields are required",
-        variant: "destructive",
-      });
-      return;
+  // If a client is provided, populate the form fields
+  useEffect(() => {
+    if (client) {
+      setName(client.name);
+      setManager(client.manager);
+      setAbbreviation(client.abbreviation);
+      setDescription(client.description);
     }
-    
+  }, [client]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     setIsSubmitting(true);
-    setLastError(null);
-    
-    try {
-      console.log("ClientForm: Adding new client:", { 
-        name: newClient,
-        manager: newManager,
-        abbreviation: newAbbreviation,
-        description: newDescription
-      });
-      
-      // Verify Supabase connection before attempting insert
-      const { data: connectionTest, error: connectionError } = await supabase.from("clients").select("count");
-      
-      if (connectionError) {
-        console.error("ClientForm: Connection test failed:", connectionError);
-        throw new Error(`Connection error: ${connectionError.message}`);
-      }
-      
-      console.log("ClientForm: Connection test passed:", connectionTest);
-      
-      const { data, error } = await supabase
-        .from("clients")
-        .insert({ 
-          name: newClient,
-          manager: newManager,
-          abbreviation: newAbbreviation,
-          description: newDescription
-        })
-        .select();
-      
-      if (error) {
-        console.error("ClientForm: Error adding client:", error);
-        setLastError(error.message);
-        throw error;
-      }
-      
-      console.log("ClientForm: Client added successfully:", data);
-      
-      toast({
-        title: "Success",
-        description: `Client "${newClient}" has been added.`,
-      });
-      
-      setNewClient("");
-      setNewManager("");
-      setNewAbbreviation("");
-      setNewDescription("");
-      
-      // Refresh data after adding
-      queryClient.invalidateQueries({ queryKey: ["clientOptions"] });
-      // Trigger a refetch in the parent component
-      document.dispatchEvent(new CustomEvent('client-added'));
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error("Error adding client:", error);
-      setLastError(errorMessage);
-      toast({
-        title: "Error",
-        description: `Failed to add client: ${errorMessage}`,
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
-  // Test function to add a sample client - this helps debug the form
-  const addSampleClient = async () => {
-    setNewClient("Sample Client");
-    setNewManager("Sample Manager");
-    setNewAbbreviation("SMPL");
-    setNewDescription("This is a sample client for testing purposes");
+    const formData = {
+      name,
+      manager,
+      abbreviation,
+      description,
+      ...(client && { id: client.id })
+    };
+
+    onSubmit(formData);
     
-    // Wait for state to update
-    setTimeout(handleAddClient, 100);
+    // Only reset the form if we're adding a new client (not editing)
+    if (!client) {
+      setName("");
+      setManager("");
+      setAbbreviation("");
+      setDescription("");
+    }
+    
+    setIsSubmitting(false);
   };
 
   return (
-    <div className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Input 
-          placeholder="Client Name" 
-          value={newClient} 
-          onChange={(e) => setNewClient(e.target.value)} 
-        />
-        <Input 
-          placeholder="Manager Name" 
-          value={newManager} 
-          onChange={(e) => setNewManager(e.target.value)} 
-        />
-        <Input 
-          placeholder="Abbreviation" 
-          value={newAbbreviation} 
-          onChange={(e) => setNewAbbreviation(e.target.value)} 
-        />
-        <Input 
-          placeholder="Company Description" 
-          value={newDescription} 
-          onChange={(e) => setNewDescription(e.target.value)} 
-        />
-        <Button 
-          onClick={handleAddClient} 
-          className="md:col-span-2"
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? 'Adding...' : 'Add Client'}
-        </Button>
-      </div>
-      
-      {/* For debugging purposes */}
-      <div className="text-xs text-muted-foreground mt-4 border-t pt-2">
-        <p>Debug: Last error: {lastError || 'None'}</p>
-        <div className="flex justify-end">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={addSampleClient}
-            className="text-xs"
-          >
-            Add Sample Client (Debug)
-          </Button>
+        <div className="space-y-2">
+          <label htmlFor="name" className="text-sm font-medium">
+            Client Name
+          </label>
+          <Input
+            id="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Enter client name"
+            required
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <label htmlFor="abbreviation" className="text-sm font-medium">
+            Abbreviation
+          </label>
+          <Input
+            id="abbreviation"
+            value={abbreviation}
+            onChange={(e) => setAbbreviation(e.target.value)}
+            placeholder="Enter abbreviation (e.g., ACME)"
+            required
+          />
         </div>
       </div>
-    </div>
+      
+      <div className="space-y-2">
+        <label htmlFor="manager" className="text-sm font-medium">
+          Manager
+        </label>
+        <Input
+          id="manager"
+          value={manager}
+          onChange={(e) => setManager(e.target.value)}
+          placeholder="Enter manager name"
+          required
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <label htmlFor="description" className="text-sm font-medium">
+          Description
+        </label>
+        <Textarea
+          id="description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Enter client description"
+          rows={3}
+        />
+      </div>
+      
+      <div className="flex justify-end space-x-2">
+        {client && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            disabled={isSubmitting}
+          >
+            Cancel
+          </Button>
+        )}
+        <Button type="submit" disabled={isSubmitting}>
+          {client ? "Update Client" : "Add Client"}
+        </Button>
+      </div>
+    </form>
   );
 }
