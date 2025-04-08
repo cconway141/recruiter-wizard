@@ -1,5 +1,5 @@
 
-import { Eye, Pencil, Trash2, Copy, Check } from "lucide-react";
+import { Eye, Pencil, Trash2, Copy, Check, RefreshCw } from "lucide-react";
 import { useState } from "react";
 import { useJobs } from "@/contexts/JobContext";
 import { Button } from "@/components/ui/button";
@@ -32,7 +32,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
-import { generateM1, generateM2, generateM3 } from "@/utils/jobUtils";
+import { generateM1, generateM2, generateM3, generateInternalTitle } from "@/utils/jobUtils";
 
 const StatusBadgeColor = {
   Active: "bg-green-100 text-green-800 hover:bg-green-100",
@@ -48,10 +48,11 @@ type CopiedMessageInfo = {
 } | null;
 
 export function JobsTable() {
-  const { filteredJobs, deleteJob } = useJobs();
+  const { filteredJobs, deleteJob, updateJob, loadFromSupabase } = useJobs();
   const { toast } = useToast();
   // Track both job ID and message type that was copied
   const [copiedMessage, setCopiedMessage] = useState<CopiedMessageInfo>(null);
+  const [isUpdatingTitles, setIsUpdatingTitles] = useState(false);
 
   const copyToClipboard = async (jobId: string, messageType: string, job: any) => {
     try {
@@ -92,8 +93,77 @@ export function JobsTable() {
     return copiedMessage?.jobId === jobId && copiedMessage?.messageType === messageType;
   };
 
+  // Function to update all job titles to the new format
+  const updateAllJobTitles = async () => {
+    try {
+      setIsUpdatingTitles(true);
+      
+      // Process jobs in batches to avoid overwhelming the database
+      const batchSize = 10;
+      let processed = 0;
+      
+      while (processed < filteredJobs.length) {
+        const batch = filteredJobs.slice(processed, processed + batchSize);
+        
+        // Process each job in the batch
+        await Promise.all(batch.map(async (job) => {
+          try {
+            // Generate new internal title using the new format
+            const newInternalTitle = await generateInternalTitle(
+              job.client,
+              job.candidateFacingTitle,
+              job.flavor,
+              job.locale
+            );
+            
+            // Only update if the title has changed
+            if (newInternalTitle !== job.internalTitle) {
+              const updatedJob = { ...job, internalTitle: newInternalTitle };
+              await updateJob(updatedJob);
+            }
+          } catch (error) {
+            console.error(`Error updating job ${job.id}:`, error);
+          }
+        }));
+        
+        processed += batchSize;
+      }
+      
+      // Refresh data from database to reflect all updates
+      await loadFromSupabase();
+      
+      toast({
+        title: "Job Titles Updated",
+        description: "All job titles have been updated to the new format.",
+      });
+    } catch (error) {
+      console.error("Error updating job titles:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update job titles. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUpdatingTitles(false);
+    }
+  };
+
   return (
     <div className="rounded-md border bg-white">
+      <div className="p-4 flex justify-end">
+        <Button 
+          onClick={updateAllJobTitles} 
+          disabled={isUpdatingTitles}
+          className="flex items-center gap-2"
+        >
+          {isUpdatingTitles ? (
+            <RefreshCw className="h-4 w-4 animate-spin" />
+          ) : (
+            <RefreshCw className="h-4 w-4" />
+          )}
+          Update All Job Titles
+        </Button>
+      </div>
       <Table>
         <TableHeader>
           <TableRow>
