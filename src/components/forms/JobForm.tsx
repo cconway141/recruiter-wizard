@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useFormContext } from "react-hook-form";
+import { useFormContext, UseFormReturn } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Job, Locale } from "@/types/job";
 import { 
@@ -20,7 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 // Import the component files
 import { JobFormBasicInfo } from "./JobFormBasicInfo";
 import { JobFormCompanyDesc } from "./JobFormCompanyDesc";
-import { JobFormDetails } from "./JobFormDetails";
+import { JobFormDetails, JobFormValues } from "./JobFormDetails";
 import { JobFormLinks } from "./JobFormLinks";
 import { FormRatePreview } from "./FormRatePreview";
 import { MessagePreviewSection } from "./MessagePreviewSection";
@@ -49,7 +49,7 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
   });
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
 
-  const form = useFormContext();
+  const form = useFormContext<JobFormValues>();
   const watchedFields = form.watch();
 
   const { isLoading: clientsLoading } = useClientOptions();

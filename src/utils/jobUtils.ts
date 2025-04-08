@@ -79,7 +79,7 @@ export async function getWorkDetails(locale: Locale): Promise<string> {
       .from("locales")
       .select("work_details")
       .eq("name", locale)
-      .single();
+      .maybeSingle();
     
     if (error) {
       console.error("Error fetching work details:", error);
@@ -105,7 +105,7 @@ export async function getPayDetails(locale: Locale): Promise<string> {
       .from("locales")
       .select("pay_details")
       .eq("name", locale)
-      .single();
+      .maybeSingle();
     
     if (error) {
       console.error("Error fetching pay details:", error);

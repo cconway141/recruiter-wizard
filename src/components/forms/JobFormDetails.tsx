@@ -9,7 +9,7 @@ import { UseFormReturn } from "react-hook-form";
 import { Locale } from "@/types/job";
 import { getWorkDetails, getPayDetails, generateM1, generateM2, generateM3 } from "@/utils/jobUtils";
 
-interface JobFormValues {
+export interface JobFormValues {
   candidateFacingTitle: string;
   compDesc: string;
   locale: string;
