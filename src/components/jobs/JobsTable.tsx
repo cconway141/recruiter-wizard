@@ -10,6 +10,9 @@ import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { generateM1, generateM2, generateM3 } from "@/utils/messageUtils";
+import { SortableHeader } from "@/components/ui/sortable-header";
+import { useSortableTable } from "@/hooks/useSortableTable";
+import { Job } from "@/types/job";
 
 const StatusBadgeColor = {
   Active: "bg-green-100 text-green-800 hover:bg-green-100",
@@ -32,6 +35,15 @@ export function JobsTable() {
   const {
     toast
   } = useToast();
+  
+  // Add sorting functionality
+  const { sortField, sortDirection, handleSort, sortedData } = 
+    useSortableTable<Job, keyof Job>(
+      filteredJobs,
+      'internalTitle',
+      'asc'
+    );
+    
   // Track both job ID and message type that was copied
   const [copiedMessage, setCopiedMessage] = useState<CopiedMessageInfo>(null);
   const copyToClipboard = async (jobId: string, messageType: string, job: any) => {
@@ -72,25 +84,56 @@ export function JobsTable() {
   const isMessageCopied = (jobId: string, messageType: string) => {
     return copiedMessage?.jobId === jobId && copiedMessage?.messageType === messageType;
   };
+  
   return <div className="rounded-md border bg-white">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Title</TableHead>
-            <TableHead>Client</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Rate (US)</TableHead>
-            <TableHead>Owner</TableHead>
+            <SortableHeader
+              title="Title"
+              field="internalTitle"
+              currentField={sortField}
+              direction={sortDirection}
+              onSort={handleSort}
+            />
+            <SortableHeader
+              title="Client"
+              field="client"
+              currentField={sortField}
+              direction={sortDirection}
+              onSort={handleSort}
+            />
+            <SortableHeader
+              title="Status"
+              field="status"
+              currentField={sortField}
+              direction={sortDirection}
+              onSort={handleSort}
+            />
+            <SortableHeader
+              title="Rate (US)"
+              field="rate"
+              currentField={sortField}
+              direction={sortDirection}
+              onSort={handleSort}
+            />
+            <SortableHeader
+              title="Owner"
+              field="owner"
+              currentField={sortField}
+              direction={sortDirection}
+              onSort={handleSort}
+            />
             <TableHead className="text-center">Messages</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filteredJobs.length === 0 ? <TableRow>
+          {sortedData.length === 0 ? <TableRow>
               <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
                 No jobs found. Try adjusting your filters or add a new job.
               </TableCell>
-            </TableRow> : filteredJobs.map(job => <TableRow key={job.id}>
+            </TableRow> : sortedData.map(job => <TableRow key={job.id}>
                 <TableCell className="font-medium">{job.internalTitle}</TableCell>
                 <TableCell>{job.client}</TableCell>
                 <TableCell>

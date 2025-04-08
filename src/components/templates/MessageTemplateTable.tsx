@@ -22,11 +22,12 @@ export function MessageTemplateTable({ templates, onUpdateTemplate }: MessageTem
   const [editingTemplate, setEditingTemplate] = useState<MessageTemplate | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   
-  // Use the sortable table hook
+  // Use the sortable table hook with better typing
   const { sortField, sortDirection, handleSort, sortedData } = 
     useSortableTable<MessageTemplate, keyof MessageTemplate>(
       templates, 
-      'id'
+      'id',
+      'asc'
     );
 
   // Function to copy message to clipboard

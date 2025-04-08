@@ -63,7 +63,7 @@ export function JobsFilter() {
         </Select>
         
         <Link to="/message-templates">
-          <Button variant="outline">Message Templates</Button>
+          <Button variant="outline">Generic Messages</Button>
         </Link>
         
         <Link to="/jobs/new">

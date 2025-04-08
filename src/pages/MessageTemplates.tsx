@@ -4,43 +4,18 @@ import { Navbar } from "@/components/layout/Navbar";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle,
-  DialogFooter
-} from "@/components/ui/dialog";
-import {
-  Form,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl
-} from "@/components/ui/form";
-import { Textarea } from "@/components/ui/textarea";
-import { Copy, Edit, ChevronUp, ChevronDown, Search } from "lucide-react";
-import { useForm } from "react-hook-form";
-import { toast } from "@/components/ui/use-toast";
-
-interface MessageTemplate {
-  id: string;
-  category: string;
-  situation: string;
-  message: string;
-}
+import { MessageTemplateTable } from "@/components/templates/MessageTemplateTable";
+import { Search } from "lucide-react";
+import { MessageTemplate } from "@/types/messageTemplate";
 
 // Sample message templates data
 const initialTemplates: MessageTemplate[] = [
-  { id: "G1", category: "General", situation: "Urgent EOD Role update", message: "Client - Manager - Role - EOD URGENT (DATE)\n\nNAME/ROLE - Needs <blank> or we will fall behind, can you push forward tonight?" },
+  { 
+    id: "G1", 
+    category: "General", 
+    situation: "Urgent EOD Role update", 
+    message: "Client - Manager - Role - EOD URGENT (DATE)\n\nNAME/ROLE - Needs <blank> or we will fall behind, can you push forward tonight?" 
+  },
   { id: "G2", category: "M1", situation: "No", message: "No problem! Best of luck on your journey this year!" },
   { id: "G3", category: "M2", situation: "Objection-Skill Block", message: "The skills block is very helpful and needs to be done before any other step, we'll need to have your personal view on your skills and level for each to ensure we are aligned, afterwards we can discuss next steps and any questions or concerns, how does that sound?" },
   { id: "G4", category: "M2", situation: "Objection-Job/Visa Details", message: "Take a look our pay details above for those sort of questions, let me know if you have any questions after that." },
@@ -60,94 +35,27 @@ const initialTemplates: MessageTemplate[] = [
 export default function MessageTemplates() {
   const [templates, setTemplates] = useState<MessageTemplate[]>(initialTemplates);
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortConfig, setSortConfig] = useState<{
-    key: keyof MessageTemplate;
-    direction: 'ascending' | 'descending';
-  } | null>(null);
-  const [selectedTemplate, setSelectedTemplate] = useState<MessageTemplate | null>(null);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-  // Create form
-  const form = useForm<MessageTemplate>({
-    defaultValues: {
-      id: "",
-      category: "",
-      situation: "",
-      message: ""
-    }
-  });
-
-  // Handle sorting
-  const requestSort = (key: keyof MessageTemplate) => {
-    let direction: 'ascending' | 'descending' = 'ascending';
-    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
-      direction = 'descending';
-    }
-    setSortConfig({ key, direction });
-  };
-
-  // Apply sorting and filtering
-  const filteredAndSortedTemplates = useMemo(() => {
-    let filteredTemplates = templates;
+  // Filtered templates based on search query
+  const filteredTemplates = useMemo(() => {
+    if (!searchQuery) return templates;
     
-    // Apply search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filteredTemplates = templates.filter(template => 
-        template.id.toLowerCase().includes(query) ||
-        template.category.toLowerCase().includes(query) ||
-        template.situation.toLowerCase().includes(query) ||
-        template.message.toLowerCase().includes(query)
-      );
-    }
-    
-    // Apply sorting
-    if (sortConfig !== null) {
-      filteredTemplates = [...filteredTemplates].sort((a, b) => {
-        if (a[sortConfig.key] < b[sortConfig.key]) {
-          return sortConfig.direction === 'ascending' ? -1 : 1;
-        }
-        if (a[sortConfig.key] > b[sortConfig.key]) {
-          return sortConfig.direction === 'ascending' ? 1 : -1;
-        }
-        return 0;
-      });
-    }
-    
-    return filteredTemplates;
-  }, [templates, searchQuery, sortConfig]);
+    const query = searchQuery.toLowerCase();
+    return templates.filter(template => 
+      template.id.toLowerCase().includes(query) ||
+      template.category.toLowerCase().includes(query) ||
+      template.situation.toLowerCase().includes(query) ||
+      template.message.toLowerCase().includes(query)
+    );
+  }, [templates, searchQuery]);
 
-  // Copy message to clipboard
-  const copyToClipboard = (message: string) => {
-    navigator.clipboard.writeText(message);
-    toast({
-      title: "Copied to clipboard",
-      description: "Message has been copied to clipboard",
-    });
-  };
-
-  // Open edit dialog
-  const openEditDialog = (template: MessageTemplate) => {
-    setSelectedTemplate(template);
-    form.reset(template);
-    setIsEditDialogOpen(true);
-  };
-
-  // Save edited template
-  const saveTemplate = (data: MessageTemplate) => {
-    if (selectedTemplate) {
-      // Update template in the list
-      setTemplates(prev => 
-        prev.map(t => t.id === selectedTemplate.id ? { ...data, id: selectedTemplate.id } : t)
-      );
-      
-      toast({
-        title: "Template updated",
-        description: "Message template has been updated successfully",
-      });
-      
-      setIsEditDialogOpen(false);
-    }
+  // Handler for updating a template
+  const handleUpdateTemplate = (updatedTemplate: MessageTemplate) => {
+    setTemplates(prevTemplates => 
+      prevTemplates.map(template => 
+        template.id === updatedTemplate.id ? updatedTemplate : template
+      )
+    );
   };
 
   return (
@@ -155,8 +63,8 @@ export default function MessageTemplates() {
       <Navbar />
       <main className="flex-1 container py-10">
         <PageHeader 
-          title="Message Templates" 
-          description="Manage and use message templates for communication with candidates" 
+          title="Generic Messages" 
+          description="Standard templates for commonly used messages in candidate communications" 
         />
 
         {/* Search and filters */}
@@ -171,133 +79,10 @@ export default function MessageTemplates() {
         </div>
 
         {/* Templates table */}
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[80px] cursor-pointer" onClick={() => requestSort('id')}>
-                  ID
-                  {sortConfig?.key === 'id' && (
-                    sortConfig.direction === 'ascending' ? <ChevronUp className="ml-1 h-4 w-4 inline" /> : <ChevronDown className="ml-1 h-4 w-4 inline" />
-                  )}
-                </TableHead>
-                <TableHead className="cursor-pointer" onClick={() => requestSort('category')}>
-                  Category
-                  {sortConfig?.key === 'category' && (
-                    sortConfig.direction === 'ascending' ? <ChevronUp className="ml-1 h-4 w-4 inline" /> : <ChevronDown className="ml-1 h-4 w-4 inline" />
-                  )}
-                </TableHead>
-                <TableHead className="cursor-pointer" onClick={() => requestSort('situation')}>
-                  Situation
-                  {sortConfig?.key === 'situation' && (
-                    sortConfig.direction === 'ascending' ? <ChevronUp className="ml-1 h-4 w-4 inline" /> : <ChevronDown className="ml-1 h-4 w-4 inline" />
-                  )}
-                </TableHead>
-                <TableHead>Message</TableHead>
-                <TableHead className="w-[100px] text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredAndSortedTemplates.length > 0 ? (
-                filteredAndSortedTemplates.map((template) => (
-                  <TableRow key={template.id}>
-                    <TableCell className="font-medium">{template.id}</TableCell>
-                    <TableCell>{template.category}</TableCell>
-                    <TableCell>{template.situation}</TableCell>
-                    <TableCell className="max-w-md">
-                      <div className="truncate">{template.message}</div>
-                    </TableCell>
-                    <TableCell className="text-right space-x-2">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => copyToClipboard(template.message)}
-                        title="Copy Message"
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => openEditDialog(template)}
-                        title="Edit Template"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-4">
-                    No message templates found
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-
-        {/* Edit dialog */}
-        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="sm:max-w-[600px]">
-            <DialogHeader>
-              <DialogTitle>Edit Message Template</DialogTitle>
-            </DialogHeader>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(saveTemplate)} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="category"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Category</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Category" {...field} />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="situation"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Situation</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Situation" {...field} />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                <FormField
-                  control={form.control}
-                  name="message"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Message</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          placeholder="Message content" 
-                          className="min-h-[200px] font-mono"
-                          {...field} 
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button type="submit">Save Changes</Button>
-                </DialogFooter>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
+        <MessageTemplateTable 
+          templates={filteredTemplates} 
+          onUpdateTemplate={handleUpdateTemplate} 
+        />
       </main>
     </div>
   );
