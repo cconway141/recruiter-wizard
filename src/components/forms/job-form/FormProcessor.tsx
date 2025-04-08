@@ -47,6 +47,7 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
       const m3 = generateM3(values.videoQuestions);
       
       if (isEditing && job) {
+        console.log("Updating existing job");
         updateJob({
           ...job,
           ...values,
@@ -67,33 +68,54 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
           description: `${internalTitle} has been updated successfully.`,
         });
       } else {
-        console.log("Adding new job");
-        addJob({
-          jd: values.jd,
-          candidateFacingTitle: values.candidateFacingTitle,
-          status: values.status,
-          skillsSought: values.skillsSought,
-          minSkills: values.minSkills, 
-          lir: values.lir,
-          client: values.client,
-          compDesc: values.compDesc,
-          rate: values.rate,
-          locale: locale,
-          owner: values.owner,
-          date: values.date,
-          other: values.other || "",
-          videoQuestions: values.videoQuestions,
-          screeningQuestions: values.screeningQuestions,
-          flavor: values.flavor,
+        console.log("Adding new job with values:", {
+          ...values,
+          internalTitle,
+          highRate: high,
+          mediumRate: medium,
+          lowRate: low,
+          workDetails,
+          payDetails,
+          m1,
+          m2,
+          m3
         });
         
-        toast({
-          title: "Job Added",
-          description: `${internalTitle} has been added successfully.`,
-        });
+        try {
+          await addJob({
+            jd: values.jd,
+            candidateFacingTitle: values.candidateFacingTitle,
+            status: values.status,
+            skillsSought: values.skillsSought,
+            minSkills: values.minSkills, 
+            lir: values.lir,
+            client: values.client,
+            compDesc: values.compDesc,
+            rate: values.rate,
+            locale: locale,
+            owner: values.owner,
+            date: values.date,
+            other: values.other || "",
+            videoQuestions: values.videoQuestions,
+            screeningQuestions: values.screeningQuestions,
+            flavor: values.flavor,
+          });
+          
+          toast({
+            title: "Job Added",
+            description: `${internalTitle} has been added successfully.`,
+          });
+          
+          navigate("/");
+        } catch (addError) {
+          console.error("Error in addJob:", addError);
+          toast({
+            title: "Error",
+            description: `Failed to create job: ${addError instanceof Error ? addError.message : String(addError)}`,
+            variant: "destructive",
+          });
+        }
       }
-      
-      navigate("/");
     } catch (err) {
       console.error("Error in form submission:", err);
       toast({
@@ -101,6 +123,7 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
         description: `Failed to ${isEditing ? "update" : "create"} job: ${err instanceof Error ? err.message : String(err)}`,
         variant: "destructive",
       });
+      throw err; // Re-throw to prevent navigation
     }
   };
 

@@ -6,6 +6,7 @@ import { FormProvider, useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { JobProvider } from "@/contexts/JobContext";
+import { useEffect } from "react";
 
 // Define the form schema for the job
 const formSchema = z.object({
@@ -25,7 +26,12 @@ const formSchema = z.object({
   videoQuestions: z.string().min(1, "Video questions are required"),
   screeningQuestions: z.string().min(1, "Screening questions are required"),
   flavor: z.string().min(1, "Flavor is required"),
-  previewName: z.string().optional(),
+  // These fields are required for the form but will be generated
+  m1: z.string().optional(),
+  m2: z.string().optional(),
+  m3: z.string().optional(),
+  workDetails: z.string().optional(),
+  payDetails: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -50,9 +56,22 @@ const AddJob = () => {
       videoQuestions: "",
       screeningQuestions: "",
       flavor: "FE",
-      previewName: "Candidate",
+      m1: "",
+      m2: "",
+      m3: "",
+      workDetails: "",
+      payDetails: "",
     }
   });
+
+  // For debugging
+  useEffect(() => {
+    console.log("Form state:", methods.formState);
+    const subscription = methods.watch(() => {
+      console.log("Form values changed:", methods.getValues());
+    });
+    return () => subscription.unsubscribe();
+  }, [methods]);
 
   return (
     <div className="flex flex-col min-h-screen">

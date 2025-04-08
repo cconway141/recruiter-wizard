@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { Locale } from "@/types/job";
@@ -79,7 +80,7 @@ export function JobFormDetails({ form }: JobFormDetailsProps) {
           // Update the form values with the generated messages
           form.setValue("m1", m1);
           form.setValue("m2", m2);
-          form.setValue("m3", m3);
+          if (m3) form.setValue("m3", m3);
         } catch (err) {
           console.error("Error generating messages:", err);
         }

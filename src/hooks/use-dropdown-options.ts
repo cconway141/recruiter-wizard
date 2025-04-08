@@ -2,182 +2,131 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-export interface FlavorOption {
-  id: string;
-  name: string;
-  label: string;
-}
-
-export interface SimpleOption {
+// Interface for a dropdown option
+export interface DropdownOption {
   id: string;
   name: string;
 }
 
-export interface UserOption {
+// Interface for user profiles
+export interface UserProfile {
   id: string;
   first_name: string | null;
   last_name: string | null;
-  email: string | null;
-  display_name: string;
+  email: string;
+  display_name: string | null;
 }
 
-export const useFlavorOptions = () => {
+// Fetch client options
+export function useClientOptions() {
   return useQuery({
-    queryKey: ["flavorOptions"],
-    queryFn: async (): Promise<FlavorOption[]> => {
+    queryKey: ['clientOptions'],
+    queryFn: async () => {
       const { data, error } = await supabase
-        .from("flavors")
-        .select("*");
-      
-      if (error) {
-        throw error;
-      }
-      
-      return data as FlavorOption[] || [];
-    },
-  });
-};
+        .from('clients')
+        .select('id, name')
+        .order('name');
 
-export const useLocaleOptions = () => {
+      if (error) {
+        console.error("Error fetching clients:", error);
+        throw new Error(error.message);
+      }
+
+      console.log("useClientOptions: Formatted client data:", data);
+      
+      return data as DropdownOption[];
+    }
+  });
+}
+
+// Fetch locale options
+export function useLocaleOptions() {
   return useQuery({
-    queryKey: ["localeOptions"],
-    queryFn: async (): Promise<SimpleOption[]> => {
+    queryKey: ['localeOptions'],
+    queryFn: async () => {
       const { data, error } = await supabase
-        .from("locales")
-        .select("*");
-      
+        .from('locales')
+        .select('id, name')
+        .order('name');
+
       if (error) {
-        throw error;
+        console.error("Error fetching locales:", error);
+        throw new Error(error.message);
       }
       
-      return data as SimpleOption[] || [];
-    },
+      return data as DropdownOption[];
+    }
   });
-};
+}
 
-export const useStatusOptions = () => {
+// Fetch flavor options
+export function useFlavorOptions() {
   return useQuery({
-    queryKey: ["statusOptions"],
-    queryFn: async (): Promise<SimpleOption[]> => {
+    queryKey: ['flavorOptions'],
+    queryFn: async () => {
       const { data, error } = await supabase
-        .from("job_statuses")
-        .select("*");
-      
+        .from('flavors')
+        .select('id, name')
+        .order('name');
+
       if (error) {
-        throw error;
+        console.error("Error fetching flavors:", error);
+        throw new Error(error.message);
       }
       
-      return data as SimpleOption[] || [];
-    },
+      return data as DropdownOption[];
+    }
   });
-};
+}
 
-export const useClientOptions = () => {
+// Fetch status options
+export function useStatusOptions() {
   return useQuery({
-    queryKey: ["clientOptions"],
-    queryFn: async (): Promise<SimpleOption[]> => {
-      try {
-        console.log("useClientOptions: Fetching clients from Supabase...");
-        
-        // First verify Supabase connection
-        const { error: connectionError } = await supabase.from("clients").select("count");
-        
-        if (connectionError) {
-          console.error("useClientOptions: Connection test failed:", connectionError);
-          throw new Error(`Connection error: ${connectionError.message}`);
-        }
-        
-        console.log("useClientOptions: Connection test passed, fetching clients...");
-        
-        const { data, error } = await supabase
-          .from("clients")
-          .select("*")
-          .order('name');
-        
-        if (error) {
-          console.error("useClientOptions: Error fetching clients:", error);
-          throw error;
-        }
-        
-        console.log("useClientOptions: Fetched clients raw data:", data);
-        
-        // Make sure we're returning the data in the expected format
-        const formattedData = (data || []).map(client => ({
-          id: client.id,
-          name: client.name
-        }));
-        
-        console.log("useClientOptions: Formatted client data:", formattedData);
-        return formattedData;
-      } catch (error) {
-        console.error("Error in useClientOptions:", error);
-        throw error;
-      }
-    },
-    // Force refetch on component mount
-    refetchOnMount: true,
-    // Add stale time to avoid too frequent refetches
-    staleTime: 30000,
-    // Add retry for better error handling
-    retry: 2,
-    retryDelay: 1000,
-  });
-};
+    queryKey: ['statusOptions'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('job_statuses')
+        .select('id, name')
+        .order('name');
 
-export const useUserOptions = () => {
-  return useQuery({
-    queryKey: ["userOptions"],
-    queryFn: async (): Promise<UserOption[]> => {
-      try {
-        console.log("useUserOptions: Fetching users from Supabase...");
-        
-        // First verify Supabase connection
-        const { error: connectionError } = await supabase.from("profiles").select("count");
-        
-        if (connectionError) {
-          console.error("useUserOptions: Connection test failed:", connectionError);
-          throw new Error(`Connection error: ${connectionError.message}`);
-        }
-        
-        console.log("useUserOptions: Connection test passed, fetching users...");
-        
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("*");
-        
-        if (error) {
-          console.error("useUserOptions: Error fetching users:", error);
-          throw error;
-        }
-        
-        console.log("useUserOptions: Fetched users raw data:", data);
-        
-        // Make sure we handle both cases - whether display_name exists or not
-        const formattedData = (data || []).map(user => ({
-          id: user.id,
-          first_name: user.first_name,
-          last_name: user.last_name,
-          email: user.email,
-          // Fallback chain in case display_name isn't set
-          display_name: user.display_name || 
-                     `${user.first_name || ''} ${user.last_name || ''}`.trim() || 
-                     user.email?.split('@')[0] || 
-                     'Unknown User'
-        }));
-        
-        console.log("useUserOptions: Formatted user data:", formattedData);
-        return formattedData;
-      } catch (error) {
-        console.error("Error in useUserOptions:", error);
-        throw error;
+      if (error) {
+        console.error("Error fetching job statuses:", error);
+        throw new Error(error.message);
       }
-    },
-    // Force refetch on component mount
-    refetchOnMount: true,
-    // Add stale time to avoid too frequent refetches
-    staleTime: 30000,
-    // Add retry for better error handling
-    retry: 2,
-    retryDelay: 1000,
+      
+      return data as DropdownOption[];
+    }
   });
-};
+}
+
+// Fetch user options
+export function useUserOptions() {
+  return useQuery({
+    queryKey: ['userOptions'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, email, display_name');
+
+      if (error) {
+        console.error("Error fetching users:", error);
+        throw new Error(error.message);
+      }
+
+      console.log("useUserOptions: Fetched users raw data:", data);
+      
+      // Transform data to required format, ensuring display_name is used
+      const formattedData = data.map(user => ({
+        id: user.id,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        email: user.email,
+        display_name: user.display_name
+      }));
+
+      console.log("useUserOptions: Formatted user data:", formattedData);
+      
+      return formattedData as UserProfile[];
+    }
+  });
+}
