@@ -20,12 +20,14 @@ export function JobsFilter() {
         <Input 
           placeholder="Search jobs..." 
           className="pl-8"
+          value={filters.search}
           onChange={(e) => updateFilter("search", e.target.value)}
         />
       </div>
       
       <div className="flex gap-2 w-full md:w-auto">
         <Select 
+          value={filters.status}
           onValueChange={(value) => updateFilter("status", value)}
         >
           <SelectTrigger className="w-full md:w-[180px]">
@@ -41,6 +43,7 @@ export function JobsFilter() {
         </Select>
         
         <Select 
+          value={filters.flavor}
           onValueChange={(value) => updateFilter("flavor", value)}
         >
           <SelectTrigger className="w-full md:w-[180px]">
