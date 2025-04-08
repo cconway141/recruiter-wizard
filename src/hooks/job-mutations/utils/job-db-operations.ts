@@ -16,7 +16,7 @@ export async function lookupEntityByName(
   table: TableName, 
   nameField: string, 
   nameValue: string
-) {
+): Promise<{ id: string }> {
   const { data, error } = await supabase
     .from(table as any)
     .select('id')
@@ -38,7 +38,7 @@ export async function lookupEntityByName(
     throw new Error(`${table} lookup failed: ${error.message}`);
   }
   
-  return data;
+  return data as { id: string };
 }
 
 /**
