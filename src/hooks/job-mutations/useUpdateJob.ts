@@ -2,7 +2,7 @@
 import { Job } from "@/types/job";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
-import { generateInternalTitle } from "@/utils/jobUtils";
+import { generateInternalTitle } from "@/utils/titleUtils";
 
 export function useUpdateJob(jobs: Job[], setJobs: (jobs: Job[]) => void) {
   const updateJob = async (updatedJob: Job) => {

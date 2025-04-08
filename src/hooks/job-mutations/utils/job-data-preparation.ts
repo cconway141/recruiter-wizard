@@ -1,15 +1,9 @@
-
 import { Job, Locale } from "@/types/job";
 import { lookupEntityByName } from "./job-db-operations";
-import { 
-  calculateRates, 
-  generateInternalTitle, 
-  getWorkDetails, 
-  getPayDetails, 
-  generateM1, 
-  generateM2, 
-  generateM3 
-} from "@/utils/jobUtils";
+import { calculateRates } from "@/utils/rateUtils";
+import { generateInternalTitle } from "@/utils/titleUtils";
+import { getWorkDetails, getPayDetails } from "@/utils/localeUtils";
+import { generateM1, generateM2, generateM3 } from "@/utils/messageUtils";
 
 /**
  * Prepares a job for database insertion by gathering all required data

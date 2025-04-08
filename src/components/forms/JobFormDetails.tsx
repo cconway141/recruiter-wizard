@@ -2,7 +2,8 @@
 import { useState, useEffect, useRef } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { Locale } from "@/types/job";
-import { getWorkDetails, getPayDetails, generateM1, generateM2, generateM3 } from "@/utils/jobUtils";
+import { getWorkDetails, getPayDetails } from "@/utils/localeUtils";
+import { generateM1, generateM2, generateM3 } from "@/utils/messageUtils";
 
 // Import the components
 import { JobFormDescription } from "./job-details/JobFormDescription";

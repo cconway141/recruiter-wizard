@@ -1,3 +1,4 @@
+
 import { Eye, Pencil, Trash2, Copy, Check } from "lucide-react";
 import { useState } from "react";
 import { useJobs } from "@/contexts/JobContext";
@@ -8,8 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { supabase } from "@/integrations/supabase/client";
-import { generateM1, generateM2, generateM3 } from "@/utils/jobUtils";
+import { generateM1, generateM2, generateM3 } from "@/utils/messageUtils";
+
 const StatusBadgeColor = {
   Active: "bg-green-100 text-green-800 hover:bg-green-100",
   Aquarium: "bg-blue-100 text-blue-800 hover:bg-blue-100",
@@ -22,6 +23,7 @@ type CopiedMessageInfo = {
   jobId: string;
   messageType: string;
 } | null;
+
 export function JobsTable() {
   const {
     filteredJobs,

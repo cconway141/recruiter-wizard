@@ -2,7 +2,9 @@
 import { useState, useEffect } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { Locale } from "@/types/job";
-import { generateInternalTitle, calculateRates, generateM1, generateM2, generateM3 } from "@/utils/jobUtils";
+import { generateInternalTitle } from "@/utils/titleUtils";
+import { calculateRates } from "@/utils/rateUtils";
+import { generateM1, generateM2, generateM3 } from "@/utils/messageUtils";
 
 // Define the JobFormValues interface here to avoid the import error
 interface JobFormValues {

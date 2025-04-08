@@ -2,7 +2,10 @@
 import { Job } from "@/types/job";
 import { prepareJobForInsertion, transformDatabaseJobToJobObject } from "./utils/job-data-preparation";
 import { insertJobToDatabase } from "./utils/job-db-operations";
-import { calculateRates, generateInternalTitle, getWorkDetails, getPayDetails, generateM1, generateM2, generateM3 } from "@/utils/jobUtils";
+import { calculateRates } from "@/utils/rateUtils";
+import { generateInternalTitle } from "@/utils/titleUtils";
+import { getWorkDetails, getPayDetails } from "@/utils/localeUtils";
+import { generateM1, generateM2, generateM3 } from "@/utils/messageUtils";
 
 export function useAddJob(jobs: Job[], setJobs: (jobs: Job[]) => void) {
   const addJob = async (jobData: Omit<Job, "id" | "internalTitle" | "highRate" | "mediumRate" | "lowRate" | "workDetails" | "payDetails" | "m1" | "m2" | "m3">) => {

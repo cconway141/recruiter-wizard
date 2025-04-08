@@ -1,17 +1,11 @@
-
 import { useNavigate } from "react-router-dom";
 import { Job, Locale } from "@/types/job";
 import { useJobs } from "@/contexts/JobContext";
 import { JobFormValues } from "../JobFormDetails";
-import { 
-  calculateRates, 
-  generateInternalTitle, 
-  getWorkDetails, 
-  getPayDetails,
-  generateM1,
-  generateM2,
-  generateM3
-} from "@/utils/jobUtils";
+import { calculateRates } from "@/utils/rateUtils";
+import { generateInternalTitle } from "@/utils/titleUtils";
+import { getWorkDetails, getPayDetails } from "@/utils/localeUtils";
+import { generateM1, generateM2, generateM3 } from "@/utils/messageUtils";
 import { toast } from "@/components/ui/use-toast";
 import { useSupabaseData } from "@/hooks/useSupabaseData";
 

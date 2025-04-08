@@ -5,7 +5,7 @@ import { Job } from "@/types/job";
 import { useJobs } from "@/contexts/JobContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { generateM1, generateM2, generateM3 } from "@/utils/jobUtils";
+import { generateM1, generateM2, generateM3 } from "@/utils/messageUtils";
 
 interface JobMessagesProps {
   job: Job;
