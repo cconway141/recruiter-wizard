@@ -69,15 +69,15 @@ export async function getRoleAbbreviation(role: string): Promise<string> {
     
     if (error || !data) {
       console.warn(`Role abbreviation not found for: ${role}`);
-      // Return the role itself if no abbreviation found
-      return role;
+      // Return the first 3 characters of the role if no abbreviation found
+      return role.slice(0, 3).toUpperCase();
     }
     
     return data.abbreviation;
   } catch (err) {
     console.error("Error fetching role abbreviation:", err);
-    // Return the role itself if an error occurs
-    return role;
+    // Return first 3 characters of role if an error occurs
+    return role.slice(0, 3).toUpperCase();
   }
 }
 
@@ -106,3 +106,4 @@ export async function getAllRoleAbbreviations(): Promise<Record<string, string>>
     return {};
   }
 }
+
