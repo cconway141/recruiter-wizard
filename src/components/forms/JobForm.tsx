@@ -9,7 +9,6 @@ import { JobFormBasicInfo } from "./JobFormBasicInfo";
 import { JobFormCompanyDesc } from "./JobFormCompanyDesc";
 import { JobFormDetails, JobFormValues } from "./JobFormDetails";
 import { JobFormLinks } from "./JobFormLinks";
-import { FormPreview } from "./job-form/FormPreview";
 import { FormActions } from "./job-form/FormActions";
 import { useFormProcessor } from "./job-form/FormProcessor";
 import { useClientSelection } from "./job-form/useClientSelection";
@@ -32,7 +31,7 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
   const form = useFormContext<JobFormValues>();
   const { handleSubmit } = useFormProcessor({ job, isEditing });
   const { handleClientSelection } = useClientSelection(form);
-  const { previewTitle, messages, isLoadingMessages, watchedFields } = useFormPreview(form);
+  const { messages, watchedFields } = useFormPreview(form);
 
   const { isLoading: clientsLoading } = useClientOptions();
   const { isLoading: flavorsLoading } = useFlavorOptions();
@@ -40,7 +39,7 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
   const { isLoading: statusesLoading } = useStatusOptions();
   const { isLoading: usersLoading } = useUserOptions();
 
-  const isLoading = clientsLoading || flavorsLoading || localesLoading || statusesLoading || usersLoading || isLoadingMessages;
+  const isLoading = clientsLoading || flavorsLoading || localesLoading || statusesLoading || usersLoading;
 
   // Set form values for messages
   useEffect(() => {
@@ -69,22 +68,14 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-      <div>
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-          <JobFormBasicInfo handleClientSelection={handleClientSelection} />
-          <JobFormCompanyDesc />
-          <JobFormDetails form={form} />
-          <JobFormLinks />
-          <FormActions isEditing={isEditing} />
-        </form>
-      </div>
-      
-      <FormPreview 
-        previewTitle={previewTitle}
-        watchedFields={watchedFields}
-        messages={messages}
-      />
+    <div>
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+        <JobFormBasicInfo handleClientSelection={handleClientSelection} />
+        <JobFormCompanyDesc />
+        <JobFormDetails form={form} />
+        <JobFormLinks />
+        <FormActions isEditing={isEditing} />
+      </form>
     </div>
   );
 }
