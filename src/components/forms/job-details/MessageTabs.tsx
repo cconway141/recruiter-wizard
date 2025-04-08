@@ -42,29 +42,29 @@ export function MessageTabs({ form, messages, isLoading = false }: MessageTabsPr
             </TabsList>
             <TabsContent value="m1">
               <MessagePreviewSection
-                messageKey="m1"
-                title="Initial Contact Message"
-                description="First message sent to candidates introducing the company and position."
-                message={messages.m1}
-                form={form}
+                messages={{
+                  m1: messages.m1,
+                  m2: "",
+                  m3: ""
+                }}
               />
             </TabsContent>
             <TabsContent value="m2">
               <MessagePreviewSection
-                messageKey="m2"
-                title="Job Details Message"
-                description="Follow-up message with detailed job information and requirements."
-                message={messages.m2}
-                form={form}
+                messages={{
+                  m1: "",
+                  m2: messages.m2,
+                  m3: ""
+                }}
               />
             </TabsContent>
             <TabsContent value="m3">
               <MessagePreviewSection
-                messageKey="m3"
-                title="Video Instructions Message"
-                description="Instructions for candidates on how to complete the video portion of the application."
-                message={messages.m3}
-                form={form}
+                messages={{
+                  m1: "",
+                  m2: "",
+                  m3: messages.m3
+                }}
               />
             </TabsContent>
           </Tabs>
