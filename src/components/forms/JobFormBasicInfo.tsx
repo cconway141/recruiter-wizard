@@ -1,3 +1,4 @@
+
 import { useFormContext } from "react-hook-form";
 import {
   FormControl,
@@ -14,7 +15,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Locale, Flavor, JobStatus } from "@/types/job";
 import { 
   useClientOptions, 
   useFlavorOptions, 
@@ -114,7 +114,7 @@ export function JobFormBasicInfo({ handleClientSelection }: JobFormBasicInfoProp
                 <SelectContent>
                   {flavorOptions?.map((flavor) => (
                     <SelectItem key={flavor.id} value={flavor.name}>
-                      {flavor.label} ({flavor.name})
+                      {flavor.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
