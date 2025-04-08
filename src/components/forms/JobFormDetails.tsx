@@ -36,17 +36,32 @@ interface JobFormDetailsProps {
 export function JobFormDetails({ form }: JobFormDetailsProps) {
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Safely watch fields with null checks
+  const safeWatch = (fieldName: keyof JobFormValues) => {
+    try {
+      return form.watch(fieldName);
+    } catch (err) {
+      console.error(`Error watching field ${fieldName}:`, err);
+      return undefined;
+    }
+  };
+
   const watchedFields = {
-    candidateFacingTitle: form.watch("candidateFacingTitle"),
-    compDesc: form.watch("compDesc"),
-    locale: form.watch("locale"),
-    skillsSought: form.watch("skillsSought"),
-    videoQuestions: form.watch("videoQuestions"),
-    owner: form.watch("owner")
+    candidateFacingTitle: safeWatch("candidateFacingTitle"),
+    compDesc: safeWatch("compDesc"),
+    locale: safeWatch("locale"),
+    skillsSought: safeWatch("skillsSought"),
+    videoQuestions: safeWatch("videoQuestions"),
+    owner: safeWatch("owner")
   };
 
   // Update messages with debounce to prevent too frequent updates
   useEffect(() => {
+    // Only proceed if form is valid and all required fields are filled
+    if (!form || !form.setValue) {
+      return;
+    }
+
     // Only proceed if all required fields are filled
     if (
       watchedFields.candidateFacingTitle && 
@@ -71,8 +86,15 @@ export function JobFormDetails({ form }: JobFormDetailsProps) {
           form.setValue("payDetails", payDetails);
           
           // Generate messages and update form
-          const m1 = await generateM1("[First Name]", watchedFields.candidateFacingTitle, watchedFields.compDesc, watchedFields.owner);
-          const m2 = await generateM2(watchedFields.candidateFacingTitle, payDetails, workDetails, watchedFields.skillsSought);
+          const firstName = "[First Name]";
+          const m1 = await generateM1(firstName, watchedFields.candidateFacingTitle!, watchedFields.compDesc!, watchedFields.owner as string);
+          
+          const m2 = await generateM2(
+            watchedFields.candidateFacingTitle!, 
+            payDetails, 
+            workDetails, 
+            watchedFields.skillsSought!
+          );
           
           form.setValue("m1", m1);
           form.setValue("m2", m2);

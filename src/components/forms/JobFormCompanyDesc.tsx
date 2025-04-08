@@ -6,7 +6,9 @@ import { useClientOptions } from "@/hooks/use-dropdown-options";
 export function JobFormCompanyDesc() {
   const form = useFormContext();
   const { data: clientOptions, isLoading } = useClientOptions();
-  const selectedClient = form.watch("client");
+  
+  // Add null check before calling form methods
+  const selectedClient = form && form.watch ? form.watch("client") : null;
   
   // Find the selected client to display information about it
   const clientInfo = clientOptions?.find(client => client.name === selectedClient);
@@ -27,7 +29,9 @@ export function JobFormCompanyDesc() {
         )}
         
         {/* Field is rendered as a hidden input to maintain form structure */}
-        <input type="hidden" {...form.register("compDesc")} />
+        {form && form.register ? (
+          <input type="hidden" {...form.register("compDesc")} />
+        ) : null}
       </CardContent>
     </Card>
   );

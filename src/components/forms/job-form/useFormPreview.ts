@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { Locale } from "@/types/job";
-import { JobFormValues } from "../JobFormDetails";
+import { JobFormValues } from "@/components/forms/JobFormDetails";
 import { generateInternalTitle, calculateRates, generateM1, generateM2, generateM3 } from "@/utils/jobUtils";
 
 export function useFormPreview(form: UseFormReturn<JobFormValues>) {
@@ -28,18 +28,26 @@ export function useFormPreview(form: UseFormReturn<JobFormValues>) {
     videoQuestions: form.watch("videoQuestions"),
     payDetails: form.watch("payDetails"),
     workDetails: form.watch("workDetails"),
+    owner: form.watch("owner")
   };
 
   useEffect(() => {
     // Update internal title preview
     if (watchedFields.client && watchedFields.candidateFacingTitle && watchedFields.flavor && watchedFields.locale) {
-      const newTitle = generateInternalTitle(
-        watchedFields.client,
-        watchedFields.candidateFacingTitle,
-        watchedFields.flavor,
-        watchedFields.locale as Locale
-      );
-      setPreviewTitle(newTitle);
+      const updateTitle = async () => {
+        try {
+          const newTitle = await generateInternalTitle(
+            watchedFields.client,
+            watchedFields.candidateFacingTitle,
+            watchedFields.flavor,
+            watchedFields.locale as Locale
+          );
+          setPreviewTitle(newTitle);
+        } catch (err) {
+          console.error("Error generating title preview:", err);
+        }
+      };
+      updateTitle();
     }
 
     // Update rate previews
@@ -71,7 +79,10 @@ export function useFormPreview(form: UseFormReturn<JobFormValues>) {
         try {
           // Generate preview messages
           const firstName = form.watch("previewName") || "[First Name]";
-          const m1 = await generateM1(firstName, watchedFields.candidateFacingTitle, watchedFields.compDesc);
+          const owner = watchedFields.owner || "";
+          
+          // Fix: Await the promises to resolve, then update state
+          const m1 = await generateM1(firstName, watchedFields.candidateFacingTitle, watchedFields.compDesc, owner);
           const m2 = await generateM2(
             watchedFields.candidateFacingTitle,
             watchedFields.payDetails || "",
@@ -84,6 +95,7 @@ export function useFormPreview(form: UseFormReturn<JobFormValues>) {
             m3 = await generateM3(watchedFields.videoQuestions);
           }
           
+          // Update state with resolved values, not promises
           setMessages({ m1, m2, m3 });
         } catch (err) {
           console.error("Error generating message previews:", err);
@@ -101,6 +113,7 @@ export function useFormPreview(form: UseFormReturn<JobFormValues>) {
     watchedFields.videoQuestions,
     watchedFields.payDetails,
     watchedFields.workDetails,
+    watchedFields.owner
   ]);
 
   return {

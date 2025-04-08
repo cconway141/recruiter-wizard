@@ -41,27 +41,41 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
 
   // Add a null check for form before accessing getValues
   useEffect(() => {
-    if (!form) return; // Guard clause to prevent accessing null form
+    if (!form || !form.getValues) {
+      console.warn("Form context is not properly initialized");
+      return;
+    }
     
-    const locale = form.getValues("locale");
-    const candidateFacingTitle = form.getValues("candidateFacingTitle");
-    const compDesc = form.getValues("compDesc");
-    const skillsSought = form.getValues("skillsSought");
-    const videoQuestions = form.getValues("videoQuestions");
-    
-    if (locale && candidateFacingTitle && compDesc && skillsSought) {
-      // All required fields are filled, we could generate messages in background
-      // but don't need to show them to user
+    try {
+      const locale = form.getValues("locale");
+      const candidateFacingTitle = form.getValues("candidateFacingTitle");
+      const compDesc = form.getValues("compDesc");
+      const skillsSought = form.getValues("skillsSought");
+      const videoQuestions = form.getValues("videoQuestions");
+      
+      if (locale && candidateFacingTitle && compDesc && skillsSought) {
+        // All required fields are filled, we could generate messages in background
+        // but don't need to show them to user
+      }
+    } catch (err) {
+      console.error("Error accessing form values:", err);
     }
   }, [form]);
 
   // Handle initial client selection for company description
   useEffect(() => {
-    if (!form) return; // Guard clause to prevent accessing null form
+    if (!form || !form.getValues) {
+      console.warn("Form context is not properly initialized for client selection");
+      return;
+    }
     
-    const clientValue = form.getValues("client");
-    if (clientValue) {
-      handleClientSelection(clientValue);
+    try {
+      const clientValue = form.getValues("client");
+      if (clientValue) {
+        handleClientSelection(clientValue);
+      }
+    } catch (err) {
+      console.error("Error handling client selection:", err);
     }
   }, [form, handleClientSelection]);
 
@@ -77,19 +91,28 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
   // Add a safeguard for form.handleSubmit to prevent null errors
   const onSubmitForm = form && typeof form.handleSubmit === 'function' 
     ? form.handleSubmit(handleSubmit)
-    : (e: React.FormEvent) => { e.preventDefault(); console.error("Form context not properly initialized"); };
-
-  console.log("Form is valid:", form?.formState?.isValid);
-  console.log("Form errors:", form?.formState?.errors);
+    : (e: React.FormEvent) => { 
+        e.preventDefault(); 
+        console.error("Form context not properly initialized"); 
+      };
 
   return (
     <div>
       <form onSubmit={onSubmitForm} className="space-y-6">
-        <JobFormBasicInfo handleClientSelection={handleClientSelection} />
-        <JobFormCompanyDesc />
-        <JobFormDetails form={form} />
-        <JobFormLinks />
-        <FormActions isEditing={isEditing} />
+        {form ? (
+          <>
+            <JobFormBasicInfo handleClientSelection={handleClientSelection} />
+            <JobFormCompanyDesc />
+            <JobFormDetails form={form} />
+            <JobFormLinks />
+            <FormActions isEditing={isEditing} />
+          </>
+        ) : (
+          <div className="text-center p-4">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto text-gray-500 mb-2" />
+            <p>Initializing form...</p>
+          </div>
+        )}
       </form>
     </div>
   );

@@ -12,6 +12,10 @@ import { Input } from "@/components/ui/input";
 export function JobFormLinks() {
   const form = useFormContext();
   
+  if (!form || !form.control) {
+    return null; // Return early if form context isn't available
+  }
+  
   return (
     <div className="grid grid-cols-1 gap-4">
       <FormField

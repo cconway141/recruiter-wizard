@@ -41,6 +41,15 @@ export function JobFormBasicInfo({ handleClientSelection }: JobFormBasicInfoProp
     console.log("User options:", userOptions);
   }, [userOptions]);
 
+  // If form context is not available, show a placeholder
+  if (!form || !form.control) {
+    return (
+      <div className="p-4 border border-dashed rounded-md">
+        <p className="text-center text-muted-foreground">Loading form...</p>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
