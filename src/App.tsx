@@ -16,6 +16,7 @@ import Settings from "./pages/Settings";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
+import MessageTemplates from "./pages/MessageTemplates";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -75,6 +76,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <Profile />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/message-templates" 
+                element={
+                  <ProtectedRoute>
+                    <MessageTemplates />
                   </ProtectedRoute>
                 } 
               />
