@@ -7,6 +7,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { JobProvider } from "@/contexts/JobContext";
 import { useEffect } from "react";
+import { Toaster } from "@/components/ui/toaster";
 
 // Define the form schema for the job
 const formSchema = z.object({
@@ -87,6 +88,7 @@ const AddJob = () => {
           </FormProvider>
         </JobProvider>
       </main>
+      <Toaster />
     </div>
   );
 };

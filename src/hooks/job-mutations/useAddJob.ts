@@ -194,11 +194,8 @@ export function useAddJob(jobs: Job[], setJobs: (jobs: Job[]) => void) {
       }
     } catch (error) {
       console.error("Error in useAddJob:", error);
-      toast({
-        title: "Error Adding Job",
-        description: error instanceof Error ? error.message : String(error),
-        variant: "destructive",
-      });
+      // Note: We're not showing a toast here because it's better to handle this
+      // in the FormProcessor to prevent duplicate toasts
       throw error;
     }
   };

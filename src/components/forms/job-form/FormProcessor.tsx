@@ -67,6 +67,9 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
           title: "Job Updated",
           description: `${internalTitle} has been updated successfully.`,
         });
+        
+        // Navigate after successful update
+        navigate("/");
       } else {
         console.log("Adding new job with values:", {
           ...values,
@@ -82,6 +85,9 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
         });
         
         try {
+          // Disable the submit button while processing
+          document.querySelector('button[type="submit"]')?.setAttribute('disabled', 'true');
+          
           await addJob({
             jd: values.jd,
             candidateFacingTitle: values.candidateFacingTitle,
@@ -101,11 +107,15 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
             flavor: values.flavor,
           });
           
+          // Show success toast
           toast({
-            title: "Job Added",
+            title: "Job Created",
             description: `${internalTitle} has been added successfully.`,
+            variant: "default",
+            className: "bg-green-500 text-white border-green-600",
           });
           
+          // Navigate to home page after successful creation
           navigate("/");
         } catch (addError) {
           console.error("Error in addJob:", addError);
@@ -114,6 +124,8 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
             description: `Failed to create job: ${addError instanceof Error ? addError.message : String(addError)}`,
             variant: "destructive",
           });
+          // Re-enable submit button on error
+          document.querySelector('button[type="submit"]')?.removeAttribute('disabled');
         }
       }
     } catch (err) {
@@ -123,6 +135,8 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
         description: `Failed to ${isEditing ? "update" : "create"} job: ${err instanceof Error ? err.message : String(err)}`,
         variant: "destructive",
       });
+      // Re-enable submit button on error
+      document.querySelector('button[type="submit"]')?.removeAttribute('disabled');
       throw err; // Re-throw to prevent navigation
     }
   };
