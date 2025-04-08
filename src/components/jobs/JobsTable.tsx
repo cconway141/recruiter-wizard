@@ -39,14 +39,21 @@ const StatusBadgeColor = {
   Closed: "bg-gray-100 text-gray-800 hover:bg-gray-100"
 };
 
+// Define a type for copied message tracking
+type CopiedMessageInfo = {
+  jobId: string;
+  messageType: string;
+} | null;
+
 export function JobsTable() {
   const { filteredJobs, deleteJob } = useJobs();
   const { toast } = useToast();
-  const [copiedMessage, setCopiedMessage] = useState<string | null>(null);
+  // Track both job ID and message type that was copied
+  const [copiedMessage, setCopiedMessage] = useState<CopiedMessageInfo>(null);
 
-  const copyToClipboard = (text: string, messageType: string) => {
+  const copyToClipboard = (jobId: string, text: string, messageType: string) => {
     navigator.clipboard.writeText(text);
-    setCopiedMessage(messageType);
+    setCopiedMessage({ jobId, messageType });
     
     toast({
       title: "Copied!",
@@ -56,6 +63,11 @@ export function JobsTable() {
     setTimeout(() => {
       setCopiedMessage(null);
     }, 2000);
+  };
+
+  // Helper to check if a specific job's message has been copied
+  const isMessageCopied = (jobId: string, messageType: string) => {
+    return copiedMessage?.jobId === jobId && copiedMessage?.messageType === messageType;
   };
 
   return (
@@ -99,10 +111,10 @@ export function JobsTable() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => copyToClipboard(job.m1, "M1")}
-                            className={copiedMessage === "M1" ? "bg-green-100" : ""}
+                            onClick={() => copyToClipboard(job.id, job.m1, "M1")}
+                            className={isMessageCopied(job.id, "M1") ? "bg-green-100" : ""}
                           >
-                            {copiedMessage === "M1" ? (
+                            {isMessageCopied(job.id, "M1") ? (
                               <Check className="h-4 w-4 mr-1" />
                             ) : (
                               <Copy className="h-4 w-4 mr-1" />
@@ -122,10 +134,10 @@ export function JobsTable() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => copyToClipboard(job.m2, "M2")}
-                            className={copiedMessage === "M2" ? "bg-green-100" : ""}
+                            onClick={() => copyToClipboard(job.id, job.m2, "M2")}
+                            className={isMessageCopied(job.id, "M2") ? "bg-green-100" : ""}
                           >
-                            {copiedMessage === "M2" ? (
+                            {isMessageCopied(job.id, "M2") ? (
                               <Check className="h-4 w-4 mr-1" />
                             ) : (
                               <Copy className="h-4 w-4 mr-1" />
@@ -145,10 +157,10 @@ export function JobsTable() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => copyToClipboard(job.m3, "M3")}
-                            className={copiedMessage === "M3" ? "bg-green-100" : ""}
+                            onClick={() => copyToClipboard(job.id, job.m3, "M3")}
+                            className={isMessageCopied(job.id, "M3") ? "bg-green-100" : ""}
                           >
-                            {copiedMessage === "M3" ? (
+                            {isMessageCopied(job.id, "M3") ? (
                               <Check className="h-4 w-4 mr-1" />
                             ) : (
                               <Copy className="h-4 w-4 mr-1" />
