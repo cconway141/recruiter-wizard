@@ -40,6 +40,7 @@ export function JobFormDetails({ form }: JobFormDetailsProps) {
     m3: ""
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [debouncedUpdate, setDebouncedUpdate] = useState(false);
 
   const watchedFields = {
     candidateFacingTitle: form.watch("candidateFacingTitle"),
@@ -49,9 +50,26 @@ export function JobFormDetails({ form }: JobFormDetailsProps) {
     videoQuestions: form.watch("videoQuestions")
   };
 
+  // Add a debounce to prevent too frequent updates
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedUpdate(true);
+    }, 1000); // Wait 1 second after typing stops
+
+    return () => {
+      clearTimeout(timer);
+      setDebouncedUpdate(false);
+    };
+  }, [watchedFields]);
+
   useEffect(() => {
     const updateMessages = async () => {
-      if (watchedFields.candidateFacingTitle && watchedFields.compDesc && watchedFields.locale && watchedFields.skillsSought && watchedFields.videoQuestions) {
+      // Only update messages if all required fields are filled and the debounce timer has completed
+      if (debouncedUpdate && 
+          watchedFields.candidateFacingTitle && 
+          watchedFields.compDesc && 
+          watchedFields.locale && 
+          watchedFields.skillsSought) {
         try {
           setIsLoading(true);
           const locale = watchedFields.locale as Locale;
@@ -64,7 +82,12 @@ export function JobFormDetails({ form }: JobFormDetailsProps) {
           
           const m1 = generateM1("[First Name]", watchedFields.candidateFacingTitle, watchedFields.compDesc);
           const m2 = generateM2(watchedFields.candidateFacingTitle, payDetails, workDetails, watchedFields.skillsSought);
-          const m3 = generateM3(watchedFields.videoQuestions);
+          
+          // Only generate m3 if videoQuestions has content
+          let m3 = messages.m3;
+          if (watchedFields.videoQuestions) {
+            m3 = generateM3(watchedFields.videoQuestions);
+          }
           
           setMessages({ m1, m2, m3 });
           
@@ -81,7 +104,7 @@ export function JobFormDetails({ form }: JobFormDetailsProps) {
     };
     
     updateMessages();
-  }, [watchedFields, form]);
+  }, [debouncedUpdate, form]);
 
   return (
     <div className="space-y-6">
@@ -89,7 +112,7 @@ export function JobFormDetails({ form }: JobFormDetailsProps) {
       <JobFormWorkDetails />
       <JobFormQuestionDetails />
       <JobFormOtherInfo />
-      <MessageTabs form={form} messages={messages} />
+      <MessageTabs form={form} messages={messages} isLoading={isLoading} />
     </div>
   );
 }

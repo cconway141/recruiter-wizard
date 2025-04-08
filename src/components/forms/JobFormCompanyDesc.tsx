@@ -5,7 +5,7 @@ import { useClientOptions } from "@/hooks/use-dropdown-options";
 
 export function JobFormCompanyDesc() {
   const form = useFormContext();
-  const { data: clientOptions } = useClientOptions();
+  const { data: clientOptions, isLoading } = useClientOptions();
   const selectedClient = form.watch("client");
   
   // Find the selected client to display information about it
@@ -17,10 +17,14 @@ export function JobFormCompanyDesc() {
         <CardTitle className="text-md">Company Description</CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-muted-foreground mb-4">
-          Company descriptions are managed in Settings → Clients and will be populated 
-          automatically based on the selected client: <span className="font-medium">{selectedClient}</span>
-        </p>
+        {isLoading ? (
+          <p className="text-sm text-muted-foreground">Loading client information...</p>
+        ) : (
+          <p className="text-sm text-muted-foreground mb-4">
+            Company descriptions are managed in Settings → Clients and will be populated 
+            automatically based on the selected client: <span className="font-medium">{selectedClient || "None selected"}</span>
+          </p>
+        )}
         
         {/* Field is rendered as a hidden input to maintain form structure */}
         <input type="hidden" {...form.register("compDesc")} />

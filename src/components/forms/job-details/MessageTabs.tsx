@@ -1,9 +1,10 @@
 
-import { FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
-import { Textarea } from "@/components/ui/textarea";
+import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { UseFormReturn } from "react-hook-form";
+import { MessagePreviewSection } from "../MessagePreviewSection";
+import { Loader2 } from "lucide-react";
 
 interface MessageTabsProps {
   form: UseFormReturn<any>;
@@ -12,85 +13,62 @@ interface MessageTabsProps {
     m2: string;
     m3: string;
   };
+  isLoading?: boolean;
 }
 
-export function MessageTabs({ form, messages }: MessageTabsProps) {
+export function MessageTabs({ form, messages, isLoading = false }: MessageTabsProps) {
+  const [activeTab, setActiveTab] = useState("m1");
+
   return (
     <Card>
-      <CardContent className="pt-6">
-        <Tabs defaultValue="m1">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="m1">Message 1</TabsTrigger>
-            <TabsTrigger value="m2">Message 2</TabsTrigger>
-            <TabsTrigger value="m3">Message 3</TabsTrigger>
-          </TabsList>
-          <TabsContent value="m1" className="pt-4">
-            <FormField
-              control={form.control}
-              name="m1"
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <Textarea
-                      placeholder="First message to candidate"
-                      className="min-h-[200px]"
-                      {...field}
-                      value={field.value || messages.m1}
-                      onChange={(e) => {
-                        field.onChange(e);
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </TabsContent>
-          <TabsContent value="m2" className="pt-4">
-            <FormField
-              control={form.control}
-              name="m2"
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Second message to candidate"
-                      className="min-h-[200px]"
-                      {...field}
-                      value={field.value || messages.m2}
-                      onChange={(e) => {
-                        field.onChange(e);
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </TabsContent>
-          <TabsContent value="m3" className="pt-4">
-            <FormField
-              control={form.control}
-              name="m3"
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Third message to candidate"
-                      className="min-h-[200px]"
-                      {...field}
-                      value={field.value || messages.m3}
-                      onChange={(e) => {
-                        field.onChange(e);
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </TabsContent>
-        </Tabs>
+      <CardHeader>
+        <CardTitle>Message Templates</CardTitle>
+        <CardDescription>
+          These messages are automatically generated based on the job details. You can edit them if needed.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <span className="ml-2 text-muted-foreground">Generating messages...</span>
+          </div>
+        ) : (
+          <Tabs defaultValue="m1" value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="w-full grid grid-cols-3">
+              <TabsTrigger value="m1">Initial Contact</TabsTrigger>
+              <TabsTrigger value="m2">Job Details</TabsTrigger>
+              <TabsTrigger value="m3">Video Instructions</TabsTrigger>
+            </TabsList>
+            <TabsContent value="m1">
+              <MessagePreviewSection
+                messageKey="m1"
+                title="Initial Contact Message"
+                description="First message sent to candidates introducing the company and position."
+                message={messages.m1}
+                form={form}
+              />
+            </TabsContent>
+            <TabsContent value="m2">
+              <MessagePreviewSection
+                messageKey="m2"
+                title="Job Details Message"
+                description="Follow-up message with detailed job information and requirements."
+                message={messages.m2}
+                form={form}
+              />
+            </TabsContent>
+            <TabsContent value="m3">
+              <MessagePreviewSection
+                messageKey="m3"
+                title="Video Instructions Message"
+                description="Instructions for candidates on how to complete the video portion of the application."
+                message={messages.m3}
+                form={form}
+              />
+            </TabsContent>
+          </Tabs>
+        )}
       </CardContent>
     </Card>
   );

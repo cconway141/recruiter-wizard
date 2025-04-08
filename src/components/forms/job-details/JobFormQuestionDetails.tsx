@@ -1,5 +1,5 @@
 
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { useFormContext } from "react-hook-form";
 
@@ -21,6 +21,9 @@ export function JobFormQuestionDetails() {
                 {...field}
               />
             </FormControl>
+            <FormDescription>
+              These questions will be included in the video instructions message (M3).
+            </FormDescription>
             <FormMessage />
           </FormItem>
         )}
@@ -39,6 +42,9 @@ export function JobFormQuestionDetails() {
                 {...field}
               />
             </FormControl>
+            <FormDescription>
+              These questions will be used during the initial candidate screening.
+            </FormDescription>
             <FormMessage />
           </FormItem>
         )}
