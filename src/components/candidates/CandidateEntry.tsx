@@ -6,6 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Check, Plus, Trash } from "lucide-react";
 import { useJobs } from "@/contexts/JobContext";
+import { uuid } from "@/utils/uuid";
 
 export type CandidateStatus = {
   approved: boolean;
@@ -32,7 +33,20 @@ export const CandidateEntry: React.FC<CandidateEntryProps> = ({ jobId }) => {
 
   const handleAddCandidate = () => {
     if (newCandidateName.trim()) {
-      addCandidate(jobId, newCandidateName);
+      // Create a new candidate object with the required structure
+      const newCandidate: Candidate = {
+        id: uuid(),
+        name: newCandidateName,
+        status: {
+          approved: false,
+          preparing: false,
+          submitted: false,
+          interviewing: false,
+          offered: false
+        }
+      };
+      
+      addCandidate(jobId, newCandidate);
       setNewCandidateName("");
     }
   };
@@ -43,8 +57,8 @@ export const CandidateEntry: React.FC<CandidateEntryProps> = ({ jobId }) => {
     }
   };
 
-  const handleStatusChange = (candidateId: string, statusKey: keyof CandidateStatus, value: boolean) => {
-    updateCandidateStatus(jobId, candidateId, statusKey, value);
+  const handleStatusChange = (candidateId: string, statusKey: keyof CandidateStatus) => {
+    updateCandidateStatus(jobId, candidateId, statusKey);
   };
 
   return (
@@ -96,8 +110,8 @@ export const CandidateEntry: React.FC<CandidateEntryProps> = ({ jobId }) => {
                 <Checkbox 
                   id={`approved-${candidate.id}`}
                   checked={candidate.status.approved}
-                  onCheckedChange={(checked) => 
-                    handleStatusChange(candidate.id, "approved", checked as boolean)
+                  onCheckedChange={() => 
+                    handleStatusChange(candidate.id, "approved")
                   }
                 />
               </div>
@@ -106,8 +120,8 @@ export const CandidateEntry: React.FC<CandidateEntryProps> = ({ jobId }) => {
                 <Checkbox 
                   id={`preparing-${candidate.id}`}
                   checked={candidate.status.preparing}
-                  onCheckedChange={(checked) => 
-                    handleStatusChange(candidate.id, "preparing", checked as boolean)
+                  onCheckedChange={() => 
+                    handleStatusChange(candidate.id, "preparing")
                   }
                 />
               </div>
@@ -116,8 +130,8 @@ export const CandidateEntry: React.FC<CandidateEntryProps> = ({ jobId }) => {
                 <Checkbox 
                   id={`submitted-${candidate.id}`}
                   checked={candidate.status.submitted}
-                  onCheckedChange={(checked) => 
-                    handleStatusChange(candidate.id, "submitted", checked as boolean)
+                  onCheckedChange={() => 
+                    handleStatusChange(candidate.id, "submitted")
                   }
                 />
               </div>
@@ -126,8 +140,8 @@ export const CandidateEntry: React.FC<CandidateEntryProps> = ({ jobId }) => {
                 <Checkbox 
                   id={`interviewing-${candidate.id}`}
                   checked={candidate.status.interviewing}
-                  onCheckedChange={(checked) => 
-                    handleStatusChange(candidate.id, "interviewing", checked as boolean)
+                  onCheckedChange={() => 
+                    handleStatusChange(candidate.id, "interviewing")
                   }
                 />
               </div>
@@ -136,8 +150,8 @@ export const CandidateEntry: React.FC<CandidateEntryProps> = ({ jobId }) => {
                 <Checkbox 
                   id={`offered-${candidate.id}`}
                   checked={candidate.status.offered}
-                  onCheckedChange={(checked) => 
-                    handleStatusChange(candidate.id, "offered", checked as boolean)
+                  onCheckedChange={() => 
+                    handleStatusChange(candidate.id, "offered")
                   }
                 />
               </div>

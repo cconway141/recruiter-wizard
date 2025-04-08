@@ -7,7 +7,7 @@ export function useCandidateOperations(
   setCandidates: (candidates: Record<string, Candidate[]>) => void
 ) {
   // Placeholder functions for candidate management since we removed the candidates table
-  const addCandidate = async (jobId: string, name: string) => {
+  const addCandidate = (jobId: string, candidate: Candidate) => {
     toast({
       title: "Feature Unavailable",
       description: "Candidate management is currently disabled.",
@@ -15,7 +15,7 @@ export function useCandidateOperations(
     });
   };
 
-  const removeCandidate = async (jobId: string, candidateId: string) => {
+  const removeCandidate = (jobId: string, candidateId: string) => {
     toast({
       title: "Feature Unavailable",
       description: "Candidate management is currently disabled.",
@@ -23,11 +23,10 @@ export function useCandidateOperations(
     });
   };
 
-  const updateCandidateStatus = async (
+  const updateCandidateStatus = (
     jobId: string, 
     candidateId: string, 
-    statusKey: keyof CandidateStatus, 
-    value: boolean
+    status: string
   ) => {
     toast({
       title: "Feature Unavailable",
