@@ -1,97 +1,79 @@
 
+import { useCallback } from "react";
 import { Job } from "@/types/job";
-import { prepareJobForInsertion, transformDatabaseJobToJobObject } from "./utils/job-data-preparation";
-import { insertJobToDatabase } from "./utils/job-db-operations";
-import { calculateRates } from "@/utils/rateUtils";
-import { generateInternalTitle } from "@/utils/titleUtils";
-import { getWorkDetails, getPayDetails } from "@/utils/localeUtils";
-import { generateM1, generateM2, generateM3 } from "@/utils/messageUtils";
+import { prepareJobForCreate } from "./utils/job-data-preparation";
+import { insertJob } from "./utils/job-db-operations";
+import { toast } from "@/components/ui/use-toast";
 
+/**
+ * Hook for adding a new job
+ */
 export function useAddJob(jobs: Job[], setJobs: (jobs: Job[]) => void) {
-  const addJob = async (jobData: Omit<Job, "id" | "internalTitle" | "highRate" | "mediumRate" | "lowRate" | "workDetails" | "payDetails" | "m1" | "m2" | "m3">) => {
-    try {
-      console.log("Starting addJob with data:", jobData);
-      
-      // Calculate the values we'll need for the final Job object
-      const internalTitle = await generateInternalTitle(jobData.client, jobData.candidateFacingTitle, jobData.flavor, jobData.locale);
-      const { high, medium, low } = calculateRates(jobData.rate);
-      
-      // Get work and pay details
-      const workDetails = await getWorkDetails(jobData.locale);
-      const payDetails = await getPayDetails(jobData.locale);
-      
-      // Generate message templates
-      const m1 = await generateM1("[First Name]", jobData.candidateFacingTitle, jobData.compDesc, jobData.owner);
-      const m2 = await generateM2(jobData.candidateFacingTitle, payDetails, workDetails, jobData.skillsSought);
-      const m3 = await generateM3(jobData.videoQuestions);
-      
-      // Prepare job data for insertion including the calculated values
-      const preparedJobData = await prepareJobForInsertion({
-        ...jobData,
-        internalTitle,
-        highRate: high,
-        mediumRate: medium,
-        lowRate: low,
-        workDetails,
-        payDetails,
-        m1,
-        m2,
-        m3,
-        linkedinSearch: jobData.linkedinSearch || ''
-      });
-      
-      // Insert job into database
-      const insertedJob = await insertJobToDatabase(preparedJobData);
-      
-      console.log("Job added successfully:", insertedJob);
-      
-      // Transform the returned data to match our Job interface
-      const newJob: Job = {
-        id: insertedJob.id,
-        internalTitle: insertedJob.internal_title || internalTitle,
-        candidateFacingTitle: insertedJob.candidate_facing_title,
-        jd: insertedJob.jd,
-        status: insertedJob.status as Job["status"],
-        skillsSought: insertedJob.skills_sought,
-        minSkills: insertedJob.min_skills,
-        lir: insertedJob.lir,
-        client: insertedJob.client,
-        clientId: insertedJob.client_id,
-        compDesc: insertedJob.comp_desc,
-        rate: insertedJob.rate,
-        highRate: insertedJob.high_rate || high,
-        mediumRate: insertedJob.medium_rate || medium,
-        lowRate: insertedJob.low_rate || low,
-        locale: insertedJob.locale as Job["locale"],
-        localeId: insertedJob.locale_id,
-        owner: insertedJob.owner,
-        ownerId: insertedJob.owner_id,
-        date: insertedJob.date,
-        workDetails: insertedJob.work_details,
-        payDetails: insertedJob.pay_details,
-        other: insertedJob.other || "",
-        videoQuestions: insertedJob.video_questions,
-        screeningQuestions: insertedJob.screening_questions,
-        flavor: insertedJob.flavor as Job["flavor"],
-        flavorId: insertedJob.flavor_id,
-        statusId: insertedJob.status_id,
-        m1: insertedJob.m1,
-        m2: insertedJob.m2,
-        m3: insertedJob.m3,
-        linkedinSearch: insertedJob.linkedin_search || ''
-      };
+  /**
+   * Add a new job to the state and database
+   */
+  const addJob = useCallback(
+    async (
+      jobToAdd: Omit<
+        Job,
+        | "id"
+        | "internalTitle"
+        | "highRate"
+        | "mediumRate"
+        | "lowRate"
+        | "workDetails"
+        | "payDetails"
+        | "m1"
+        | "m2"
+        | "m3"
+      >
+    ) => {
+      try {
+        // Step 1: Prepare the job data with calculated fields
+        const preparedJob = prepareJobForCreate(jobToAdd);
 
-      // Update local state
-      setJobs([...jobs, newJob]);
-      
-      return insertedJob.id;
-    } catch (error) {
-      console.error("Error in useAddJob:", error);
-      // Note: We're not showing a toast here because it's better to handle this
-      // in the FormProcessor to prevent duplicate toasts
-      throw error;
-    }
-  };
+        // Step 2: Update state immediately for a responsive UI
+        const newJob: Job = {
+          ...preparedJob,
+          // Add default values for the omitted properties
+          workDetails: "",
+          payDetails: "",
+          m1: "",
+          m2: "",
+          m3: "",
+          linkedinSearch: jobToAdd.linkedinSearch || "",
+        };
+
+        setJobs([...jobs, newJob]);
+
+        // Step 3: Insert into database
+        const savedJob = await insertJob(newJob);
+
+        if (!savedJob) {
+          // If the database operation failed, revert the state change
+          const filteredJobs = jobs.filter((job) => job.id !== newJob.id);
+          setJobs(filteredJobs);
+          throw new Error("Failed to save job to database");
+        }
+
+        toast({
+          title: "Job Added",
+          description: "The job has been successfully created.",
+        });
+
+        return newJob;
+      } catch (error: any) {
+        console.error("Error adding job:", error);
+        toast({
+          title: "Error Adding Job",
+          description: error.message,
+          variant: "destructive",
+        });
+        return null;
+      }
+    },
+    [jobs, setJobs]
+  );
 
   return addJob;
 }

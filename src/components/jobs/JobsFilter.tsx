@@ -7,13 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
 export function JobsFilter() {
-  const { filteredJobs, setFilters } = useJobs();
+  const { filters, setFilters } = useJobs();
 
   const updateFilter = (key: string, value: string) => {
-    setFilters((prevFilters) => ({
-      ...prevFilters,
-      [key]: value
-    }));
+    setFilters({ [key]: value });
   };
   
   return (
@@ -50,7 +47,7 @@ export function JobsFilter() {
             <SelectValue placeholder="Job Flavor" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Flavors</SelectItem>
+            <SelectItem value="All">All Flavors</SelectItem>
             <SelectItem value="FE">Frontend</SelectItem>
             <SelectItem value="BE">Backend</SelectItem>
             <SelectItem value="FS">Full Stack</SelectItem>

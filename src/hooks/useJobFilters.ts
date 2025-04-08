@@ -6,7 +6,7 @@ export interface JobFilters {
   search: string;
   status: JobStatus | "All";
   locale: Locale | "All";
-  flavor: Flavor | string;
+  flavor: Flavor | "All" | string;
 }
 
 export function useJobFilters(jobs: Job[]) {
@@ -15,7 +15,7 @@ export function useJobFilters(jobs: Job[]) {
     search: "",
     status: "All",
     locale: "All",
-    flavor: ""
+    flavor: "All"
   });
 
   // Apply filters effect
@@ -45,7 +45,7 @@ export function useJobFilters(jobs: Job[]) {
     }
 
     // Apply flavor filter
-    if (filters.flavor) {
+    if (filters.flavor !== "All") {
       result = result.filter((job) => job.flavor === filters.flavor);
     }
 

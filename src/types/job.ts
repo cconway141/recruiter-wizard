@@ -1,4 +1,3 @@
-
 export type JobStatus = "Active" | "Aquarium" | "Inactive" | "Closed";
 export type Locale = "Onshore" | "Nearshore" | "Offshore";
 export type Flavor = "FE" | "BE" | "FS" | "DevOps" | "Data" | "ML" | "Mobile" | "Other";
@@ -6,28 +5,28 @@ export type Flavor = "FE" | "BE" | "FS" | "DevOps" | "Data" | "ML" | "Mobile" | 
 export interface Job {
   id: string;
   internalTitle: string;
-  jd: string;
   candidateFacingTitle: string;
+  jd: string;
   status: JobStatus;
-  statusId?: string;
+  statusId: string;
   m1: string;
   m2: string;
   m3: string;
   skillsSought: string;
   minSkills: string;
-  linkedinSearch: string; // Added this property
-  lir: string; // LinkedIn Recruiter project link
+  linkedinSearch: string;
+  lir: string;
   client: string;
-  clientId?: string;
-  compDesc: string; // Company description
-  rate: number; // US Onshore rate
-  highRate: number; // H (High Non-US Rate)
-  mediumRate: number; // M (Medium Non-US Rate)
-  lowRate: number; // L (Low Non-US Rate)
+  clientId: string;
+  compDesc: string;
+  rate: number;
+  highRate: number;
+  mediumRate: number;
+  lowRate: number;
   locale: Locale;
-  localeId?: string;
+  localeId: string;
   owner: string;
-  ownerId?: string;
+  ownerId: string;
   date: string;
   workDetails: string;
   payDetails: string;
@@ -35,7 +34,7 @@ export interface Job {
   videoQuestions: string;
   screeningQuestions: string;
   flavor: Flavor;
-  flavorId?: string;
+  flavorId: string;
 }
 
 export const DEFAULT_WORK_DETAILS: Record<Locale, string> = {

@@ -1,129 +1,112 @@
 
-import { Job, Locale } from "@/types/job";
-import { lookupEntityByName } from "./job-db-operations";
-import { calculateRates } from "@/utils/rateUtils";
-import { generateInternalTitle } from "@/utils/titleUtils";
-import { getWorkDetails, getPayDetails } from "@/utils/localeUtils";
-import { generateM1, generateM2, generateM3 } from "@/utils/messageUtils";
+import { uuid } from "@/utils/uuid";
+import { Job } from "@/types/job";
 
 /**
- * Prepares a job for database insertion by gathering all required data
- * @param jobData Basic job data provided from the form
- * @returns Fully prepared job data ready for database insertion
+ * Prepare job data for creation in the database
  */
-export async function prepareJobForInsertion(
-  jobData: Omit<Job, "id">
-) {
-  // Generate the internal title if not provided
-  const internalTitle = jobData.internalTitle || generateInternalTitle(
-    jobData.client, 
-    jobData.candidateFacingTitle, 
-    jobData.flavor, 
-    jobData.locale
-  );
-  
-  // Calculate rates
-  const { high, medium, low } = calculateRates(jobData.rate);
-  
-  // Get locale-specific details
-  const workDetails = await getWorkDetails(jobData.locale);
-  const payDetails = await getPayDetails(jobData.locale);
-  
-  // Generate message templates
-  const m1 = await generateM1("[First Name]", jobData.candidateFacingTitle, jobData.compDesc);
-  const m2 = await generateM2(jobData.candidateFacingTitle, payDetails, workDetails, jobData.skillsSought);
-  const m3 = await generateM3(jobData.videoQuestions);
+export const prepareJobForCreate = (
+  job: Omit<Job, "id" | "internalTitle" | "highRate" | "mediumRate" | "lowRate" | "workDetails" | "payDetails" | "m1" | "m2" | "m3">
+): Omit<Job, "workDetails" | "payDetails" | "m1" | "m2" | "m3"> => {
+  const now = new Date();
+  const date = now.toISOString().split("T")[0]; // YYYY-MM-DD
 
-  // Look up all the necessary foreign keys
-  const clientId = await lookupEntityByName('clients', 'name', jobData.client);
-  const localeId = await lookupEntityByName('locales', 'name', jobData.locale);
-  const flavorId = await lookupEntityByName('flavors', 'name', jobData.flavor);
-  const statusId = await lookupEntityByName('job_statuses', 'name', jobData.status);
-  const ownerData = null; // Not looking up real users anymore
+  const internalTitle = job.candidateFacingTitle || "New Job"; // Default title
+  
+  // Calculate rates based on the main rate
+  const rate = Number(job.rate) || 0;
+  const highRate = rate * 1.2; // 20% above base rate
+  const mediumRate = rate; // Base rate
+  const lowRate = rate * 0.9; // 10% below base rate
 
-  // Prepare the database entry
   return {
-    internal_title: internalTitle,
-    candidate_facing_title: jobData.candidateFacingTitle,
-    jd: jobData.jd,
-    status: jobData.status,
-    skills_sought: jobData.skillsSought,
-    min_skills: jobData.minSkills,
-    lir: jobData.lir,
-    client: jobData.client,
-    client_id: clientId,
-    comp_desc: jobData.compDesc,
-    rate: jobData.rate,
-    high_rate: high,
-    medium_rate: medium,
-    low_rate: low,
-    locale: jobData.locale,
-    locale_id: localeId,
-    owner: jobData.owner,
-    owner_id: ownerData,
-    date: jobData.date,
-    work_details: workDetails,
-    pay_details: payDetails,
-    other: jobData.other,
-    video_questions: jobData.videoQuestions,
-    screening_questions: jobData.screeningQuestions,
-    flavor: jobData.flavor,
-    flavor_id: flavorId,
-    status_id: statusId,
-    m1,
-    m2,
-    m3,
-    linkedin_search: jobData.linkedinSearch || ''
+    ...job,
+    id: uuid(),
+    internalTitle,
+    highRate,
+    mediumRate,
+    lowRate,
+    date,
+    linkedinSearch: job.linkedinSearch || "", // Ensure this property exists
   };
-}
+};
 
 /**
- * Transforms the raw database job data to match our Job interface
+ * Map job data to the format expected by Supabase
  */
-export function transformDatabaseJobToJobObject(
-  data: any,
-  internalTitle: string,
-  high: number,
-  medium: number,
-  low: number,
-  workDetails: string,
-  payDetails: string,
-  m1: string,
-  m2: string,
-  m3: string
-): Job {
+export const mapJobToDatabase = (job: Job) => {
   return {
-    id: data.id,
-    internalTitle: data.internal_title || internalTitle,
-    candidateFacingTitle: data.candidate_facing_title,
-    jd: data.jd,
-    status: data.status,
-    skillsSought: data.skills_sought,
-    minSkills: data.min_skills,
-    lir: data.lir,
-    client: data.client,
-    clientId: data.client_id,
-    compDesc: data.comp_desc,
-    rate: data.rate,
-    highRate: data.high_rate || high,
-    mediumRate: data.medium_rate || medium,
-    lowRate: data.low_rate || low,
-    locale: data.locale,
-    localeId: data.locale_id,
-    owner: data.owner,
-    ownerId: data.owner_id,
-    date: data.date,
-    workDetails: data.work_details || workDetails,
-    payDetails: data.pay_details || payDetails,
-    other: data.other || "",
-    videoQuestions: data.video_questions,
-    screeningQuestions: data.screening_questions,
-    flavor: data.flavor,
-    flavorId: data.flavor_id,
-    statusId: data.status_id,
-    m1: data.m1 || m1,
-    m2: data.m2 || m2,
-    m3: data.m3 || m3,
-    linkedinSearch: data.linkedin_search || ''
+    id: job.id,
+    internal_title: job.internalTitle,
+    candidate_facing_title: job.candidateFacingTitle,
+    jd: job.jd || "",
+    status: job.status,
+    status_id: job.statusId,
+    skills_sought: job.skillsSought || "",
+    min_skills: job.minSkills || "",
+    linkedin_search: job.linkedinSearch || "", // Map the linkedinSearch field
+    lir: job.lir || "",
+    client: job.client,
+    client_id: job.clientId,
+    comp_desc: job.compDesc || "",
+    rate: job.rate,
+    high_rate: job.highRate,
+    medium_rate: job.mediumRate,
+    low_rate: job.lowRate,
+    locale: job.locale,
+    locale_id: job.localeId,
+    owner: job.owner,
+    owner_id: job.ownerId,
+    date: job.date,
+    work_details: job.workDetails || "",
+    pay_details: job.payDetails || "",
+    other: job.other || "",
+    video_questions: job.videoQuestions || "",
+    screening_questions: job.screeningQuestions || "",
+    flavor: job.flavor,
+    flavor_id: job.flavorId,
+    m1: job.m1 || "",
+    m2: job.m2 || "",
+    m3: job.m3 || "",
   };
-}
+};
+
+/**
+ * Map database job to Job object
+ */
+export const mapDatabaseToJob = (dbJob: any): Job => {
+  return {
+    id: dbJob.id,
+    internalTitle: dbJob.internal_title,
+    candidateFacingTitle: dbJob.candidate_facing_title,
+    jd: dbJob.jd,
+    status: dbJob.status,
+    statusId: dbJob.status_id,
+    m1: dbJob.m1,
+    m2: dbJob.m2,
+    m3: dbJob.m3,
+    skillsSought: dbJob.skills_sought,
+    minSkills: dbJob.min_skills,
+    linkedinSearch: dbJob.linkedin_search, // Map the linkedinSearch field
+    lir: dbJob.lir,
+    client: dbJob.client,
+    clientId: dbJob.client_id,
+    compDesc: dbJob.comp_desc,
+    rate: Number(dbJob.rate),
+    highRate: Number(dbJob.high_rate),
+    mediumRate: Number(dbJob.medium_rate),
+    lowRate: Number(dbJob.low_rate),
+    locale: dbJob.locale,
+    localeId: dbJob.locale_id,
+    owner: dbJob.owner,
+    ownerId: dbJob.owner_id,
+    date: dbJob.date,
+    workDetails: dbJob.work_details,
+    payDetails: dbJob.pay_details,
+    other: dbJob.other || "",
+    videoQuestions: dbJob.video_questions,
+    screeningQuestions: dbJob.screening_questions,
+    flavor: dbJob.flavor,
+    flavorId: dbJob.flavor_id,
+  };
+};
