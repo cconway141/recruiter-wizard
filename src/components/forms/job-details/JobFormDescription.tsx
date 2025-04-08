@@ -1,5 +1,5 @@
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { useFormContext } from "react-hook-form";
@@ -131,6 +131,7 @@ export function JobFormDescription() {
           shouldValidate: true 
         });
         
+        // Explicitly set video questions generated state here
         setVideoQuestionsGenerated(true);
         videoQuestionsGeneratedRef.current = true;
         
