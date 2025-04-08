@@ -1,107 +1,36 @@
 
 import { useState, useEffect } from "react";
-import { Client } from "./types";
-import { ClientForm } from "./ClientForm";
-import { ClientsList } from "./ClientsList";
-import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Info } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { ClientsList } from "./ClientsList";
+import { ClientForm } from "./ClientForm";
+import { Client } from "./types";
 import { toast } from "@/components/ui/use-toast";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 export function ClientsManager() {
   const [clients, setClients] = useState<Client[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState<string>("Unknown");
-  const [lastError, setLastError] = useState<string | null>(null);
-  const [tableInfo, setTableInfo] = useState<any>(null);
-  const queryClient = useQueryClient();
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [editingClient, setEditingClient] = useState<Client | null>(null);
 
-  // First, check if we can connect to Supabase and the clients table exists
-  const checkConnection = async () => {
-    try {
-      console.log("ClientsManager: Checking Supabase connection...");
-      setConnectionStatus("Checking...");
-      
-      // First test basic connection
-      const { data: countData, error: countError } = await supabase
-        .from("clients")
-        .select("count");
-      
-      if (countError) {
-        console.error("ClientsManager: Connection error:", countError);
-        setConnectionStatus(`Error: ${countError.message}`);
-        setLastError(countError.message);
-        throw countError;
-      }
-      
-      console.log("ClientsManager: Connection successful, count data:", countData);
-      setConnectionStatus("Connected");
-      
-      // Get table info to help with debugging
-      const { data: tableData, error: tableError } = await supabase
-        .rpc('get_clients_table_info');
-      
-      if (tableError) {
-        if (tableError.code === '42883') {
-          console.log("ClientsManager: get_clients_table_info function doesn't exist, this is expected");
-          // This is fine - the function doesn't exist yet
-          setTableInfo({ note: "Table info function doesn't exist yet" });
-        } else {
-          console.error("ClientsManager: Error getting table info:", tableError);
-        }
-      } else if (tableData) {
-        console.log("ClientsManager: Table info:", tableData);
-        setTableInfo(tableData);
-      }
-    } catch (error) {
-      console.error("ClientsManager: Error checking connection:", error);
-      setConnectionStatus("Failed to connect");
-    }
-  };
-
-  const fetchClients = async () => {
+  const loadClients = async () => {
     setIsLoading(true);
     try {
-      console.log("ClientsManager: Attempting to fetch clients from Supabase...");
       const { data, error } = await supabase
-        .from("clients")
-        .select("*")
+        .from('clients')
+        .select('*')
         .order('name');
+        
+      if (error) throw error;
       
-      if (error) {
-        console.error("ClientsManager: Error fetching clients:", error);
-        setLastError(error.message);
-        toast({
-          title: "Error fetching clients",
-          description: error.message,
-          variant: "destructive",
-        });
-        throw error;
-      }
-      
-      console.log("ClientsManager: Raw data received:", data);
-      console.log("ClientsManager: Data length:", data?.length || 0);
-      
-      if (data) {
-        setClients(data as Client[]);
-        console.log("ClientsManager: Clients state updated with:", data);
-      } else {
-        console.log("ClientsManager: No data returned from Supabase");
-        setClients([]);
-      }
-      
-      setLastError(null);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error("Error fetching clients:", error);
-      setLastError(errorMessage);
+      setClients(data || []);
+    } catch (err) {
+      console.error('Error loading clients:', err);
       toast({
-        title: "Error",
-        description: `Failed to fetch clients: ${errorMessage}`,
-        variant: "destructive",
+        title: 'Error loading clients',
+        description: 'There was a problem loading the client list.',
+        variant: 'destructive',
       });
     } finally {
       setIsLoading(false);
@@ -109,132 +38,135 @@ export function ClientsManager() {
   };
 
   useEffect(() => {
-    console.log("ClientsManager: Component mounted, checking connection...");
-    checkConnection().then(() => {
-      console.log("ClientsManager: Connection checked, now fetching clients...");
-      fetchClients();
-    });
-    
-    // Listen for client-added events
-    const handleClientAdded = () => {
-      console.log("ClientsManager: Detected client-added event, refreshing...");
-      fetchClients();
-    };
-    
-    document.addEventListener('client-added', handleClientAdded);
-    
-    return () => {
-      document.removeEventListener('client-added', handleClientAdded);
-    };
+    loadClients();
   }, []);
 
-  // Function to invalidate queries and refresh data
-  const refreshData = () => {
-    console.log("Refreshing client data and invalidating queries...");
-    checkConnection().then(fetchClients);
-    queryClient.invalidateQueries({ queryKey: ["clientOptions"] });
-  };
-
-  // Temporary function to seed a sample client if none exist
-  const seedSampleClient = async () => {
+  const handleAddClient = async (client: Omit<Client, 'id'>) => {
     try {
-      console.log("Seeding sample client...");
       const { data, error } = await supabase
-        .from("clients")
-        .insert({ 
-          name: "Sample Client",
-          manager: "Sample Manager",
-          abbreviation: "SMPL",
-          description: "This is a sample client created via the debug button"
-        })
+        .from('clients')
+        .insert([client])
         .select();
+        
+      if (error) throw error;
       
-      if (error) {
-        console.error("Error seeding sample client:", error);
-        throw error;
+      if (data && data.length > 0) {
+        setClients([...clients, data[0] as Client]);
+        setShowAddForm(false);
+        toast({
+          title: 'Client added',
+          description: `${client.name} has been added successfully.`,
+        });
       }
-      
+    } catch (err) {
+      console.error('Error adding client:', err);
       toast({
-        title: "Success",
-        description: "Sample client seeded successfully",
-      });
-      
-      // Refresh data
-      fetchClients();
-      queryClient.invalidateQueries({ queryKey: ["clientOptions"] });
-    } catch (error) {
-      console.error("Error seeding sample client:", error);
-      toast({
-        title: "Error",
-        description: "Failed to seed sample client",
-        variant: "destructive",
+        title: 'Error adding client',
+        description: 'There was a problem adding the client.',
+        variant: 'destructive',
       });
     }
   };
 
+  const handleUpdateClient = async (client: Client) => {
+    try {
+      const { error } = await supabase
+        .from('clients')
+        .update({
+          name: client.name,
+          abbreviation: client.abbreviation,
+          description: client.description,
+          manager: client.manager
+        })
+        .eq('id', client.id);
+        
+      if (error) throw error;
+      
+      setClients(clients.map(c => c.id === client.id ? client : c));
+      setEditingClient(null);
+      toast({
+        title: 'Client updated',
+        description: `${client.name} has been updated successfully.`,
+      });
+    } catch (err) {
+      console.error('Error updating client:', err);
+      toast({
+        title: 'Error updating client',
+        description: 'There was a problem updating the client.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDeleteClient = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('clients')
+        .delete()
+        .eq('id', id);
+        
+      if (error) throw error;
+      
+      setClients(clients.filter(c => c.id !== id));
+      toast({
+        title: 'Client deleted',
+        description: 'The client has been deleted successfully.',
+      });
+    } catch (err) {
+      console.error('Error deleting client:', err);
+      toast({
+        title: 'Error deleting client',
+        description: 'There was a problem deleting the client.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-40">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
+      </div>
+    );
+  }
+
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex justify-between items-center">
-          <div>
-            <CardTitle>Clients</CardTitle>
-            <CardDescription>Manage client companies</CardDescription>
-          </div>
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={refreshData} 
-              disabled={isLoading}
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
-          </div>
+    <div>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-semibold">Manage Clients</h2>
+        {!showAddForm && (
+          <Button onClick={() => setShowAddForm(true)}>
+            Add New Client
+          </Button>
+        )}
+      </div>
+      
+      {showAddForm && (
+        <div className="mb-6 p-4 border rounded-md">
+          <h3 className="text-lg font-medium mb-4">Add New Client</h3>
+          <ClientForm 
+            onSubmit={handleAddClient} 
+            onCancel={() => setShowAddForm(false)} 
+          />
         </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-6">
-          <ClientForm />
-          <ClientsList clients={clients} isLoading={isLoading} />
-          
-          {/* Debug info */}
-          <Accordion type="single" collapsible className="mt-6">
-            <AccordionItem value="debug">
-              <AccordionTrigger className="text-xs text-muted-foreground">
-                <div className="flex items-center">
-                  <Info className="h-3 w-3 mr-2" />
-                  Debug Information
-                </div>
-              </AccordionTrigger>
-              <AccordionContent>
-                <div className="text-xs text-muted-foreground space-y-2 p-2 bg-muted/50 rounded-md">
-                  <p>Debug: Clients count: {clients.length}</p>
-                  <p>Debug: Loading state: {isLoading ? 'Loading' : 'Not loading'}</p>
-                  <p>Debug: Connection status: {connectionStatus}</p>
-                  <p>Debug: Last error: {lastError || 'None'}</p>
-                  <details>
-                    <summary className="cursor-pointer">Table Info</summary>
-                    <pre className="text-xs overflow-auto mt-2 p-2 bg-muted rounded-md">
-                      {JSON.stringify(tableInfo, null, 2)}
-                    </pre>
-                  </details>
-                  <div className="pt-2 flex justify-end">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={seedSampleClient}
-                      className="text-xs"
-                    >
-                      Add Sample Client (Debug)
-                    </Button>
-                  </div>
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
+      )}
+      
+      {editingClient && (
+        <div className="mb-6 p-4 border rounded-md">
+          <h3 className="text-lg font-medium mb-4">Edit Client</h3>
+          <ClientForm 
+            client={editingClient}
+            onSubmit={handleUpdateClient} 
+            onCancel={() => setEditingClient(null)} 
+          />
         </div>
-      </CardContent>
-    </Card>
+      )}
+      
+      <ClientsList 
+        clients={clients} 
+        onEdit={setEditingClient} 
+        onDelete={handleDeleteClient} 
+      />
+    </div>
   );
 }

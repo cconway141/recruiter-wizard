@@ -1,4 +1,3 @@
-
 import { Job, JobStatus, Locale, Flavor } from "@/types/job";
 import { 
   calculateRates, 
@@ -65,7 +64,6 @@ export function useJobMutations(jobs: Job[], setJobs: (jobs: Job[]) => void) {
         status: jobData.status,
         skills_sought: jobData.skillsSought,
         min_skills: jobData.minSkills,
-        linkedin_search: jobData.linkedinSearch,
         lir: jobData.lir,
         client: jobData.client,
         client_id: clientData?.id,
@@ -113,7 +111,6 @@ export function useJobMutations(jobs: Job[], setJobs: (jobs: Job[]) => void) {
         status: jobData.status,
         skillsSought: jobData.skillsSought,
         minSkills: jobData.minSkills,
-        linkedinSearch: jobData.linkedinSearch,
         lir: jobData.lir,
         client: jobData.client,
         clientId: data[0].client_id,
@@ -164,7 +161,6 @@ export function useJobMutations(jobs: Job[], setJobs: (jobs: Job[]) => void) {
         m3: updatedJob.m3,
         skills_sought: updatedJob.skillsSought,
         min_skills: updatedJob.minSkills,
-        linkedin_search: updatedJob.linkedinSearch,
         lir: updatedJob.lir,
         client: updatedJob.client,
         client_id: updatedJob.clientId,

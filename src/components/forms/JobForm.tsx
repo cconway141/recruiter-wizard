@@ -137,7 +137,6 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
         status: jobData.status,
         skillsSought: jobData.skillsSought,
         minSkills: jobData.minSkills, 
-        linkedinSearch: jobData.linkedinSearch,
         lir: jobData.lir,
         client: jobData.client,
         compDesc: jobData.compDesc,
