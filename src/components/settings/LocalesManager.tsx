@@ -15,6 +15,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { SortableHeader } from "@/components/ui/sortable-header";
+import { useSortableTable } from "@/hooks/useSortableTable";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -37,6 +39,8 @@ interface Locale {
   updated_at?: string;
 }
 
+type SortableLocaleField = "name" | "abbreviation";
+
 export function LocalesManager() {
   const [locales, setLocales] = useState<Locale[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -45,6 +49,9 @@ export function LocalesManager() {
   const [newWorkDetails, setNewWorkDetails] = useState("");
   const [newPayDetails, setNewPayDetails] = useState("");
   const [editingLocale, setEditingLocale] = useState<Locale | null>(null);
+  
+  const { sortField, sortDirection, handleSort, sortedData: sortedLocales } = 
+    useSortableTable<Locale, SortableLocaleField>(locales, "name");
 
   const fetchLocales = async () => {
     setIsLoading(true);
@@ -245,8 +252,20 @@ export function LocalesManager() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Abbreviation</TableHead>
+                  <SortableHeader 
+                    title="Name"
+                    field="name"
+                    currentField={sortField}
+                    direction={sortDirection}
+                    onSort={handleSort}
+                  />
+                  <SortableHeader 
+                    title="Abbreviation"
+                    field="abbreviation"
+                    currentField={sortField}
+                    direction={sortDirection}
+                    onSort={handleSort}
+                  />
                   <TableHead>Work Details</TableHead>
                   <TableHead>Pay Details</TableHead>
                   <TableHead className="w-[100px]">Actions</TableHead>
@@ -260,7 +279,7 @@ export function LocalesManager() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  locales.map((locale) => (
+                  sortedLocales.map((locale) => (
                     <TableRow key={locale.id}>
                       {editingLocale && editingLocale.id === locale.id ? (
                         <>

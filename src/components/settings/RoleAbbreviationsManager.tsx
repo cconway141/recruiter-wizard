@@ -14,6 +14,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { SortableHeader } from "@/components/ui/sortable-header";
+import { useSortableTable } from "@/hooks/useSortableTable";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -40,6 +42,9 @@ export function RoleAbbreviationsManager() {
   const [newRoleName, setNewRoleName] = useState("");
   const [newAbbreviation, setNewAbbreviation] = useState("");
   const [editingRole, setEditingRole] = useState<RoleAbbreviation | null>(null);
+  
+  const { sortField, sortDirection, handleSort, sortedData: sortedRoles } = 
+    useSortableTable<RoleAbbreviation, "role_name" | "abbreviation">(roleAbbreviations, "role_name");
 
   const fetchRoleAbbreviations = async () => {
     setIsLoading(true);
@@ -217,8 +222,20 @@ export function RoleAbbreviationsManager() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Role Name</TableHead>
-                  <TableHead>Abbreviation</TableHead>
+                  <SortableHeader 
+                    title="Role Name"
+                    field="role_name"
+                    currentField={sortField}
+                    direction={sortDirection}
+                    onSort={handleSort}
+                  />
+                  <SortableHeader 
+                    title="Abbreviation"
+                    field="abbreviation"
+                    currentField={sortField}
+                    direction={sortDirection}
+                    onSort={handleSort}
+                  />
                   <TableHead className="w-[100px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -230,7 +247,7 @@ export function RoleAbbreviationsManager() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  roleAbbreviations.map((role) => (
+                  sortedRoles.map((role) => (
                     <TableRow key={role.id}>
                       {editingRole && editingRole.id === role.id ? (
                         <>

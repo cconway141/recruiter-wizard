@@ -14,6 +14,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { SortableHeader } from "@/components/ui/sortable-header";
+import { useSortableTable } from "@/hooks/useSortableTable";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -36,6 +38,9 @@ export function StatusesManager() {
   const [isLoading, setIsLoading] = useState(false);
   const [newStatus, setNewStatus] = useState("");
   const [editingStatus, setEditingStatus] = useState<JobStatus | null>(null);
+  
+  const { sortField, sortDirection, handleSort, sortedData: sortedStatuses } = 
+    useSortableTable<JobStatus, "name" | "id">(statuses, "name");
 
   const fetchStatuses = async () => {
     setIsLoading(true);
@@ -191,19 +196,31 @@ export function StatusesManager() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
+                  <SortableHeader 
+                    title="Name"
+                    field="name"
+                    currentField={sortField}
+                    direction={sortDirection}
+                    onSort={handleSort}
+                  />
                   <TableHead className="w-[100px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {statuses.length === 0 ? (
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={2} className="text-center text-muted-foreground py-6">
+                      Loading statuses...
+                    </TableCell>
+                  </TableRow>
+                ) : sortedStatuses.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={2} className="text-center text-muted-foreground py-6">
                       No job statuses found
                     </TableCell>
                   </TableRow>
                 ) : (
-                  statuses.map((status) => (
+                  sortedStatuses.map((status) => (
                     <TableRow key={status.id}>
                       {editingStatus && editingStatus.id === status.id ? (
                         <>

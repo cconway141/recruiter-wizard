@@ -14,6 +14,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { SortableHeader } from "@/components/ui/sortable-header";
+import { useSortableTable } from "@/hooks/useSortableTable";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -38,6 +40,9 @@ export function FlavorsManager() {
   const [newName, setNewName] = useState("");
   const [newLabel, setNewLabel] = useState("");
   const [editingFlavor, setEditingFlavor] = useState<Flavor | null>(null);
+  
+  const { sortField, sortDirection, handleSort, sortedData: sortedFlavors } = 
+    useSortableTable<Flavor, "name" | "label">(flavors, "name");
 
   const fetchFlavors = async () => {
     setIsLoading(true);
@@ -203,20 +208,38 @@ export function FlavorsManager() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Label</TableHead>
+                  <SortableHeader 
+                    title="Name"
+                    field="name"
+                    currentField={sortField}
+                    direction={sortDirection}
+                    onSort={handleSort}
+                  />
+                  <SortableHeader 
+                    title="Label"
+                    field="label"
+                    currentField={sortField}
+                    direction={sortDirection}
+                    onSort={handleSort}
+                  />
                   <TableHead className="w-[100px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {flavors.length === 0 ? (
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-center text-muted-foreground py-6">
+                      Loading flavors...
+                    </TableCell>
+                  </TableRow>
+                ) : sortedFlavors.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={3} className="text-center text-muted-foreground py-6">
                       No flavors found
                     </TableCell>
                   </TableRow>
                 ) : (
-                  flavors.map((flavor) => (
+                  sortedFlavors.map((flavor) => (
                     <TableRow key={flavor.id}>
                       {editingFlavor && editingFlavor.id === flavor.id ? (
                         <>
