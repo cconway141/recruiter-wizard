@@ -5,6 +5,7 @@ import { JobForm } from "@/components/forms/JobForm";
 import { FormProvider, useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { JobProvider } from "@/contexts/JobContext";
 
 // Define the form schema for the job
 const formSchema = z.object({
@@ -61,9 +62,11 @@ const AddJob = () => {
           title="Add New Job" 
           description="Create a new job posting with automated message templates."
         />
-        <FormProvider {...methods}>
-          <JobForm />
-        </FormProvider>
+        <JobProvider>
+          <FormProvider {...methods}>
+            <JobForm />
+          </FormProvider>
+        </JobProvider>
       </main>
     </div>
   );

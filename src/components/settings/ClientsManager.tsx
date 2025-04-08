@@ -26,14 +26,9 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useQueryClient } from "@tanstack/react-query";
-
-interface Client {
-  id: string;
-  name: string;
-  manager: string;
-  abbreviation: string;
-  description: string;
-}
+import { Client } from "@/components/settings/clients/types";
+import { ClientForm } from "./clients/ClientForm";
+import { ClientsList } from "./clients/ClientsList";
 
 export function ClientsManager() {
   const [clients, setClients] = useState<Client[]>([]);
@@ -85,25 +80,11 @@ export function ClientsManager() {
     queryClient.invalidateQueries({ queryKey: ["clientOptions"] });
   };
 
-  const handleAddClient = async () => {
-    if (!newClient.trim() || !newManager.trim() || !newAbbreviation.trim() || !newDescription.trim()) {
-      toast({
-        title: "Error",
-        description: "All fields are required",
-        variant: "destructive",
-      });
-      return;
-    }
-    
+  const handleAddClient = async (client: Omit<Client, "id">) => {
     try {
       const { error } = await supabase
         .from("clients")
-        .insert({ 
-          name: newClient,
-          manager: newManager,
-          abbreviation: newAbbreviation,
-          description: newDescription
-        });
+        .insert(client);
       
       if (error) {
         throw error;
@@ -111,13 +92,8 @@ export function ClientsManager() {
       
       toast({
         title: "Success",
-        description: `Client "${newClient}" has been added.`,
+        description: `Client "${client.name}" has been added.`,
       });
-      
-      setNewClient("");
-      setNewManager("");
-      setNewAbbreviation("");
-      setNewDescription("");
       
       // Refresh data after adding
       refreshData();
@@ -131,27 +107,17 @@ export function ClientsManager() {
     }
   };
 
-  const handleStartEditing = (client: Client) => {
-    setEditingClient({ ...client });
-  };
-
-  const handleCancelEditing = () => {
-    setEditingClient(null);
-  };
-
-  const handleUpdateClient = async () => {
-    if (!editingClient) return;
-    
+  const handleUpdateClient = async (updatedClient: Client) => {
     try {
       const { error } = await supabase
         .from("clients")
         .update({
-          name: editingClient.name,
-          manager: editingClient.manager,
-          abbreviation: editingClient.abbreviation,
-          description: editingClient.description
+          name: updatedClient.name,
+          manager: updatedClient.manager,
+          abbreviation: updatedClient.abbreviation,
+          description: updatedClient.description
         })
-        .eq("id", editingClient.id);
+        .eq("id", updatedClient.id);
         
       if (error) {
         throw error;
@@ -225,136 +191,30 @@ export function ClientsManager() {
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input 
-              placeholder="Client Name" 
-              value={newClient} 
-              onChange={(e) => setNewClient(e.target.value)} 
+          <div className="mb-6 p-4 border rounded-md">
+            <h3 className="text-lg font-medium mb-4">Add New Client</h3>
+            <ClientForm 
+              onSubmit={handleAddClient} 
+              onCancel={() => {}} 
             />
-            <Input 
-              placeholder="Manager Name" 
-              value={newManager} 
-              onChange={(e) => setNewManager(e.target.value)} 
-            />
-            <Input 
-              placeholder="Abbreviation" 
-              value={newAbbreviation} 
-              onChange={(e) => setNewAbbreviation(e.target.value)} 
-            />
-            <Input 
-              placeholder="Company Description" 
-              value={newDescription} 
-              onChange={(e) => setNewDescription(e.target.value)} 
-            />
-            <Button onClick={handleAddClient} className="md:col-span-2">Add Client</Button>
           </div>
           
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Abbreviation</TableHead>
-                  <TableHead>Manager</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead className="w-[100px]">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground py-6">
-                      Loading clients...
-                    </TableCell>
-                  </TableRow>
-                ) : clients.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground py-6">
-                      No clients found
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  clients.map((client) => (
-                    <TableRow key={client.id}>
-                      {editingClient && editingClient.id === client.id ? (
-                        <>
-                          <TableCell>
-                            <Input 
-                              value={editingClient.name}
-                              onChange={(e) => setEditingClient({...editingClient, name: e.target.value})}
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Input 
-                              value={editingClient.abbreviation}
-                              onChange={(e) => setEditingClient({...editingClient, abbreviation: e.target.value})}
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Input 
-                              value={editingClient.manager}
-                              onChange={(e) => setEditingClient({...editingClient, manager: e.target.value})}
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Input 
-                              value={editingClient.description}
-                              onChange={(e) => setEditingClient({...editingClient, description: e.target.value})}
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex space-x-2">
-                              <Button size="sm" variant="outline" onClick={handleUpdateClient}>
-                                <Save className="h-4 w-4" />
-                              </Button>
-                              <Button size="sm" variant="outline" onClick={handleCancelEditing}>
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </>
-                      ) : (
-                        <>
-                          <TableCell>{client.name}</TableCell>
-                          <TableCell>{client.abbreviation}</TableCell>
-                          <TableCell>{client.manager}</TableCell>
-                          <TableCell className="max-w-[200px] truncate">{client.description}</TableCell>
-                          <TableCell>
-                            <div className="flex space-x-2">
-                              <Button size="sm" variant="outline" onClick={() => handleStartEditing(client)}>
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button size="sm" variant="outline">
-                                    <Trash className="h-4 w-4" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Delete Client</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      Are you sure you want to delete "{client.name}"? This action cannot be undone.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDeleteClient(client.id)}>
-                                      Delete
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </div>
-                          </TableCell>
-                        </>
-                      )}
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          {editingClient && (
+            <div className="mb-6 p-4 border rounded-md">
+              <h3 className="text-lg font-medium mb-4">Edit Client</h3>
+              <ClientForm 
+                client={editingClient}
+                onSubmit={handleUpdateClient} 
+                onCancel={() => setEditingClient(null)} 
+              />
+            </div>
+          )}
+          
+          <ClientsList 
+            clients={clients} 
+            onEdit={setEditingClient} 
+            onDelete={handleDeleteClient} 
+          />
         </div>
       </CardContent>
     </Card>

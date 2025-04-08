@@ -92,29 +92,16 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job }) => {
       <div className="bg-white p-6 rounded-lg border">
         <h3 className="text-xl font-semibold mb-4 text-recruiter-primary">LinkedIn Resources</h3>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <h4 className="font-medium text-gray-500 mb-1">LinkedIn Search</h4>
-            <a 
-              href={job.linkedinSearch}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:text-blue-800 flex items-center"
-            >
-              Open LinkedIn Search <ExternalLink className="ml-1 h-4 w-4" />
-            </a>
-          </div>
-          <div>
-            <h4 className="font-medium text-gray-500 mb-1">LinkedIn Recruiter Project</h4>
-            <a 
-              href={job.lir}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:text-blue-800 flex items-center"
-            >
-              Open LIR Project <ExternalLink className="ml-1 h-4 w-4" />
-            </a>
-          </div>
+        <div>
+          <h4 className="font-medium text-gray-500 mb-1">LinkedIn Recruiter Project</h4>
+          <a 
+            href={job.lir}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:text-blue-800 flex items-center"
+          >
+            Open LIR Project <ExternalLink className="ml-1 h-4 w-4" />
+          </a>
         </div>
       </div>
     </div>

@@ -15,7 +15,7 @@ import {
 } from "@/utils/jobUtils";
 import { useJobs } from "@/contexts/JobContext";
 import { Loader2 } from "lucide-react";
-import { getClientByName } from "@/utils/clientData";
+import { supabase } from "@/integrations/supabase/client";
 
 // Import the component files
 import { JobFormBasicInfo } from "./JobFormBasicInfo";
@@ -60,98 +60,119 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
 
   const isLoading = clientsLoading || flavorsLoading || localesLoading || statusesLoading || usersLoading;
 
-  const handleClientSelection = (clientName: string) => {
-    const clientData = getClientByName(clientName);
-    if (clientData) {
-      form.setValue("compDesc", clientData.description);
+  const handleClientSelection = async (clientName: string) => {
+    try {
+      // Fetch client data from Supabase to get the description
+      const { data, error } = await supabase
+        .from('clients')
+        .select('description')
+        .eq('name', clientName)
+        .single();
+        
+      if (error) {
+        console.error("Error fetching client description:", error);
+        return;
+      }
+      
+      if (data && data.description) {
+        form.setValue("compDesc", data.description);
+      }
+    } catch (err) {
+      console.error("Error in handleClientSelection:", err);
     }
   };
 
   useEffect(() => {
     if (watchedFields.client && watchedFields.candidateFacingTitle && watchedFields.flavor && watchedFields.locale) {
-      const clientData = getClientByName(watchedFields.client);
-      const clientIdentifier = clientData ? clientData.abbreviation : watchedFields.client;
-      
-      const newTitle = generateInternalTitle(
-        clientIdentifier,
-        watchedFields.candidateFacingTitle,
-        watchedFields.flavor,
-        watchedFields.locale as Locale
-      );
-      setPreviewTitle(newTitle);
+      try {
+        const newTitle = generateInternalTitle(
+          watchedFields.client,
+          watchedFields.candidateFacingTitle,
+          watchedFields.flavor,
+          watchedFields.locale as Locale
+        );
+        setPreviewTitle(newTitle);
+      } catch (err) {
+        console.error("Error generating internal title:", err);
+      }
     }
 
     if (watchedFields.candidateFacingTitle && watchedFields.compDesc && watchedFields.locale && watchedFields.skillsSought && watchedFields.videoQuestions) {
-      const locale = watchedFields.locale as Locale;
-      const workDetails = getWorkDetails(locale);
-      const payDetails = getPayDetails(locale);
-      
-      const m1 = generateM1("[First Name]", watchedFields.candidateFacingTitle, watchedFields.compDesc);
-      const m2 = generateM2(watchedFields.candidateFacingTitle, payDetails, workDetails, watchedFields.skillsSought);
-      const m3 = generateM3(watchedFields.videoQuestions);
-      
-      setMessages({ m1, m2, m3 });
+      try {
+        const locale = watchedFields.locale as Locale;
+        const workDetails = getWorkDetails(locale);
+        const payDetails = getPayDetails(locale);
+        
+        const m1 = generateM1("[First Name]", watchedFields.candidateFacingTitle, watchedFields.compDesc);
+        const m2 = generateM2(watchedFields.candidateFacingTitle, payDetails, workDetails, watchedFields.skillsSought);
+        const m3 = generateM3(watchedFields.videoQuestions);
+        
+        setMessages({ m1, m2, m3 });
+      } catch (err) {
+        console.error("Error generating messages:", err);
+      }
     }
   }, [watchedFields]);
 
   const onSubmit = (values: any) => {
-    const { previewName, ...jobData } = values;
-    
-    const { high, medium, low } = calculateRates(values.rate);
-    
-    const locale = values.locale as Locale;
-    const workDetails = getWorkDetails(locale);
-    const payDetails = getPayDetails(locale);
-    
-    const clientData = getClientByName(values.client);
-    const clientIdentifier = clientData ? clientData.abbreviation : values.client;
-    
-    const internalTitle = generateInternalTitle(
-      clientIdentifier,
-      values.candidateFacingTitle,
-      values.flavor,
-      locale
-    );
-    
-    if (isEditing && job) {
-      updateJob({
-        ...job,
-        ...jobData,
-        locale: jobData.locale as Locale,
-        status: jobData.status,
-        flavor: jobData.flavor,
-        internalTitle,
-        highRate: high,
-        mediumRate: medium,
-        lowRate: low,
-        workDetails,
-        payDetails,
-        m1: messages.m1,
-        m2: messages.m2,
-        m3: messages.m3
-      });
-    } else {
-      addJob({
-        jd: jobData.jd,
-        candidateFacingTitle: jobData.candidateFacingTitle,
-        status: jobData.status,
-        skillsSought: jobData.skillsSought,
-        minSkills: jobData.minSkills, 
-        lir: jobData.lir,
-        client: jobData.client,
-        compDesc: jobData.compDesc,
-        rate: jobData.rate,
-        locale: jobData.locale as Locale,
-        owner: jobData.owner,
-        date: jobData.date,
-        other: jobData.other || "",
-        videoQuestions: jobData.videoQuestions,
-        screeningQuestions: jobData.screeningQuestions,
-        flavor: jobData.flavor,
-      });
+    try {
+      const { previewName, ...jobData } = values;
+      
+      const { high, medium, low } = calculateRates(values.rate);
+      
+      const locale = values.locale as Locale;
+      const workDetails = getWorkDetails(locale);
+      const payDetails = getPayDetails(locale);
+      
+      const internalTitle = generateInternalTitle(
+        values.client,
+        values.candidateFacingTitle,
+        values.flavor,
+        locale
+      );
+      
+      if (isEditing && job) {
+        updateJob({
+          ...job,
+          ...jobData,
+          locale: jobData.locale as Locale,
+          status: jobData.status,
+          flavor: jobData.flavor,
+          internalTitle,
+          highRate: high,
+          mediumRate: medium,
+          lowRate: low,
+          workDetails,
+          payDetails,
+          m1: messages.m1,
+          m2: messages.m2,
+          m3: messages.m3
+        });
+      } else {
+        addJob({
+          jd: jobData.jd,
+          candidateFacingTitle: jobData.candidateFacingTitle,
+          status: jobData.status,
+          skillsSought: jobData.skillsSought,
+          minSkills: jobData.minSkills, 
+          lir: jobData.lir,
+          client: jobData.client,
+          compDesc: jobData.compDesc,
+          rate: jobData.rate,
+          locale: jobData.locale as Locale,
+          owner: jobData.owner,
+          date: jobData.date,
+          other: jobData.other || "",
+          videoQuestions: jobData.videoQuestions,
+          screeningQuestions: jobData.screeningQuestions,
+          flavor: jobData.flavor,
+        });
+      }
+      
+      navigate("/");
+    } catch (err) {
+      console.error("Error in form submission:", err);
     }
-    
-    navigate("/");
   };
 
   if (isLoading) {

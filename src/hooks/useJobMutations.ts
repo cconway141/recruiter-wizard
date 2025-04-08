@@ -1,3 +1,4 @@
+
 import { Job, JobStatus, Locale, Flavor } from "@/types/job";
 import { 
   calculateRates, 
@@ -54,7 +55,7 @@ export function useJobMutations(jobs: Job[], setJobs: (jobs: Job[]) => void) {
       .eq('display_name', jobData.owner)
       .single();
 
-    // Insert into Supabase with IDs
+    // Insert into Supabase
     const { data, error } = await supabase
       .from('jobs')
       .insert({
@@ -87,7 +88,8 @@ export function useJobMutations(jobs: Job[], setJobs: (jobs: Job[]) => void) {
         status_id: statusData?.id,
         m1: m1,
         m2: m2,
-        m3: m3
+        m3: m3,
+        linkedin_search: '' // Add empty linkedin_search to satisfy database schema
       })
       .select();
 
@@ -181,7 +183,8 @@ export function useJobMutations(jobs: Job[], setJobs: (jobs: Job[]) => void) {
         screening_questions: updatedJob.screeningQuestions,
         flavor: updatedJob.flavor,
         flavor_id: updatedJob.flavorId,
-        status_id: updatedJob.statusId
+        status_id: updatedJob.statusId,
+        linkedin_search: '' // Add empty linkedin_search to satisfy database schema
       })
       .eq('id', updatedJob.id);
 

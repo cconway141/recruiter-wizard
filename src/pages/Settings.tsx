@@ -1,16 +1,15 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AirtableSetup } from "@/components/settings/AirtableSetup";
 import { ClientsManager } from "@/components/settings/ClientsManager";
 import { FlavorsManager } from "@/components/settings/FlavorsManager";
 import { LocalesManager } from "@/components/settings/LocalesManager";
 import { StatusesManager } from "@/components/settings/StatusesManager";
 import { toast } from "@/components/ui/use-toast";
 import { setupAirtable, getAirtableConfig } from "@/utils/airtableUtils";
+import { AirtableSetup } from "@/components/settings/AirtableSetup";
 
 const Settings = () => {
   const [isAirtableSetup, setIsAirtableSetup] = useState(false);
@@ -19,14 +18,14 @@ const Settings = () => {
   const [activeTab, setActiveTab] = useState<string>("airtable");
 
   // Load saved configuration on component mount
-  useState(() => {
+  useEffect(() => {
     const config = getAirtableConfig();
     if (config.apiKey && config.baseId) {
       setApiKey(config.apiKey);
       setBaseId(config.baseId);
       setIsAirtableSetup(true);
     }
-  });
+  }, []);
 
   const handleSaveAirtableConfig = () => {
     if (!apiKey || !baseId) {
