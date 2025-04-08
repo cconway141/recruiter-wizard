@@ -1,5 +1,7 @@
 
 import React from "react";
+import { cn } from "@/lib/utils";
+import { calculateRates } from "@/utils/rateUtils";
 
 interface FormRatePreviewProps {
   rate: number;
@@ -10,23 +12,21 @@ export function FormRatePreview({ rate }: FormRatePreviewProps) {
     return null;
   }
 
-  const highRate = Math.round(rate * 0.55);
-  const mediumRate = Math.round(rate * 0.4);
-  const lowRate = Math.round(rate * 0.2);
+  const { high, medium, low } = calculateRates(rate);
 
   return (
-    <div className="mb-6 grid grid-cols-3 gap-2">
-      <div className="p-3 bg-gray-50 rounded-md">
-        <h4 className="text-sm font-medium text-gray-500">High Rate</h4>
-        <p className="text-lg font-semibold">${highRate}/hr</p>
-      </div>
-      <div className="p-3 bg-gray-50 rounded-md">
-        <h4 className="text-sm font-medium text-gray-500">Medium Rate</h4>
-        <p className="text-lg font-semibold">${mediumRate}/hr</p>
-      </div>
-      <div className="p-3 bg-gray-50 rounded-md">
-        <h4 className="text-sm font-medium text-gray-500">Low Rate</h4>
-        <p className="text-lg font-semibold">${lowRate}/hr</p>
+    <div className="mb-2 flex items-center space-x-2">
+      <span className="text-sm text-muted-foreground">Rates:</span>
+      <div className="flex space-x-2">
+        <div className="bg-gray-100 px-2 py-1 rounded-md text-xs">
+          <span className="font-medium">High:</span> ${high}/hr
+        </div>
+        <div className="bg-gray-100 px-2 py-1 rounded-md text-xs">
+          <span className="font-medium">Medium:</span> ${medium}/hr
+        </div>
+        <div className="bg-gray-100 px-2 py-1 rounded-md text-xs">
+          <span className="font-medium">Low:</span> ${low}/hr
+        </div>
       </div>
     </div>
   );
