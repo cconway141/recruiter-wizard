@@ -5,6 +5,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Trash, Mail, Linkedin, ExternalLink } from "lucide-react";
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useMessageTemplates } from "@/hooks/useMessageTemplates";
 import { Candidate } from "./types";
 
 interface CandidateListItemProps {
@@ -19,6 +21,8 @@ export const CandidateListItem: React.FC<CandidateListItemProps> = ({
   onStatusChange 
 }) => {
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<string>("");
+  const { templates } = useMessageTemplates();
 
   const handleEmailClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -28,8 +32,17 @@ export const CandidateListItem: React.FC<CandidateListItemProps> = ({
   const composeEmail = () => {
     if (!candidate.email) return;
     
-    const subject = `Regarding your application`;
-    const body = `Hello ${candidate.name},\n\nI hope this email finds you well.`;
+    // Get the template content if a template is selected
+    let subject = `Regarding your application`;
+    let body = `Hello ${candidate.name},\n\nI hope this email finds you well.`;
+    
+    // If a template is selected, use its content
+    if (selectedTemplate) {
+      const template = templates.find(t => t.id === selectedTemplate);
+      if (template) {
+        body = template.message.replace(/\[First Name\]/g, candidate.name.split(' ')[0]);
+      }
+    }
     
     // Create Gmail compose URL with prefilled fields
     const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(candidate.email)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
@@ -155,13 +168,44 @@ export const CandidateListItem: React.FC<CandidateListItemProps> = ({
           <DialogHeader>
             <DialogTitle>Email {candidate.name}</DialogTitle>
             <DialogDescription>
-              Click the button below to compose an email to this candidate.
+              Select a template or compose a custom email to this candidate.
             </DialogDescription>
           </DialogHeader>
           
           {candidate.email ? (
-            <div className="py-4">
-              <p className="mb-2"><strong>To:</strong> {candidate.name} ({candidate.email})</p>
+            <div className="space-y-4 py-4">
+              <div>
+                <p className="mb-2"><strong>To:</strong> {candidate.name} ({candidate.email})</p>
+              </div>
+              
+              <div className="space-y-2">
+                <label htmlFor="template-select" className="block text-sm font-medium text-gray-700">
+                  Email Template
+                </label>
+                <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
+                  <SelectTrigger id="template-select" className="w-full">
+                    <SelectValue placeholder="Select a template" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Custom Email</SelectItem>
+                    {templates.map((template) => (
+                      <SelectItem key={template.id} value={template.id}>
+                        {template.category} - {template.situation}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                {selectedTemplate && (
+                  <div className="mt-2 p-3 bg-gray-50 rounded-md max-h-[200px] overflow-y-auto">
+                    <p className="whitespace-pre-line text-sm">
+                      {templates
+                        .find(t => t.id === selectedTemplate)?.message
+                        .replace(/\[First Name\]/g, candidate.name.split(' ')[0]) || ''}
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           ) : (
             <div className="py-4 text-red-500">

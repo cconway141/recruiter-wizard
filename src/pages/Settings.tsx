@@ -10,6 +10,7 @@ import { StatusesManager } from "@/components/settings/StatusesManager";
 import { MessageTemplatesManager } from "@/components/settings/MessageTemplatesManager";
 import { RoleAbbreviationsManager } from "@/components/settings/RoleAbbreviationsManager";
 import { PromptsManager } from "@/components/settings/PromptsManager";
+import { EmailTemplatesManager } from "@/components/settings/EmailTemplatesManager";
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState<string>("clients");
@@ -25,13 +26,14 @@ const Settings = () => {
         <PageHeader title="Settings" description="Configure your application settings and manage data." />
 
         <Tabs defaultValue="clients" className="mt-6" onValueChange={handleTabChange}>
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger value="clients">Clients</TabsTrigger>
             <TabsTrigger value="statuses">Statuses</TabsTrigger>
             <TabsTrigger value="locales">Locales</TabsTrigger>
             <TabsTrigger value="flavors">Job Flavors</TabsTrigger>
             <TabsTrigger value="roles">Role Abbreviations</TabsTrigger>
             <TabsTrigger value="messages">Message Templates</TabsTrigger>
+            <TabsTrigger value="emails">Email Templates</TabsTrigger>
             <TabsTrigger value="prompts">AI Prompts</TabsTrigger>
           </TabsList>
           
@@ -57,6 +59,10 @@ const Settings = () => {
           
           <TabsContent value="messages" className="p-4 border rounded-md mt-4">
             <MessageTemplatesManager />
+          </TabsContent>
+          
+          <TabsContent value="emails" className="p-4 border rounded-md mt-4 bg-white">
+            <EmailTemplatesManager />
           </TabsContent>
           
           <TabsContent value="prompts" className="p-4 border rounded-md mt-4 bg-white">

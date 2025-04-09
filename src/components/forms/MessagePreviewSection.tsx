@@ -1,7 +1,9 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { MessageCard } from "@/components/messages/MessageCard";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 interface MessagePreviewSectionProps {
   messages: {
@@ -14,29 +16,53 @@ interface MessagePreviewSectionProps {
 export function MessagePreviewSection({ messages }: MessagePreviewSectionProps) {
   const form = useFormContext();
   const previewName = form.watch("previewName") || "Candidate";
+  const [selectedMessage, setSelectedMessage] = useState<string>("m1");
+  
+  // Define message options
+  const messageOptions = [
+    { value: "m1", label: "M1 - Initial Outreach" },
+    { value: "m2", label: "M2 - Detailed Information" },
+    { value: "m3", label: "M3 - Video & Final Questions" }
+  ];
+  
+  // Get current message based on selection
+  const getCurrentMessage = () => {
+    switch (selectedMessage) {
+      case "m1":
+        return { value: messages.m1, title: "M1 - Initial Outreach" };
+      case "m2":
+        return { value: messages.m2, title: "M2 - Detailed Information" };
+      case "m3":
+        return { value: messages.m3, title: "M3 - Video & Final Questions" };
+      default:
+        return { value: messages.m1, title: "M1 - Initial Outreach" };
+    }
+  };
+  
+  const currentMessage = getCurrentMessage();
   
   return (
     <div className="space-y-4">
-      {messages.m1 !== undefined && messages.m1 !== null && (
-        <MessageCard
-          title="M1 - Initial Outreach"
-          message={messages.m1}
-          previewName={previewName}
-        />
-      )}
+      <div className="mb-4">
+        <Label htmlFor="message-select" className="mb-2 block">Select Message Template</Label>
+        <Select value={selectedMessage} onValueChange={setSelectedMessage}>
+          <SelectTrigger id="message-select" className="w-full">
+            <SelectValue placeholder="Select a message template" />
+          </SelectTrigger>
+          <SelectContent>
+            {messageOptions.map(option => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
       
-      {messages.m2 !== undefined && messages.m2 !== null && (
+      {currentMessage.value !== undefined && currentMessage.value !== null && (
         <MessageCard
-          title="M2 - Detailed Information"
-          message={messages.m2}
-          previewName={previewName}
-        />
-      )}
-      
-      {messages.m3 !== undefined && messages.m3 !== null && (
-        <MessageCard
-          title="M3 - Video & Final Questions"
-          message={messages.m3}
+          title={currentMessage.title}
+          message={currentMessage.value}
           previewName={previewName}
         />
       )}
