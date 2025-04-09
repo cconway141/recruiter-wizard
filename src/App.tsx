@@ -5,6 +5,7 @@ import {
   Routes,
   useNavigate,
   useLocation,
+  Link
 } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import Dashboard from '@/pages/Dashboard';
@@ -26,7 +27,6 @@ import { MainNav } from "@/components/layout/MainNav";
 import { SidebarNav } from "@/components/layout/SidebarNav";
 import { siteConfig } from "@/config/site";
 import { ModeToggle } from "@/components/layout/ModeToggle";
-import { Link } from "@radix-ui/react-navigation-menu";
 import {
   Sheet,
   SheetContent,
@@ -69,7 +69,7 @@ function App() {
     <div className="flex min-h-screen bg-background antialiased">
       <aside className="border-r bg-secondary w-60 flex-none hidden lg:block">
         <ScrollArea className="py-6 pr-4">
-          <Link href="/" className="flex items-center gap-2 px-4">
+          <Link to="/" className="flex items-center gap-2 px-4">
             {siteConfig.name}
           </Link>
           <Separator className="my-2" />
