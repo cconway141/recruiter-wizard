@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,6 +37,31 @@ const Auth = () => {
     };
     
     checkSession();
+
+    // Check for hash fragment in URL (from Google redirect)
+    const handleHashParams = async () => {
+      if (window.location.hash && window.location.hash.includes('access_token')) {
+        // Let the Supabase client handle the token
+        const { data, error } = await supabase.auth.getUser();
+        
+        if (error) {
+          console.error('Error getting user from hash params:', error);
+          toast({
+            title: "Authentication failed",
+            description: error.message,
+            variant: "destructive",
+          });
+        } else if (data.user) {
+          toast({
+            title: "Authentication successful",
+            description: "You are now signed in!",
+          });
+          navigate('/');
+        }
+      }
+    };
+    
+    handleHashParams();
   }, [navigate]);
 
   const handleGoogleSignIn = async () => {
