@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -13,39 +14,48 @@ const Auth = () => {
   useEffect(() => {
     const handleAuth = async () => {
       try {
-        // If we have hash parameters from OAuth redirect, process them first
-        if (location.hash && location.hash.includes('access_token')) {
-          setIsProcessingAuth(true);
+        setIsProcessingAuth(true);
+        
+        // Check for hash parameters from OAuth redirect
+        if (location.hash) {
+          console.log("Found hash in URL:", location.hash);
           
-          // Let Supabase process the hash parameters
-          const { data, error } = await supabase.auth.getUser();
+          // Let Supabase handle the hash parameters by waiting for the session
+          const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
           
-          if (error) {
-            console.error('Error getting user from hash params:', error);
+          if (sessionError) {
+            console.error('Error getting session from hash params:', sessionError);
             toast({
               title: "Authentication failed",
-              description: error.message,
+              description: sessionError.message,
               variant: "destructive"
             });
-          } else if (data.user) {
+          } else if (sessionData.session) {
+            console.log("Successfully processed hash, user is authenticated");
+            
+            // Clean up the URL by removing the hash
+            window.history.replaceState(null, document.title, window.location.pathname);
+            
             // Authentication successful, redirect to home page
             toast({
               title: "Authentication successful",
               description: "You are now signed in!"
             });
             
-            // Clear the hash and navigate to home
-            window.history.replaceState(null, document.title, window.location.pathname);
             navigate('/');
             return;
+          } else {
+            console.log("No session found after processing hash");
           }
-        } else {
-          // Otherwise check if user is already logged in
-          const { data } = await supabase.auth.getSession();
-          if (data.session) {
-            navigate("/");
-            return;
-          }
+        }
+        
+        // If there's no hash or hash processing didn't result in a session,
+        // check if the user is already logged in
+        const { data } = await supabase.auth.getSession();
+        if (data.session) {
+          console.log("User already has a valid session");
+          navigate("/");
+          return;
         }
       } catch (err) {
         console.error('Error in auth process:', err);
@@ -64,10 +74,13 @@ const Auth = () => {
 
   const handleGoogleSignIn = async () => {
     try {
+      // Use the specific auth/callback route which is set up to handle Google redirects
+      const redirectTo = `${window.location.origin}/auth/callback`;
+      
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth`,
+          redirectTo: redirectTo,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent'
@@ -76,13 +89,17 @@ const Auth = () => {
       });
       
       if (error) {
+        console.error("Google sign in error:", error);
         toast({
           title: "Google sign in failed",
           description: error.message,
           variant: "destructive"
         });
+      } else {
+        console.log("Redirecting to Google OAuth...");
       }
     } catch (error: any) {
+      console.error("Error initiating Google sign in:", error);
       toast({
         title: "Google sign in failed",
         description: error.message,
