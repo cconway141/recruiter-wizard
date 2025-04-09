@@ -29,7 +29,7 @@ export const useEmailActions = ({
   onSuccess
 }: UseEmailActionsProps) => {
   // Get thread ID for this specific job if it exists
-  const threadId = candidate.threadIds?.[jobId || ''] || null;
+  const threadId = jobId && candidate.threadIds ? candidate.threadIds[jobId] || null : null;
   const { user } = useAuth();
   
   const { 
@@ -66,6 +66,7 @@ export const useEmailActions = ({
     const { subject, body } = getEmailContent();
     
     console.log("Sending email with thread ID:", threadId);
+    console.log("For job ID:", jobId);
     
     const newThreadId = await sendEmail(
       candidate.email,
@@ -79,6 +80,7 @@ export const useEmailActions = ({
     // Update candidate's thread ID if a new one was created
     if (newThreadId && jobId && (!threadId || newThreadId !== threadId)) {
       console.log("New thread ID created:", newThreadId);
+      console.log("Saving thread ID for job:", jobId);
       
       const threadIdsUpdate = { ...(candidate.threadIds || {}), [jobId]: newThreadId };
       
@@ -92,7 +94,7 @@ export const useEmailActions = ({
       if (updateError) {
         console.error("Error updating candidate thread ID:", updateError);
       } else {
-        console.log("Thread ID saved for future emails:", newThreadId);
+        console.log("Thread ID saved for job:", jobId, "Thread ID:", newThreadId);
       }
     }
   };

@@ -24,7 +24,7 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps) => {
     jobTitle: string | undefined,
     threadId: string | null
   ) => {
-    if (!to || !user) return;
+    if (!to || !user) return null;
     
     setIsSending(true);
     setErrorMessage(null);
@@ -34,7 +34,7 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps) => {
       
       if (!isConnected) {
         setErrorMessage("Gmail not connected. Please connect your Gmail account to send emails.");
-        return;
+        return null;
       }
       
       console.log("Sending email to:", to);

@@ -40,7 +40,9 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({
   const { getJob } = useJobs();
   const job = jobId ? getJob(jobId) : undefined;
   
-  const threadTitle = job ? `ITBC ${job.candidateFacingTitle} ${candidate.name}` : `ITBC ${candidate.name}`;
+  const threadTitle = job ? `ITBC ${job.candidateFacingTitle} - ${candidate.name}` : `ITBC - ${candidate.name}`;
+  
+  const hasExistingThread = jobId && candidate.threadIds && candidate.threadIds[jobId];
 
   const { 
     isSending,
@@ -59,8 +61,12 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({
   });
 
   const openGmailThread = () => {
-    const searchQuery = encodeURIComponent(`"${threadTitle}"`);
-    window.open(`https://mail.google.com/mail/u/0/#search/${searchQuery}`, '_blank');
+    if (jobId && candidate.threadIds && candidate.threadIds[jobId]) {
+      window.open(`https://mail.google.com/mail/u/0/#search/rfc822msgid:${candidate.threadIds[jobId]}`, '_blank');
+    } else {
+      const searchQuery = encodeURIComponent(`"${threadTitle}"`);
+      window.open(`https://mail.google.com/mail/u/0/#search/${searchQuery}`, '_blank');
+    }
   };
 
   return (
@@ -70,7 +76,7 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({
           <DialogTitle>Email {candidate.name}</DialogTitle>
           <DialogDescription>
             Select a template or compose a custom email to this candidate.
-            {candidate.threadIds?.[jobId || ''] 
+            {hasExistingThread 
               ? ' This will continue the existing email thread.' 
               : ' This will start a new email thread.'}
           </DialogDescription>
@@ -79,17 +85,22 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({
         <div className="bg-gray-50 p-3 rounded-md flex justify-between items-center">
           <div className="text-sm font-medium text-gray-700">
             <span className="block">Thread: {threadTitle}</span>
+            {hasExistingThread && (
+              <span className="text-xs text-gray-500">Continuing existing thread for this job</span>
+            )}
           </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="flex items-center gap-1"
-            onClick={openGmailThread}
-          >
-            <Mail className="h-4 w-4" />
-            <span>Go to thread in Gmail</span>
-            <ExternalLink className="h-3 w-3 ml-1" />
-          </Button>
+          {(hasExistingThread || jobId) && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center gap-1"
+              onClick={openGmailThread}
+            >
+              <Mail className="h-4 w-4" />
+              <span>Go to thread in Gmail</span>
+              <ExternalLink className="h-3 w-3 ml-1" />
+            </Button>
+          )}
         </div>
         
         <EmailContent 

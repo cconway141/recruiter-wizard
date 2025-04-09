@@ -47,7 +47,7 @@ export function useLoadCandidates(
       const candidateIds = applications.map(app => app.candidate_id);
       const { data: candidatesData, error: candidatesError } = await supabase
         .from('candidates')
-        .select('*')
+        .select('*, thread_ids')  // Explicitly select thread_ids
         .in('id', candidateIds);
         
       if (candidatesError) throw candidatesError;
@@ -62,9 +62,8 @@ export function useLoadCandidates(
       const mappedCandidates = candidatesData.map(candidate => {
         const application = applications.find(app => app.candidate_id === candidate.id);
         
-        // Since TypeScript doesn't know about our new thread_ids column yet,
-        // we need to use a type assertion to access it safely
-        const threadIds = (candidate as any).thread_ids || {};
+        // Access thread_ids from the candidate data
+        const threadIds = candidate.thread_ids || {};
         
         return {
           id: candidate.id,
