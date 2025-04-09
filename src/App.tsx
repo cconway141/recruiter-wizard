@@ -1,15 +1,8 @@
 
 import React, { useEffect } from 'react';
-import {
-  Route,
-  Routes,
-  useNavigate,
-  useLocation,
-  Link
-} from 'react-router-dom';
+import { Route, Routes, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import Dashboard from '@/pages/Dashboard';
-import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import Profile from '@/pages/Profile';
 import Jobs from '@/pages/Jobs';
@@ -18,7 +11,6 @@ import Candidates from '@/pages/Candidates';
 import CandidateDetail from '@/pages/CandidateDetail';
 import Auth from '@/pages/Auth';
 import { GoogleCallback } from '@/components/auth/GoogleCallback';
-import { PageHeader } from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from "@/components/ui/scroll-area";
