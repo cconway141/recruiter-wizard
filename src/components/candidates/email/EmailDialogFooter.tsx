@@ -13,6 +13,7 @@ interface EmailDialogFooterProps {
   onComposeEmail: () => void;
   isGmailConnected?: boolean | null;
   checkGmailConnection?: () => Promise<boolean>;
+  goToProfilePage?: () => void;
 }
 
 export const EmailDialogFooter: React.FC<EmailDialogFooterProps> = ({
@@ -21,7 +22,8 @@ export const EmailDialogFooter: React.FC<EmailDialogFooterProps> = ({
   onSendEmail,
   onComposeEmail,
   isGmailConnected,
-  checkGmailConnection
+  checkGmailConnection,
+  goToProfilePage
 }) => {
   const { user } = useAuth();
   const [isChecking, setIsChecking] = useState(false);
@@ -33,14 +35,9 @@ export const EmailDialogFooter: React.FC<EmailDialogFooterProps> = ({
     if (isGmailConnected !== undefined && isGmailConnected !== null) {
       setGmailStatus(isGmailConnected);
     } else if (checkGmailConnection && user) {
-      const checkConnection = async () => {
-        setIsChecking(true);
-        const isConnected = await checkGmailConnection();
-        setGmailStatus(isConnected);
-        setIsChecking(false);
-      };
-      
-      checkConnection();
+      // We don't auto-check here anymore - the parent component controls this
+      // to prevent infinite loops
+      setGmailStatus(isGmailConnected);
     }
   }, [isGmailConnected, checkGmailConnection, user]);
   
@@ -61,11 +58,22 @@ export const EmailDialogFooter: React.FC<EmailDialogFooterProps> = ({
             onClick={onComposeEmail}
             className="flex items-center gap-2"
             variant="outline"
+            disabled={!gmailStatus}
           >
             <Mail className="h-4 w-4" />
             <span>Compose in Gmail</span>
             <ExternalLink className="h-3 w-3" />
           </Button>
+          
+          {!gmailStatus && goToProfilePage && (
+            <Button 
+              onClick={goToProfilePage}
+              className="flex items-center gap-2"
+              variant="default"
+            >
+              <span>Go to Profile to Connect Gmail</span>
+            </Button>
+          )}
           
           {!gmailStatus && (
             <GmailConnectButton 
