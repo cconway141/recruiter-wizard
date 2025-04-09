@@ -1,8 +1,11 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { GaxiosPromise } from "npm:gaxios";
-import { GoogleAuth } from "npm:google-auth-library";
-import { gmail_v1, google } from "npm:googleapis";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 // Define CORS headers for the function
 const corsHeaders = {
@@ -17,6 +20,7 @@ interface EmailRequest {
   candidateName: string;
   jobTitle?: string;
   threadId?: string;
+  userId: string; // Added userId to identify which user's tokens to use
 }
 
 serve(async (req) => {
@@ -27,12 +31,12 @@ serve(async (req) => {
 
   try {
     // Parse the request body
-    const { to, subject, body, candidateName, jobTitle, threadId } = await req.json() as EmailRequest;
+    const { to, subject, body, candidateName, jobTitle, threadId, userId } = await req.json() as EmailRequest;
 
     // Validate request
-    if (!to || !body) {
+    if (!to || !body || !userId) {
       return new Response(
-        JSON.stringify({ error: 'Missing required fields' }),
+        JSON.stringify({ error: 'Missing required fields (to, body, or userId)' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -42,30 +46,40 @@ serve(async (req) => {
 
     console.log(`Preparing to send email to ${to} with subject "${emailSubject}"`);
     console.log(`Using thread ID: ${threadId || 'New thread'}`);
-
-    // Get service account credentials from environment
-    const serviceAccountKey = JSON.parse(Deno.env.get("GMAIL_SERVICE_ACCOUNT") || "{}");
     
-    if (!serviceAccountKey.client_email || !serviceAccountKey.private_key) {
-      console.error("Invalid service account credentials");
+    // Get the user's Gmail access token
+    const { data: tokenData, error: tokenError } = await supabase
+      .from('gmail_tokens')
+      .select('access_token, expires_at')
+      .eq('user_id', userId)
+      .single();
+    
+    if (tokenError || !tokenData) {
+      console.error("Failed to get user's Gmail token:", tokenError);
       return new Response(
-        JSON.stringify({ error: 'Invalid service account credentials' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          error: 'Gmail not connected', 
+          message: 'Please connect your Gmail account before sending emails'
+        }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    // Initialize the Google Auth client with the service account
-    const auth = new GoogleAuth({
-      credentials: serviceAccountKey,
-      scopes: ['https://www.googleapis.com/auth/gmail.send'],
-    });
-
-    // Create Gmail client
-    const gmail = google.gmail({ version: 'v1', auth });
+    
+    // Check if token is expired
+    if (new Date(tokenData.expires_at) <= new Date()) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Gmail token expired', 
+          message: 'Your Gmail token has expired. Please reconnect your account.'
+        }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    const accessToken = tokenData.access_token;
 
     // Create the email content - ensure proper MIME formatting
     const emailLines = [
-      `From: ${serviceAccountKey.client_email}`,
       `To: ${to}`,
       `Subject: ${emailSubject}`,
       'MIME-Version: 1.0',
@@ -76,8 +90,8 @@ serve(async (req) => {
     
     // If we have a thread ID, add the References and In-Reply-To headers
     if (threadId) {
-      emailLines.splice(3, 0, `References: <${threadId}>`);
-      emailLines.splice(4, 0, `In-Reply-To: <${threadId}>`);
+      emailLines.splice(2, 0, `References: <${threadId}>`);
+      emailLines.splice(3, 0, `In-Reply-To: <${threadId}>`);
     }
     
     const emailContent = emailLines.join('\r\n');
@@ -89,25 +103,42 @@ serve(async (req) => {
       .replace(/\//g, '_')
       .replace(/=+$/, '');
 
-    console.log("Sending email via Gmail API");
+    console.log("Sending email via Gmail API with OAuth token");
     
-    // Send the email using the Gmail API
-    const response = await gmail.users.messages.send({
-      userId: 'me',
-      requestBody: {
+    // Send the email using the Gmail API with OAuth token
+    const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
         raw: encodedEmail,
         ...(threadId && { threadId }),
-      },
+      })
     });
+    
+    if (!response.ok) {
+      const errorDetails = await response.json();
+      console.error('Gmail API error:', errorDetails);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Failed to send email through Gmail API', 
+          details: errorDetails 
+        }),
+        { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-    console.log('Email sent successfully:', response.data);
+    const data = await response.json();
+    console.log('Email sent successfully:', data);
 
     // Return success response with thread ID for future reference
     return new Response(
       JSON.stringify({ 
         success: true, 
         message: `Email sent to ${candidateName} at ${to}`,
-        threadId: response.data.threadId || response.data.id
+        threadId: data.threadId || data.id
       }),
       { 
         status: 200, 

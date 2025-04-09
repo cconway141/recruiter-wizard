@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface EmailContentReturn {
   subject: string;
@@ -32,10 +33,76 @@ export const useEmailActions = ({
 }: UseEmailActionsProps) => {
   const [isSending, setIsSending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isCheckingGmail, setIsCheckingGmail] = useState(false);
+  const [isGmailConnected, setIsGmailConnected] = useState<boolean | null>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
   
   // Get thread ID for this candidate and job if it exists
   const threadId = candidate.threadIds?.[jobId || ''] || null;
+
+  // Check if Gmail is connected
+  const checkGmailConnection = async (): Promise<boolean> => {
+    if (!user) {
+      setErrorMessage("You must be logged in to send emails");
+      return false;
+    }
+    
+    try {
+      setIsCheckingGmail(true);
+      
+      const { data, error } = await supabase.functions.invoke('google-auth/check-connection', {
+        body: { userId: user.id }
+      });
+      
+      if (error) {
+        console.error("Error checking Gmail connection:", error);
+        setErrorMessage("Failed to check Gmail connection");
+        return false;
+      }
+      
+      const isConnected = data.connected && !data.expired;
+      setIsGmailConnected(isConnected);
+      
+      // If token is expired but we have a refresh token, refresh it
+      if (data.needsRefresh) {
+        const refreshResult = await refreshGmailToken();
+        return refreshResult;
+      }
+      
+      return isConnected;
+    } catch (error) {
+      console.error("Error checking Gmail connection:", error);
+      setErrorMessage("Failed to check Gmail connection");
+      return false;
+    } finally {
+      setIsCheckingGmail(false);
+    }
+  };
+  
+  // Refresh the Gmail access token
+  const refreshGmailToken = async (): Promise<boolean> => {
+    if (!user) return false;
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('google-auth/refresh-token', {
+        body: { userId: user.id }
+      });
+      
+      if (error) {
+        console.error("Error refreshing Gmail token:", error);
+        setErrorMessage("Failed to refresh Gmail token. Please reconnect your account.");
+        return false;
+      }
+      
+      setIsGmailConnected(true);
+      return true;
+    } catch (error) {
+      console.error("Error refreshing Gmail token:", error);
+      setErrorMessage("Failed to refresh Gmail token. Please reconnect your account.");
+      return false;
+    }
+  };
 
   const getEmailContent = (): EmailContentReturn => {
     if (!candidate.email) return { subject: '', body: '' };
@@ -56,12 +123,20 @@ export const useEmailActions = ({
   };
 
   const sendEmailViaGmail = async () => {
-    if (!candidate.email) return;
+    if (!candidate.email || !user) return;
     
     setIsSending(true);
     setErrorMessage(null);
     
     try {
+      // First check if Gmail is connected
+      const isConnected = await checkGmailConnection();
+      
+      if (!isConnected) {
+        setErrorMessage("Gmail not connected. Please connect your Gmail account to send emails.");
+        return;
+      }
+      
       const { subject, body } = getEmailContent();
       
       console.log("Sending email to:", candidate.email);
@@ -76,7 +151,8 @@ export const useEmailActions = ({
           body,
           candidateName: candidate.name,
           jobTitle: jobTitle || '',
-          threadId
+          threadId,
+          userId: user.id  // Include the user ID to get their OAuth token
         }
       });
       
@@ -89,6 +165,19 @@ export const useEmailActions = ({
       
       if (data?.error) {
         console.error("Email sending error:", data.error);
+        
+        // Handle specific error cases
+        if (data.error === "Gmail not connected") {
+          setIsGmailConnected(false);
+        } else if (data.error === "Gmail token expired") {
+          // If token expired, try to refresh it and retry
+          const refreshSucceeded = await refreshGmailToken();
+          if (refreshSucceeded) {
+            // Retry sending the email
+            return sendEmailViaGmail();
+          }
+        }
+        
         throw new Error(data.error);
       }
 
@@ -152,7 +241,10 @@ export const useEmailActions = ({
   return {
     isSending,
     errorMessage,
+    isCheckingGmail,
+    isGmailConnected,
     sendEmailViaGmail,
-    composeEmail
+    composeEmail,
+    checkGmailConnection
   };
 };

@@ -42,6 +42,8 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({
   const { 
     isSending,
     errorMessage,
+    isGmailConnected,
+    checkGmailConnection,
     sendEmailViaGmail,
     composeEmail
   } = useEmailActions({
@@ -90,6 +92,8 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({
             isSending={isSending}
             onSendEmail={sendEmailViaGmail}
             onComposeEmail={composeEmail}
+            isGmailConnected={isGmailConnected}
+            checkGmailConnection={checkGmailConnection}
           />
         </DialogFooter>
       </DialogContent>

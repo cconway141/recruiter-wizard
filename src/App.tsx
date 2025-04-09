@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { JobProvider } from "@/contexts/JobContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { GmailCallback } from "@/components/candidates/email/GmailCallback";
 import Index from "./pages/Index";
 import AddJob from "./pages/AddJob";
 import EditJob from "./pages/EditJob";
@@ -33,6 +34,7 @@ const App = () => {
               <Sonner />
               <Routes>
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/auth/callback" element={<GmailCallback />} />
                 <Route 
                   path="/" 
                   element={
