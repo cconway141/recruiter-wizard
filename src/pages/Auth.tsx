@@ -1,3 +1,4 @@
+
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -88,6 +89,11 @@ const Auth = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 flex flex-col items-center">
           <img 
+            src="/lovable-uploads/84c3c664-fba4-4005-985a-802a5ae8353d.png" 
+            alt="Google Logo" 
+            className="w-24 h-24 object-contain mb-4" 
+          />
+          <img 
             src="/lovable-uploads/4add4393-d8ec-4a30-970d-3bc3ad2bcd83.png" 
             alt="The IT Bootcamp Logo" 
             className="w-32 h-32 object-contain mb-4" 
@@ -107,3 +113,4 @@ const Auth = () => {
     </div>;
 };
 export default Auth;
+
