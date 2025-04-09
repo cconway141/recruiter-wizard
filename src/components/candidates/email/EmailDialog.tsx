@@ -37,11 +37,11 @@ export function EmailDialog({
   threadId,
   threadTitle,
 }: EmailDialogProps) {
-  const { data: templates = [], isLoading: templatesLoading } = useMessageTemplates();
+  const { templates, loading: templatesLoading } = useMessageTemplates();
   const [selectedTemplate, setSelectedTemplate] = useState("m1");
   const navigate = useNavigate();
   
-  const { checkGmailConnection, isConnected: isGmailConnected, isChecking } = useGmailAuth();
+  const { isGmailConnected, isCheckingGmail, errorMessage: authErrorMessage, checkGmailConnection } = useGmailAuth();
   const { sendEmail, isSending, error: sendError, resetState } = useEmailActions();
 
   // Reset selected template when dialog reopens
@@ -67,7 +67,7 @@ export function EmailDialog({
       candidateEmail,
       jobTitle,
       selectedTemplate,
-      templates,
+      templates: templates || [],
       jobId,
       candidateId,
       threadId,
@@ -95,7 +95,7 @@ export function EmailDialog({
         </DialogHeader>
 
         {/* Gmail connection check at the top */}
-        {!isGmailConnected && !isChecking && (
+        {!isGmailConnected && !isCheckingGmail && (
           <div className="mb-4">
             <EmailErrorAlert 
               errorMessage="You need to connect your Gmail account to send emails."
@@ -127,23 +127,20 @@ export function EmailDialog({
             </TabsList>
             <TabsContent value="m1">
               <EmailTemplateSelector
-                templates={templates}
+                templates={templates || []}
                 selectedTemplate={selectedTemplate}
-                isLoading={templatesLoading}
               />
             </TabsContent>
             <TabsContent value="m2">
               <EmailTemplateSelector
-                templates={templates}
+                templates={templates || []}
                 selectedTemplate={selectedTemplate}
-                isLoading={templatesLoading}
               />
             </TabsContent>
             <TabsContent value="m3">
               <EmailTemplateSelector
-                templates={templates}
+                templates={templates || []}
                 selectedTemplate={selectedTemplate}
-                isLoading={templatesLoading}
               />
             </TabsContent>
           </Tabs>
@@ -157,7 +154,7 @@ export function EmailDialog({
 
         <EmailContent
           selectedTemplate={selectedTemplate}
-          templates={templates}
+          templates={templates || []}
           candidateName={candidateName}
           job={jobTitle ? { candidateFacingTitle: jobTitle } : undefined}
           candidateEmail={candidateEmail}
@@ -166,12 +163,17 @@ export function EmailDialog({
         />
 
         <DialogFooter>
-          <EmailDialogFooter
-            onClose={onClose}
-            onSendEmail={handleSendEmail}
-            isSending={isSending}
-            isGmailConnected={isGmailConnected}
-          />
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSendEmail}
+              disabled={isSending || !isGmailConnected}
+            >
+              {isSending ? "Sending..." : "Send Email"}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

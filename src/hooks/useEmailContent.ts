@@ -21,12 +21,14 @@ export const useEmailContent = ({ candidateName, jobTitle, templates, selectedTe
       if (user?.id) {
         const { data, error } = await supabase
           .from('profiles')
-          .select('email_signature')
+          .select('*')
           .eq('id', user.id)
           .single();
           
         if (!error && data) {
-          setEmailSignature(data.email_signature || '');
+          // Safely access email_signature property if it exists
+          const signature = data.email_signature || '';
+          setEmailSignature(signature);
         }
       }
     };

@@ -57,11 +57,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 // Check profiles table
                 const { data } = await supabase
                   .from('profiles')
-                  .select('google_linked')
+                  .select('*')
                   .eq('id', currentSession.user.id)
                   .single();
                   
-                setIsGoogleLinked(!!data?.google_linked);
+                if (data && 'google_linked' in data) {
+                  setIsGoogleLinked(!!data.google_linked);
+                }
               }
             }
           };
@@ -87,11 +89,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Check profiles table
           supabase
             .from('profiles')
-            .select('google_linked')
+            .select('*')
             .eq('id', currentSession.user.id)
             .single()
             .then(({ data }) => {
-              setIsGoogleLinked(!!data?.google_linked);
+              if (data && 'google_linked' in data) {
+                setIsGoogleLinked(!!data.google_linked);
+              }
             });
         }
       }

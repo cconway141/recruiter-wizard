@@ -32,14 +32,15 @@ export const GoogleCallback = () => {
           const { data: existingUsers, error: existingUserError } = await supabase
             .from('profiles')
             .select('*')
-            .eq('email', user.email)
-            .is('google_linked', null);
+            .eq('email', user.email);
 
           if (existingUserError) {
             throw existingUserError;
           }
 
-          if (existingUsers && existingUsers.length > 0) {
+          // Check if any of the existing users don't have google_linked set
+          const unlinkedUsers = existingUsers?.filter(user => !user.google_linked);
+          if (unlinkedUsers && unlinkedUsers.length > 0) {
             // An existing user with the same email exists but isn't linked to Google
             setExistingUserEmail(user.email || '');
             setGoogleUserData(user);

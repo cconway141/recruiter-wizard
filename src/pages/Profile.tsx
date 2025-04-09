@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -60,13 +59,25 @@ const passwordFormSchema = z.object({
   path: ["confirmPassword"],
 });
 
+interface Profile {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  display_name: string;
+  created_at: string;
+  updated_at: string;
+  role: string;
+  email_signature?: string;
+  google_linked?: boolean;
+}
+
 const Profile = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
 
-  // Fetch user profile data
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['profile', user?.id],
     queryFn: async () => {
@@ -79,7 +90,7 @@ const Profile = () => {
         .single();
         
       if (error) throw error;
-      return data;
+      return data as Profile;
     },
     enabled: !!user?.id
   });
@@ -90,7 +101,7 @@ const Profile = () => {
       firstName: user?.user_metadata?.first_name || '',
       lastName: user?.user_metadata?.last_name || '',
       email: user?.email || '',
-      emailSignature: profile?.email_signature || '',
+      emailSignature: '',
     },
     values: {
       firstName: profile?.first_name || user?.user_metadata?.first_name || '',
@@ -112,11 +123,9 @@ const Profile = () => {
   const handleUpdateProfile = async (values: z.infer<typeof profileFormSchema>) => {
     if (!user) return;
     
-    // Check if email has changed
     const emailChanged = values.email !== user.email;
     
     try {
-      // Update profile information
       const { error: profileError } = await supabase
         .from('profiles')
         .update({ 
@@ -131,7 +140,6 @@ const Profile = () => {
         throw profileError;
       }
 
-      // Update user metadata
       const { error: metadataError } = await supabase.auth.updateUser({
         data: { first_name: values.firstName, last_name: values.lastName }
       });
@@ -140,7 +148,6 @@ const Profile = () => {
         throw metadataError;
       }
 
-      // If email has changed, update email
       if (emailChanged) {
         const { error: emailError } = await supabase.auth.updateUser({
           email: values.email,

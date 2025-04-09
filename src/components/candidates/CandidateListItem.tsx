@@ -101,14 +101,11 @@ export const CandidateListItem: React.FC<CandidateListItemProps> = ({
 
       {/* Email Dialog */}
       <EmailDialog
-        open={emailDialogOpen}
-        onOpenChange={setEmailDialogOpen}
-        candidate={{
-          id: candidate.id,
-          name: candidate.name,
-          email: candidate.email,
-          threadIds: candidate.threadIds
-        }}
+        isOpen={emailDialogOpen}
+        onClose={() => setEmailDialogOpen(false)}
+        candidateName={candidate.name}
+        candidateEmail={candidate.email}
+        threadId={candidate.threadIds ? Object.values(candidate.threadIds)[0] : null}
       />
     </>
   );
