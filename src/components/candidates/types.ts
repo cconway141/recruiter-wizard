@@ -14,4 +14,5 @@ export type Candidate = {
   linkedinUrl?: string;
   status: CandidateStatus;
   applicationId?: string;
+  threadIds?: Record<string, string>; // Store thread IDs for each job
 };

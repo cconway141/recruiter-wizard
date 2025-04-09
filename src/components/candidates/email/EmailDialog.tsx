@@ -31,7 +31,7 @@ interface EmailDialogProps {
   candidate: {
     id: string;
     name: string;
-    email: string | null;
+    email?: string | null;
     threadIds?: Record<string, string>; // Store thread IDs for each job
   };
 }
@@ -47,7 +47,7 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({
   const { templates } = useMessageTemplates();
   const { toast } = useToast();
   const { id: jobId } = useParams<{ id: string }>();
-  const { getJob } = useJobs();
+  const { getJob, updateCandidateStatus } = useJobs();
   const job = jobId ? getJob(jobId) : undefined;
 
   // Get thread ID for this candidate and job if it exists
@@ -57,7 +57,7 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({
     if (!candidate.email) return { subject: '', body: '' };
     
     // Default subject and body
-    let subject = job ? `Regarding ${job.title} position` : `Regarding your application`;
+    let subject = job ? `Regarding ${job.candidateFacingTitle} position` : `Regarding your application`;
     let body = `Hello ${candidate.name},<br><br>I hope this email finds you well.`;
     
     // If a template is selected, use its content
@@ -91,7 +91,7 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({
           subject,
           body,
           candidateName: candidate.name,
-          jobTitle: job?.title || '',
+          jobTitle: job?.candidateFacingTitle || '',
           threadId
         }
       });
@@ -109,14 +109,21 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({
       }
 
       // Store the thread ID for future reference if this is a new thread
-      if (data?.threadId && (!threadId || data.threadId !== threadId)) {
-        // Store the thread ID in the candidate's record
-        // You'll need to implement this part based on how you store candidate data
+      if (data?.threadId && jobId && (!threadId || data.threadId !== threadId)) {
         console.log("New thread ID created:", data.threadId);
         
-        // Here you would update the candidate's record with the new thread ID
-        // This is a placeholder for the actual implementation
-        // updateCandidateThreadId(candidate.id, jobId, data.threadId);
+        // Update the candidate in Supabase with the new thread ID
+        const { error: updateError } = await supabase
+          .from('candidates')
+          .update({
+            thread_ids: { ...(candidate.threadIds || {}), [jobId]: data.threadId }
+          })
+          .eq('id', candidate.id);
+          
+        if (updateError) {
+          console.error("Error updating candidate thread ID:", updateError);
+          // Continue anyway as the email was sent successfully
+        }
       }
       
       toast({
@@ -170,7 +177,7 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({
           <div className="space-y-4 py-4">
             <div>
               <p className="mb-2"><strong>To:</strong> {candidate.name} ({candidate.email})</p>
-              {job && <p className="mb-2 text-sm text-gray-600"><strong>Job:</strong> {job.title}</p>}
+              {job && <p className="mb-2 text-sm text-gray-600"><strong>Job:</strong> {job.candidateFacingTitle}</p>}
             </div>
             
             <div className="space-y-2">
