@@ -15,6 +15,8 @@ interface EmailRequest {
   subject: string;
   body: string;
   candidateName: string;
+  jobTitle?: string;
+  threadId?: string;
 }
 
 serve(async (req) => {
@@ -25,17 +27,21 @@ serve(async (req) => {
 
   try {
     // Parse the request body
-    const { to, subject, body, candidateName } = await req.json() as EmailRequest;
+    const { to, subject, body, candidateName, jobTitle, threadId } = await req.json() as EmailRequest;
 
     // Validate request
-    if (!to || !subject || !body) {
+    if (!to || !body) {
       return new Response(
         JSON.stringify({ error: 'Missing required fields' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`Preparing to send email to ${to} with subject "${subject}"`);
+    // Generate the subject for new threads if not provided
+    const emailSubject = threadId ? subject : `ITBC ${jobTitle || ''} - ${candidateName}`;
+
+    console.log(`Preparing to send email to ${to} with subject "${emailSubject}"`);
+    console.log(`Using thread ID: ${threadId || 'New thread'}`);
 
     // Get service account credentials from environment
     const serviceAccountKey = JSON.parse(Deno.env.get("GMAIL_SERVICE_ACCOUNT") || "{}");
@@ -61,12 +67,18 @@ serve(async (req) => {
     const emailLines = [
       `From: ${serviceAccountKey.client_email}`,
       `To: ${to}`,
-      `Subject: ${subject}`,
+      `Subject: ${emailSubject}`,
       'MIME-Version: 1.0',
       'Content-Type: text/html; charset=utf-8',
       '',  // Empty line to separate headers from body
       body
     ];
+    
+    // If we have a thread ID, add the References and In-Reply-To headers
+    if (threadId) {
+      emailLines.splice(3, 0, `References: <${threadId}>`);
+      emailLines.splice(4, 0, `In-Reply-To: <${threadId}>`);
+    }
     
     const emailContent = emailLines.join('\r\n');
     console.log("Email content prepared");
@@ -84,16 +96,18 @@ serve(async (req) => {
       userId: 'me',
       requestBody: {
         raw: encodedEmail,
+        ...(threadId && { threadId }),
       },
     });
 
     console.log('Email sent successfully:', response.data);
 
-    // Return success response
+    // Return success response with thread ID for future reference
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `Email sent to ${candidateName} at ${to}` 
+        message: `Email sent to ${candidateName} at ${to}`,
+        threadId: response.data.threadId || response.data.id
       }),
       { 
         status: 200, 

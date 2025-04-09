@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { AlertCircle, ExternalLink, Loader2, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -22,6 +22,8 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useParams } from "react-router-dom";
+import { useJobs } from "@/contexts/JobContext";
 
 interface EmailDialogProps {
   open: boolean;
@@ -30,6 +32,7 @@ interface EmailDialogProps {
     id: string;
     name: string;
     email: string | null;
+    threadIds?: Record<string, string>; // Store thread IDs for each job
   };
 }
 
@@ -43,12 +46,18 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { templates } = useMessageTemplates();
   const { toast } = useToast();
+  const { id: jobId } = useParams<{ id: string }>();
+  const { getJob } = useJobs();
+  const job = jobId ? getJob(jobId) : undefined;
+
+  // Get thread ID for this candidate and job if it exists
+  const threadId = candidate.threadIds?.[jobId || ''] || null;
 
   const getEmailContent = () => {
     if (!candidate.email) return { subject: '', body: '' };
     
     // Default subject and body
-    let subject = `Regarding your application`;
+    let subject = job ? `Regarding ${job.title} position` : `Regarding your application`;
     let body = `Hello ${candidate.name},<br><br>I hope this email finds you well.`;
     
     // If a template is selected, use its content
@@ -73,6 +82,7 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({
       
       console.log("Sending email to:", candidate.email);
       console.log("Subject:", subject);
+      console.log("Thread ID:", threadId);
       
       // Call our Supabase edge function to send the email via Gmail API
       const { data, error } = await supabase.functions.invoke('send-gmail', {
@@ -80,7 +90,9 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({
           to: candidate.email,
           subject,
           body,
-          candidateName: candidate.name
+          candidateName: candidate.name,
+          jobTitle: job?.title || '',
+          threadId
         }
       });
       
@@ -94,6 +106,17 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({
       if (data?.error) {
         console.error("Email sending error:", data.error);
         throw new Error(data.error);
+      }
+
+      // Store the thread ID for future reference if this is a new thread
+      if (data?.threadId && (!threadId || data.threadId !== threadId)) {
+        // Store the thread ID in the candidate's record
+        // You'll need to implement this part based on how you store candidate data
+        console.log("New thread ID created:", data.threadId);
+        
+        // Here you would update the candidate's record with the new thread ID
+        // This is a placeholder for the actual implementation
+        // updateCandidateThreadId(candidate.id, jobId, data.threadId);
       }
       
       toast({
@@ -139,6 +162,7 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({
           <DialogTitle>Email {candidate.name}</DialogTitle>
           <DialogDescription>
             Select a template or compose a custom email to this candidate.
+            {threadId ? ' This will continue the existing email thread.' : ' This will start a new email thread.'}
           </DialogDescription>
         </DialogHeader>
         
@@ -146,6 +170,7 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({
           <div className="space-y-4 py-4">
             <div>
               <p className="mb-2"><strong>To:</strong> {candidate.name} ({candidate.email})</p>
+              {job && <p className="mb-2 text-sm text-gray-600"><strong>Job:</strong> {job.title}</p>}
             </div>
             
             <div className="space-y-2">
