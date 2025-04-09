@@ -15,6 +15,7 @@ const corsHeaders = {
 
 interface EmailRequest {
   to: string;
+  cc?: string;
   subject: string;
   body: string;
   candidateName: string;
@@ -31,7 +32,7 @@ serve(async (req) => {
 
   try {
     // Parse the request body
-    const { to, subject, body, candidateName, jobTitle, threadId, userId } = await req.json() as EmailRequest;
+    const { to, cc, subject, body, candidateName, jobTitle, threadId, userId } = await req.json() as EmailRequest;
 
     // Validate request
     if (!to || !body || !userId) {
@@ -47,6 +48,7 @@ serve(async (req) => {
 
     console.log(`Preparing to send email to ${to} with subject "${emailSubject}"`);
     console.log(`Using thread ID: ${threadId || 'New thread'}`);
+    console.log(`CC'ing: ${cc || 'None'}`);
     
     // Get the user's Gmail access token
     const { data: tokenData, error: tokenError } = await supabase
@@ -82,12 +84,13 @@ serve(async (req) => {
     // Create the email content - ensure proper MIME formatting
     const emailLines = [
       `To: ${to}`,
+      cc ? `Cc: ${cc}` : '', // Add CC if provided
       `Subject: ${emailSubject}`,
       'MIME-Version: 1.0',
       'Content-Type: text/html; charset=utf-8',
       '',  // Empty line to separate headers from body
       body
-    ];
+    ].filter(line => line !== ''); // Remove empty lines (in case cc is not provided)
     
     // If we have a thread ID, add the References and In-Reply-To headers
     if (threadId) {
@@ -151,7 +154,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `Email sent to ${candidateName} at ${to}`,
+        message: `Email sent to ${candidateName} at ${to} with CC to ${cc || 'none'}`,
         threadId: data.threadId || data.id
       }),
       { 

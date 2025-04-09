@@ -41,9 +41,13 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps) => {
       console.log("Subject:", subject);
       console.log("Thread ID:", threadId);
       
+      // Always CC the recruitment team
+      const cc = "recruitment@theitbc.com";
+      
       const { data, error } = await supabase.functions.invoke('send-gmail', {
         body: {
           to,
+          cc,
           subject,
           body,
           candidateName,
@@ -76,7 +80,7 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps) => {
       
       toast({
         title: "Email Sent",
-        description: `Email was successfully sent to ${candidateName}.`,
+        description: `Email was successfully sent to ${candidateName} and CC'd to recruitment@theitbc.com.`,
       });
       
       onSuccess();
@@ -96,7 +100,9 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps) => {
   };
 
   const composeEmailInGmail = (to: string, subject: string, body: string) => {
-    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body.replace(/<br>/g, '%0A').replace(/<[^>]*>/g, ''))}`;
+    // Always include CC in the compose URL
+    const cc = "recruitment@theitbc.com";
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&cc=${encodeURIComponent(cc)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body.replace(/<br>/g, '%0A').replace(/<[^>]*>/g, ''))}`;
     window.open(gmailUrl, '_blank');
   };
 
