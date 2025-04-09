@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -10,6 +9,10 @@ const Auth = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isProcessingAuth, setIsProcessingAuth] = useState(false);
+  const [imagesLoaded, setImagesLoaded] = useState({
+    logo: false,
+    googleIcon: false
+  });
   
   useEffect(() => {
     const handleAuth = async () => {
@@ -111,16 +114,27 @@ const Auth = () => {
     }
   };
 
+  const handleImageLoad = (imageType: 'logo' | 'googleIcon') => {
+    setImagesLoaded(prev => ({
+      ...prev,
+      [imageType]: true
+    }));
+  };
+
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-50">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 flex flex-col items-center">
-          <img 
-            src="/lovable-uploads/c52867a5-bcb6-4787-a1d0-6dafe3716176.png" 
-            alt="Company Logo" 
-            className="w-32 h-32 object-contain mb-4 bg-gray-200 animate-pulse" 
-            loading="lazy"
-          />
+          <div className="w-32 h-32 flex items-center justify-center bg-gray-200 rounded-md overflow-hidden transition-opacity duration-300" 
+               style={{ opacity: imagesLoaded.logo ? 1 : 0.7 }}>
+            <img 
+              src="/lovable-uploads/c52867a5-bcb6-4787-a1d0-6dafe3716176.png" 
+              alt="Company Logo" 
+              className="w-32 h-32 object-contain"
+              loading="lazy"
+              onLoad={() => handleImageLoad('logo')}
+            />
+          </div>
           <CardTitle className="text-2xl font-bold text-center">ITBC Recruitment Portal</CardTitle>
           <CardDescription className="text-center">
             Sign in with Google to access this application
@@ -141,12 +155,16 @@ const Auth = () => {
               >
                 Sign in with Google
               </Button>
-              <img 
-                src="/lovable-uploads/84c3c664-fba4-4005-985a-802a5ae8353d.png" 
-                alt="Google Logo" 
-                className="w-16 h-16 object-contain mt-4 bg-gray-100 animate-pulse" 
-                loading="lazy"
-              />
+              <div className="w-16 h-16 flex items-center justify-center bg-gray-100 rounded-md mt-4 overflow-hidden transition-opacity duration-300"
+                   style={{ opacity: imagesLoaded.googleIcon ? 1 : 0.7 }}>
+                <img 
+                  src="/lovable-uploads/84c3c664-fba4-4005-985a-802a5ae8353d.png" 
+                  alt="Google Logo" 
+                  className="w-16 h-16 object-contain"
+                  loading="lazy"
+                  onLoad={() => handleImageLoad('googleIcon')}
+                />
+              </div>
             </>
           )}
         </CardContent>
