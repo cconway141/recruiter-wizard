@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useMessageTemplates } from "@/hooks/useMessageTemplates";
 import { useJobs } from "@/contexts/JobContext";
@@ -50,7 +51,9 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({
     isGmailConnected,
     checkGmailConnection,
     sendEmailViaGmail,
-    composeEmail
+    composeEmail,
+    getEmailContent,
+    threadId
   } = useEmailActions({
     candidate,
     jobId,
@@ -59,6 +62,16 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({
     selectedTemplate,
     onSuccess: () => onOpenChange(false)
   });
+
+  const [previewContent, setPreviewContent] = useState({ subject: '', body: '' });
+
+  // Update preview when template changes
+  useEffect(() => {
+    if (getEmailContent) {
+      const content = getEmailContent();
+      setPreviewContent(content);
+    }
+  }, [selectedTemplate, getEmailContent]);
 
   const openGmailThread = () => {
     if (jobId && candidate.threadIds && candidate.threadIds[jobId]) {
@@ -110,6 +123,7 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({
           candidateEmail={candidate.email}
           job={job}
           threadTitle={threadTitle}
+          threadId={threadId}
         />
         
         {candidate.email && (
@@ -118,6 +132,16 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({
             onSelectTemplate={setSelectedTemplate}
             templates={templates}
           />
+        )}
+        
+        {/* Preview actual email being sent */}
+        {previewContent.body && (
+          <div className="mt-4 border p-3 rounded-md">
+            <div className="text-xs font-medium text-gray-500 mb-2">Email HTML Preview:</div>
+            <div className="text-xs bg-gray-50 p-2 rounded max-h-[100px] overflow-y-auto">
+              {previewContent.body}
+            </div>
+          </div>
         )}
         
         <EmailErrorAlert errorMessage={errorMessage} />

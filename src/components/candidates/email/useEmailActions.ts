@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useGmailAuth } from "@/hooks/useGmailAuth";
 import { useEmailContent } from "@/hooks/useEmailContent";
 import { useEmailSender } from "@/hooks/useEmailSender";
+import { useToast } from "@/hooks/use-toast";
 
 interface UseEmailActionsProps {
   candidate: {
@@ -31,6 +32,7 @@ export const useEmailActions = ({
   // Get thread ID for this specific job if it exists
   const threadId = jobId && candidate.threadIds ? candidate.threadIds[jobId] || null : null;
   const { user } = useAuth();
+  const { toast } = useToast();
   
   const { 
     isGmailConnected, 
@@ -61,12 +63,31 @@ export const useEmailActions = ({
   }, [authErrorMessage, sendErrorMessage]);
 
   const sendEmailViaGmail = async () => {
-    if (!candidate.email) return;
+    if (!candidate.email) {
+      toast({
+        title: "Cannot Send Email",
+        description: "This candidate doesn't have an email address.",
+        variant: "destructive"
+      });
+      return;
+    }
     
     const { subject, body } = getEmailContent();
     
-    console.log("Sending email with thread ID:", threadId);
-    console.log("For job ID:", jobId);
+    // Log what's being sent for debugging
+    console.log("Sending email to:", candidate.email);
+    console.log("Subject:", subject);
+    console.log("Thread ID:", threadId);
+    console.log("Body:", body);
+    
+    if (!body || body.trim() === '') {
+      toast({
+        title: "Cannot Send Email",
+        description: "The email body is empty. Please select a valid template.",
+        variant: "destructive"
+      });
+      return;
+    }
     
     const newThreadId = await sendEmail(
       candidate.email,
@@ -93,6 +114,11 @@ export const useEmailActions = ({
         
       if (updateError) {
         console.error("Error updating candidate thread ID:", updateError);
+        toast({
+          title: "Warning",
+          description: "Email sent, but failed to save thread ID for future emails.",
+          variant: "destructive"
+        });
       } else {
         console.log("Thread ID saved for job:", jobId, "Thread ID:", newThreadId);
       }
@@ -100,7 +126,14 @@ export const useEmailActions = ({
   };
 
   const composeEmail = () => {
-    if (!candidate.email) return;
+    if (!candidate.email) {
+      toast({
+        title: "Cannot Compose Email",
+        description: "This candidate doesn't have an email address.",
+        variant: "destructive"
+      });
+      return;
+    }
     
     const { subject, body } = getEmailContent();
     composeEmailInGmail(candidate.email, subject, body);
@@ -114,6 +147,9 @@ export const useEmailActions = ({
     isGmailConnected,
     sendEmailViaGmail,
     composeEmail,
-    checkGmailConnection
+    checkGmailConnection,
+    // Return these for debugging
+    getEmailContent,
+    threadId
   };
 };

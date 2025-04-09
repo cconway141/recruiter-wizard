@@ -81,7 +81,7 @@ serve(async (req) => {
     
     const accessToken = tokenData.access_token;
 
-    // Create the email content - ensure proper MIME formatting for threading
+    // Create the email content with proper MIME formatting for threading
     let emailLines = [
       `To: ${to}`,
       cc ? `Cc: ${cc}` : '', // Add CC if provided
@@ -91,10 +91,11 @@ serve(async (req) => {
     ];
     
     // Add thread-related headers if a thread ID is provided
+    // These headers are critical for proper threading in Gmail
     if (threadId) {
       emailLines.push(`References: <${threadId}@mail.gmail.com>`);
       emailLines.push(`In-Reply-To: <${threadId}@mail.gmail.com>`);
-      emailLines.push(`Thread-ID: ${threadId}`);
+      emailLines.push(`Thread-Topic: ${emailSubject}`);
     }
     
     // Add empty line to separate headers from body and then the body
@@ -114,17 +115,23 @@ serve(async (req) => {
 
     console.log("Sending email via Gmail API with OAuth token");
     
-    // Send the email using the Gmail API with OAuth token and explicit threadId parameter
+    // Send the email using the Gmail API with OAuth token
+    const requestBody = {
+      raw: encodedEmail
+    };
+    
+    // If a thread ID is provided, explicitly set it in the request
+    if (threadId) {
+      requestBody.threadId = threadId;
+    }
+    
     const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        raw: encodedEmail,
-        ...(threadId && { threadId }),
-      })
+      body: JSON.stringify(requestBody)
     });
     
     if (!response.ok) {
@@ -154,13 +161,16 @@ serve(async (req) => {
 
     const data = await response.json();
     console.log('Email sent successfully:', data);
+    
+    // Extract thread ID from response and return it
+    const newThreadId = data.threadId || data.id;
 
     // Return success response with thread ID for future reference
     return new Response(
       JSON.stringify({ 
         success: true, 
         message: `Email sent to ${candidateName} at ${to} with CC to ${cc || 'none'}`,
-        threadId: data.threadId || data.id
+        threadId: newThreadId
       }),
       { 
         status: 200, 
