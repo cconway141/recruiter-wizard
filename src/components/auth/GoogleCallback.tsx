@@ -14,8 +14,11 @@ export const GoogleCallback = () => {
   useEffect(() => {
     const handleCallback = async () => {
       try {
+        console.log("Handling callback with URL:", window.location.href);
+        
         // If we have a hash in the URL, extract it and handle it
         if (window.location.hash && window.location.hash.includes('access_token')) {
+          console.log("Hash detected, processing access_token");
           // Let Supabase client handle the hash fragment
           const { data: { session }, error: sessionError } = await supabase.auth.getSession();
           
@@ -88,8 +91,22 @@ export const GoogleCallback = () => {
           throw new Error(`Error returned from OAuth provider: ${error}`);
         }
         
+        // If there's no code, check if we're already authenticated
         if (!code) {
-          throw new Error('No code parameter found in callback URL');
+          console.log("No code parameter found, checking if already authenticated");
+          const { data: { session } } = await supabase.auth.getSession();
+          
+          if (session) {
+            console.log("User is already authenticated, redirecting to home");
+            toast({
+              title: 'Already signed in',
+              description: 'You are already authenticated'
+            });
+            navigate('/');
+            return;
+          } else {
+            throw new Error('No code parameter found in callback URL');
+          }
         }
 
         // Exchange code for session
