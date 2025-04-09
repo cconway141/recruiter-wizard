@@ -109,7 +109,7 @@ serve(async (req) => {
       }
       
       // Store the tokens in Supabase
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('gmail_tokens')
         .upsert({
           user_id: userId,
@@ -118,8 +118,7 @@ serve(async (req) => {
           expires_at: new Date(Date.now() + tokenData.expires_in * 1000).toISOString(),
           token_type: tokenData.token_type,
           scope: tokenData.scope,
-        })
-        .select();
+        });
       
       if (error) {
         console.error('Error storing tokens:', error);
@@ -153,7 +152,7 @@ serve(async (req) => {
         .eq('user_id', userId)
         .single();
       
-      if (tokenError || !tokenData) {
+      if (tokenError || !tokenData?.refresh_token) {
         console.error('Error fetching refresh token:', tokenError);
         return new Response(
           JSON.stringify({ error: 'No Gmail connection found for this user' }),

@@ -195,7 +195,6 @@ export const useEmailActions = ({
         // Update the candidate in Supabase with the new thread ID
         const threadIdsUpdate = { ...(candidate.threadIds || {}), [jobId]: data.threadId };
         
-        // Use a simple update structure with type assertions
         const { error: updateError } = await supabase
           .from('candidates')
           .update({

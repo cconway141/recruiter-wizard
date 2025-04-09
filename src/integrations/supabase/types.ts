@@ -86,6 +86,7 @@ export type Database = {
           id: string
           last_name: string
           linkedin_url: string | null
+          thread_ids: Json | null
           updated_at: string
         }
         Insert: {
@@ -95,6 +96,7 @@ export type Database = {
           id?: string
           last_name: string
           linkedin_url?: string | null
+          thread_ids?: Json | null
           updated_at?: string
         }
         Update: {
@@ -104,6 +106,7 @@ export type Database = {
           id?: string
           last_name?: string
           linkedin_url?: string | null
+          thread_ids?: Json | null
           updated_at?: string
         }
         Relationships: []
@@ -159,6 +162,42 @@ export type Database = {
           label?: string
           name?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      gmail_tokens: {
+        Row: {
+          access_token: string
+          created_at: string
+          expires_at: string
+          id: string
+          refresh_token: string | null
+          scope: string | null
+          token_type: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          refresh_token?: string | null
+          scope?: string | null
+          token_type?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          refresh_token?: string | null
+          scope?: string | null
+          token_type?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
