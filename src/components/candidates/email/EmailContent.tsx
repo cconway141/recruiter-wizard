@@ -33,7 +33,11 @@ export const EmailContent: React.FC<EmailContentProps> = ({
     if (selectedTemplate && selectedTemplate !== "custom") {
       const template = templates.find(t => t.id === selectedTemplate);
       if (template && template.message) {
-        return template.message.replace(/\[First Name\]/g, candidateName.split(' ')[0]);
+        let content = template.message
+          .replace(/\[First Name\]/g, candidateName.split(' ')[0])
+          .replace(/\[Full Name\]/g, candidateName);
+        
+        return content;
       }
     }
     return '';
@@ -62,6 +66,14 @@ export const EmailContent: React.FC<EmailContentProps> = ({
         <div className="mt-2 p-3 bg-red-50 rounded-md">
           <p className="text-sm text-red-500">
             Warning: Selected template appears to be empty. Please choose another template.
+          </p>
+        </div>
+      )}
+      
+      {selectedTemplate === "custom" && (
+        <div className="mt-2 p-3 bg-blue-50 rounded-md">
+          <p className="text-sm">
+            A standard greeting and signature will be added to your email.
           </p>
         </div>
       )}

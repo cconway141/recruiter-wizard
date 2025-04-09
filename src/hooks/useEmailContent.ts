@@ -23,7 +23,7 @@ export const useEmailContent = ({
     // Ensure we have a consistent subject format for proper threading
     const subject = `ITBC ${jobTitle || ''} - ${candidateName}`;
     
-    // Start with a default greeting
+    // Start with a default greeting and signature
     let body = `Hello ${candidateName},<br><br>I hope this email finds you well.`;
     
     // If a template is selected, use its content
@@ -43,10 +43,15 @@ export const useEmailContent = ({
       }
     }
     
-    // Ensure body is not empty
+    // Ensure body is not empty and has a signature
     if (!body || body.trim() === '') {
       body = `Hello ${candidateName},<br><br>I hope this email finds you well.<br><br>Best regards,<br>The ITBC Team`;
+    } else if (!body.includes('Best regards') && !body.includes('Regards')) {
+      // Add signature if not already present
+      body += `<br><br>Best regards,<br>The ITBC Team`;
     }
+    
+    console.log("Email content generated:", { subject, bodyLength: body.length });
     
     return { subject, body };
   };

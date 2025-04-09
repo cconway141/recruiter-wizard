@@ -42,6 +42,15 @@ serve(async (req) => {
       );
     }
 
+    // Check body content for debugging
+    console.log(`Email body length: ${body?.length || 0}`);
+    if (!body || body.trim() === '') {
+      return new Response(
+        JSON.stringify({ error: 'Email body is empty', details: 'The email content cannot be empty' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Always use the consistent subject format for threading
     // This ensures all emails to the same candidate about the same job are in one thread
     const emailSubject = subject || `ITBC ${jobTitle || ''} - ${candidateName}`;
@@ -93,9 +102,12 @@ serve(async (req) => {
     // Add thread-related headers if a thread ID is provided
     // These headers are critical for proper threading in Gmail
     if (threadId) {
+      // RFC 2822 threading headers
       emailLines.push(`References: <${threadId}@mail.gmail.com>`);
       emailLines.push(`In-Reply-To: <${threadId}@mail.gmail.com>`);
       emailLines.push(`Thread-Topic: ${emailSubject}`);
+      
+      console.log("Adding threading headers with thread ID:", threadId);
     }
     
     // Add empty line to separate headers from body and then the body
@@ -106,6 +118,7 @@ serve(async (req) => {
     
     const emailContent = emailLines.join('\r\n');
     console.log("Email content prepared with proper threading headers");
+    console.log("Email content first 100 chars:", emailContent.substring(0, 100));
 
     // Encode the email in base64 URL-safe format
     const encodedEmail = btoa(emailContent)
@@ -116,7 +129,7 @@ serve(async (req) => {
     console.log("Sending email via Gmail API with OAuth token");
     
     // Send the email using the Gmail API with OAuth token
-    const requestBody = {
+    const requestBody: any = {
       raw: encodedEmail
     };
     

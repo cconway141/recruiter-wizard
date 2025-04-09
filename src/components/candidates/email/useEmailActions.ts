@@ -78,7 +78,8 @@ export const useEmailActions = ({
     console.log("Sending email to:", candidate.email);
     console.log("Subject:", subject);
     console.log("Thread ID:", threadId);
-    console.log("Body:", body);
+    console.log("Body length:", body.length);
+    console.log("Body preview:", body.substring(0, 100));
     
     if (!body || body.trim() === '') {
       toast({
