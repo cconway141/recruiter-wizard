@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useMessageTemplates } from "@/hooks/useMessageTemplates";
@@ -42,7 +41,7 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({
   const job = jobId ? getJob(jobId) : undefined;
   
   // Generate email subject (thread title)
-  const threadTitle = job ? `ITBC ${job.candidateFacingTitle} - ${candidate.name}` : `ITBC - ${candidate.name}`;
+  const threadTitle = job ? `ITBC ${job.candidateFacingTitle} ${candidate.name}` : `ITBC ${candidate.name}`;
 
   const { 
     isSending,

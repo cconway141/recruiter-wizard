@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -38,17 +37,14 @@ export const useEmailActions = ({
   const { toast } = useToast();
   const { user } = useAuth();
   
-  // Get thread ID for this candidate and job if it exists
   const threadId = candidate.threadIds?.[jobId || ''] || null;
 
-  // Check connection status when component mounts
   useEffect(() => {
     if (user) {
       checkGmailConnection();
     }
   }, [user]);
 
-  // Check if Gmail is connected
   const checkGmailConnection = async (): Promise<boolean> => {
     if (!user) {
       setErrorMessage("You must be logged in to send emails");
@@ -72,7 +68,6 @@ export const useEmailActions = ({
       const isConnected = data.connected && !data.expired;
       setIsGmailConnected(isConnected);
       
-      // If token is expired but we have a refresh token, refresh it
       if (data.needsRefresh) {
         const refreshResult = await refreshGmailToken();
         return refreshResult;
@@ -87,8 +82,7 @@ export const useEmailActions = ({
       setIsCheckingGmail(false);
     }
   };
-  
-  // Refresh the Gmail access token
+
   const refreshGmailToken = async (): Promise<boolean> => {
     if (!user) return false;
     
@@ -115,13 +109,10 @@ export const useEmailActions = ({
   const getEmailContent = (): EmailContentReturn => {
     if (!candidate.email) return { subject: '', body: '' };
     
-    // Always use a consistent subject format to maintain threading
-    const subject = `ITBC ${jobTitle || ''} - ${candidate.name}`;
+    const subject = `ITBC ${jobTitle || ''} ${candidate.name}`;
     
-    // Default body
     let body = `Hello ${candidate.name},<br><br>I hope this email finds you well.`;
     
-    // If a template is selected, use its content
     if (selectedTemplate && selectedTemplate !== "custom") {
       const template = templates.find(t => t.id === selectedTemplate);
       if (template) {
@@ -139,7 +130,6 @@ export const useEmailActions = ({
     setErrorMessage(null);
     
     try {
-      // First check if Gmail is connected
       const isConnected = await checkGmailConnection();
       
       if (!isConnected) {
@@ -153,7 +143,6 @@ export const useEmailActions = ({
       console.log("Subject:", subject);
       console.log("Thread ID:", threadId);
       
-      // Call our Supabase edge function to send the email via Gmail API
       const { data, error } = await supabase.functions.invoke('send-gmail', {
         body: {
           to: candidate.email,
@@ -162,7 +151,7 @@ export const useEmailActions = ({
           candidateName: candidate.name,
           jobTitle: jobTitle || '',
           threadId,
-          userId: user.id  // Include the user ID to get their OAuth token
+          userId: user.id
         }
       });
       
@@ -174,14 +163,11 @@ export const useEmailActions = ({
       if (data?.error) {
         console.error("Email sending error:", data.error);
         
-        // Handle specific error cases
         if (data.error === "Gmail not connected") {
           setIsGmailConnected(false);
         } else if (data.error === "Gmail token expired") {
-          // If token expired, try to refresh it and retry
           const refreshSucceeded = await refreshGmailToken();
           if (refreshSucceeded) {
-            // Retry sending the email
             setIsSending(false);
             return sendEmailViaGmail();
           }
@@ -189,12 +175,10 @@ export const useEmailActions = ({
         
         throw new Error(data.error);
       }
-
-      // Store the thread ID for future reference if this is a new thread
+      
       if (data?.threadId && jobId && (!threadId || data.threadId !== threadId)) {
         console.log("New thread ID created:", data.threadId);
         
-        // Create the new thread_ids object
         const threadIdsUpdate = { ...(candidate.threadIds || {}), [jobId]: data.threadId };
         
         const { error: updateError } = await supabase
@@ -206,7 +190,6 @@ export const useEmailActions = ({
           
         if (updateError) {
           console.error("Error updating candidate thread ID:", updateError);
-          // Continue anyway as the email was sent successfully
         }
       }
       
@@ -215,7 +198,6 @@ export const useEmailActions = ({
         description: `Email was successfully sent to ${candidate.name}.`,
       });
       
-      // Close the dialog
       onSuccess();
     } catch (error: any) {
       console.error("Error sending email:", error);
@@ -233,16 +215,12 @@ export const useEmailActions = ({
   const composeEmail = () => {
     if (!candidate.email) return;
     
-    // Get the template content if a template is selected
     const { subject, body } = getEmailContent();
     
-    // Create Gmail compose URL with prefilled fields
     const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(candidate.email)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body.replace(/<br>/g, '%0A').replace(/<[^>]*>/g, ''))}`;
     
-    // Open Gmail in a new tab
     window.open(gmailUrl, '_blank');
     
-    // Close the dialog
     onSuccess();
   };
 
