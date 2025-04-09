@@ -2,12 +2,14 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Trash, Mail, Linkedin, ExternalLink } from "lucide-react";
+import { Trash, Mail, Linkedin, ExternalLink, Loader2 } from "lucide-react";
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useMessageTemplates } from "@/hooks/useMessageTemplates";
 import { Candidate } from "./types";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CandidateListItemProps {
   candidate: Candidate;
@@ -22,19 +24,21 @@ export const CandidateListItem: React.FC<CandidateListItemProps> = ({
 }) => {
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string>("custom");
+  const [isSending, setIsSending] = useState(false);
   const { templates } = useMessageTemplates();
+  const { toast } = useToast();
 
   const handleEmailClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     setEmailDialogOpen(true);
   };
 
-  const composeEmail = () => {
-    if (!candidate.email) return;
+  const getEmailContent = () => {
+    if (!candidate.email) return { subject: '', body: '' };
     
-    // Get the template content if a template is selected
+    // Default subject and body
     let subject = `Regarding your application`;
-    let body = `Hello ${candidate.name},\n\nI hope this email finds you well.`;
+    let body = `Hello ${candidate.name},<br><br>I hope this email finds you well.`;
     
     // If a template is selected, use its content
     if (selectedTemplate && selectedTemplate !== "custom") {
@@ -43,6 +47,56 @@ export const CandidateListItem: React.FC<CandidateListItemProps> = ({
         body = template.message.replace(/\[First Name\]/g, candidate.name.split(' ')[0]);
       }
     }
+    
+    return { subject, body };
+  };
+
+  const sendEmailViaGmail = async () => {
+    if (!candidate.email) return;
+    
+    setIsSending(true);
+    
+    try {
+      const { subject, body } = getEmailContent();
+      
+      // Call our Supabase edge function to send the email via Gmail API
+      const { data, error } = await supabase.functions.invoke('send-gmail', {
+        body: {
+          to: candidate.email,
+          subject,
+          body,
+          candidateName: candidate.name
+        }
+      });
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      toast({
+        title: "Email Sent",
+        description: `Email was successfully sent to ${candidate.name}.`,
+      });
+      
+      // Close the dialog
+      setEmailDialogOpen(false);
+    } catch (error) {
+      console.error("Error sending email:", error);
+      toast({
+        title: "Email Failed",
+        description: `Failed to send email: ${error.message}`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const composeEmail = () => {
+    if (!candidate.email) return;
+    
+    // Get the template content if a template is selected
+    const { subject, body } = getEmailContent();
     
     // Create Gmail compose URL with prefilled fields
     const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(candidate.email)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
@@ -219,14 +273,30 @@ export const CandidateListItem: React.FC<CandidateListItemProps> = ({
             </DialogClose>
             
             {candidate.email && (
-              <Button 
-                onClick={composeEmail}
-                className="flex items-center gap-2"
-              >
-                <Mail className="h-4 w-4" />
-                <span>Compose in Gmail</span>
-                <ExternalLink className="h-3 w-3" />
-              </Button>
+              <>
+                <Button 
+                  onClick={composeEmail}
+                  className="flex items-center gap-2"
+                  variant="outline"
+                >
+                  <Mail className="h-4 w-4" />
+                  <span>Compose in Gmail</span>
+                  <ExternalLink className="h-3 w-3" />
+                </Button>
+                
+                <Button 
+                  onClick={sendEmailViaGmail}
+                  className="flex items-center gap-2"
+                  disabled={isSending}
+                >
+                  {isSending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Mail className="h-4 w-4" />
+                  )}
+                  <span>Send Email Now</span>
+                </Button>
+              </>
             )}
           </DialogFooter>
         </DialogContent>
