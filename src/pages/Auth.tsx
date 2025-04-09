@@ -15,16 +15,22 @@ const Auth = () => {
     googleIcon: false
   });
   
+  // Log the current URL for debugging
+  useEffect(() => {
+    console.log("Current URL:", window.location.href);
+    console.log("Location object:", location);
+  }, [location]);
+  
   useEffect(() => {
     const handleAuth = async () => {
       try {
         setIsProcessingAuth(true);
         
-        // Check for hash parameters from OAuth redirect
-        if (location.hash) {
-          console.log("Found hash in URL:", location.hash);
+        // Check for access_token in URL hash
+        if (location.hash && location.hash.includes('access_token')) {
+          console.log("Found access_token in URL hash");
           
-          // Let Supabase handle the hash parameters by waiting for the session
+          // Let Supabase handle the auth tokens from hash
           const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
           
           if (sessionError) {
@@ -78,10 +84,12 @@ const Auth = () => {
 
   const handleGoogleSignIn = async () => {
     try {
-      // Use the current site URL to build the redirect URL
-      const currentSiteURL = window.location.origin;
-      const redirectTo = `${currentSiteURL}/auth/callback`;
+      // Get current URL for the redirect
+      const currentURL = window.location.origin;
+      console.log("Current origin for redirect:", currentURL);
       
+      // Use the application's actual URL for redirection
+      const redirectTo = `${currentURL}/auth/callback`;
       console.log("Redirecting to Google with callback URL:", redirectTo);
       
       const { data, error } = await supabase.auth.signInWithOAuth({
@@ -175,4 +183,3 @@ const Auth = () => {
 };
 
 export default Auth;
-
