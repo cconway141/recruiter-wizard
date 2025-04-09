@@ -7,12 +7,12 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
-import { Template } from "@/hooks/useMessageTemplates";
+import { MessageTemplate } from "@/types/messageTemplate";
 
 interface EmailTemplateSelectorProps {
   selectedTemplate: string;
   onSelectTemplate: (templateId: string) => void;
-  templates: Template[];
+  templates: MessageTemplate[];
 }
 
 export const EmailTemplateSelector: React.FC<EmailTemplateSelectorProps> = ({
