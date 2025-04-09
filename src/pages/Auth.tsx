@@ -13,14 +13,15 @@ const Auth = () => {
   useEffect(() => {
     // Check if user is already logged in
     const checkSession = async () => {
-      const {
-        data
-      } = await supabase.auth.getSession();
+      const { data } = await supabase.auth.getSession();
       if (data.session) {
+        // Before redirecting, clear any hash fragments to prevent the access token from being exposed in the URL
+        if (window.location.hash) {
+          window.history.replaceState(null, document.title, window.location.pathname);
+        }
         navigate("/");
       }
     };
-    checkSession();
 
     // Fix for hash fragment in URL handling (from Google redirect)
     if (location.hash && location.hash.includes('access_token')) {
@@ -53,15 +54,15 @@ const Auth = () => {
       };
       
       processHashParams();
+    } else {
+      // Only check session if we're not processing the hash params
+      checkSession();
     }
   }, [navigate, location]);
 
   const handleGoogleSignIn = async () => {
     try {
-      const {
-        data,
-        error
-      } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth`,
