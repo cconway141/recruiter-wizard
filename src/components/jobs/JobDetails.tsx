@@ -1,7 +1,8 @@
-
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, ChevronDown } from "lucide-react";
 import { Job } from "@/types/job";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Button } from "@/components/ui/button";
 
 const StatusBadgeColor = {
   Active: "bg-green-100 text-green-800 hover:bg-green-100",
@@ -74,7 +75,19 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job }) => {
         
         <div className="mb-6">
           <h4 className="font-medium text-gray-500 mb-1">Job Description</h4>
-          <div className="whitespace-pre-line p-4 bg-gray-50 rounded-md">{job.jd}</div>
+          <Collapsible>
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" className="flex items-center gap-2 mb-2 hover:bg-gray-100">
+                <span>Toggle Description</span>
+                <ChevronDown className="h-4 w-4 transition-transform duration-200 [&[data-state=open]>svg]:rotate-180" />
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <div className="whitespace-pre-line p-4 bg-gray-50 rounded-md">
+                {job.jd}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
