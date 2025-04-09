@@ -115,7 +115,8 @@ const Auth = () => {
           <img 
             src="/lovable-uploads/c52867a5-bcb6-4787-a1d0-6dafe3716176.png" 
             alt="Company Logo" 
-            className="w-32 h-32 object-contain mb-4" 
+            className="w-32 h-32 object-contain mb-4 bg-gray-200 animate-pulse" 
+            loading="lazy"
           />
           <CardTitle className="text-2xl font-bold text-center">ITBC Recruitment Portal</CardTitle>
           <CardDescription className="text-center">
@@ -140,7 +141,8 @@ const Auth = () => {
               <img 
                 src="/lovable-uploads/84c3c664-fba4-4005-985a-802a5ae8353d.png" 
                 alt="Google Logo" 
-                className="w-16 h-16 object-contain mt-4" 
+                className="w-16 h-16 object-contain mt-4 bg-gray-100 animate-pulse" 
+                loading="lazy"
               />
             </>
           )}
@@ -151,3 +153,4 @@ const Auth = () => {
 };
 
 export default Auth;
+
