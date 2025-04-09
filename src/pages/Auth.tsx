@@ -15,10 +15,11 @@ const Auth = () => {
     googleIcon: false
   });
   
-  // Log the current URL for debugging
+  // Enhanced logging for debugging
   useEffect(() => {
     console.log("Current URL:", window.location.href);
     console.log("Location object:", location);
+    console.log("Origin:", window.location.origin);
   }, [location]);
   
   useEffect(() => {
@@ -28,7 +29,7 @@ const Auth = () => {
         
         // Check for access_token in URL hash
         if (location.hash && location.hash.includes('access_token')) {
-          console.log("Found access_token in URL hash");
+          console.log("Found access_token in URL hash, attempting to process");
           
           // Let Supabase handle the auth tokens from hash
           const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
@@ -84,12 +85,18 @@ const Auth = () => {
 
   const handleGoogleSignIn = async () => {
     try {
-      // Get current URL for the redirect
-      const currentURL = window.location.origin;
-      console.log("Current origin for redirect:", currentURL);
+      // Get current URL for the redirect - use the actual production URL if available
+      // This is crucial for proper redirection after Google auth
+      let redirectTo = "";
       
-      // Use the application's actual URL for redirection
-      const redirectTo = `${currentURL}/auth/callback`;
+      // First check if we're on our production domain
+      if (window.location.hostname === "recruit.theitbootcamp.com") {
+        redirectTo = "https://recruit.theitbootcamp.com/auth/callback";
+      } else {
+        // Fallback to current origin (will handle Lovable preview URLs)
+        redirectTo = `${window.location.origin}/auth/callback`;
+      }
+      
       console.log("Redirecting to Google with callback URL:", redirectTo);
       
       const { data, error } = await supabase.auth.signInWithOAuth({
@@ -134,7 +141,7 @@ const Auth = () => {
     <div className="flex justify-center items-center min-h-screen bg-gray-50">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 flex flex-col items-center">
-          <div className="w-32 h-32 flex items-center justify-center rounded-md overflow-hidden transition-opacity duration-300" 
+          <div className="w-32 h-32 flex items-center justify-center overflow-hidden transition-opacity duration-300" 
                style={{ opacity: imagesLoaded.logo ? 1 : 0.7 }}>
             <img 
               src="/lovable-uploads/c52867a5-bcb6-4787-a1d0-6dafe3716176.png" 
@@ -164,7 +171,7 @@ const Auth = () => {
               >
                 Sign in with Google
               </Button>
-              <div className="w-16 h-16 flex items-center justify-center rounded-md mt-4 overflow-hidden transition-opacity duration-300"
+              <div className="w-16 h-16 flex items-center justify-center overflow-hidden transition-opacity duration-300 mt-4"
                    style={{ opacity: imagesLoaded.googleIcon ? 1 : 0.7 }}>
                 <img 
                   src="/lovable-uploads/84c3c664-fba4-4005-985a-802a5ae8353d.png" 
