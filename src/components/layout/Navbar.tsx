@@ -29,7 +29,7 @@ export function Navbar() {
         <div className="ml-auto flex items-center gap-4">
           {user && (
             <>
-              <Link to="/jobs/new">
+              <Link to="/jobs/add">
                 <Button className="bg-recruiter-secondary hover:bg-recruiter-accent text-white">
                   <Plus className="mr-2 h-4 w-4" /> Add Job
                 </Button>

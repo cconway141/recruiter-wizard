@@ -40,6 +40,14 @@ function App() {
               }
             />
             <Route
+              path="/jobs/new"
+              element={
+                <ProtectedRoute>
+                  <AddJob />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/jobs/edit/:id"
               element={
                 <ProtectedRoute>

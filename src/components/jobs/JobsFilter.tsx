@@ -66,7 +66,7 @@ export function JobsFilter() {
           <Button variant="outline">Generic Messages</Button>
         </Link>
         
-        <Link to="/jobs/new">
+        <Link to="/jobs/add">
           <Button>
             <Plus className="mr-2 h-4 w-4" /> New Job
           </Button>
