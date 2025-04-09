@@ -10,8 +10,10 @@ const Google = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="
     <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" />
     <path d="M17.24 14.32C16.24 17.36 13.28 19.26 9.98 18.87C7.2 18.54 4.93 16.47 4.36 13.75C3.63 10.17 5.91 6.79 9.39 5.91C11.19 5.46 12.89 5.73 14.33 6.6C14.96 7 15.5 7.57 16.03 8.14C15.38 8.78 14.76 9.41 14.12 10.05C13.58 9.53 12.95 9.07 12.2 8.86C10.33 8.32 8.3 9.36 7.64 11.17C6.94 13.08 7.89 15.29 9.74 16.08C11.61 16.96 13.98 16.15 14.9 14.24H12.32V11.95H17.28C17.38 12.74 17.41 13.54 17.24 14.32Z" />
   </svg>;
+
 const Auth = () => {
   const navigate = useNavigate();
+  
   useEffect(() => {
     // Check if user is already logged in
     const checkSession = async () => {
@@ -50,6 +52,7 @@ const Auth = () => {
     };
     handleHashParams();
   }, [navigate]);
+
   const handleGoogleSignIn = async () => {
     try {
       const {
@@ -80,9 +83,15 @@ const Auth = () => {
       });
     }
   };
+
   return <div className="flex justify-center items-center min-h-screen bg-gray-50">
       <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
+        <CardHeader className="space-y-1 flex flex-col items-center">
+          <img 
+            src="/lovable-uploads/4add4393-d8ec-4a30-970d-3bc3ad2bcd83.png" 
+            alt="The IT Bootcamp Logo" 
+            className="w-32 h-32 object-contain mb-4" 
+          />
           <CardTitle className="text-2xl font-bold text-center">ITBC Recruitment Portal</CardTitle>
           <CardDescription className="text-center">
             Sign in with Google to access the application
