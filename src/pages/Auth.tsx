@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -125,7 +126,7 @@ const Auth = () => {
     <div className="flex justify-center items-center min-h-screen bg-gray-50">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 flex flex-col items-center">
-          <div className="w-32 h-32 flex items-center justify-center bg-gray-200 rounded-md overflow-hidden transition-opacity duration-300" 
+          <div className="w-32 h-32 flex items-center justify-center rounded-md overflow-hidden transition-opacity duration-300" 
                style={{ opacity: imagesLoaded.logo ? 1 : 0.7 }}>
             <img 
               src="/lovable-uploads/c52867a5-bcb6-4787-a1d0-6dafe3716176.png" 
@@ -155,7 +156,7 @@ const Auth = () => {
               >
                 Sign in with Google
               </Button>
-              <div className="w-16 h-16 flex items-center justify-center bg-gray-100 rounded-md mt-4 overflow-hidden transition-opacity duration-300"
+              <div className="w-16 h-16 flex items-center justify-center rounded-md mt-4 overflow-hidden transition-opacity duration-300"
                    style={{ opacity: imagesLoaded.googleIcon ? 1 : 0.7 }}>
                 <img 
                   src="/lovable-uploads/84c3c664-fba4-4005-985a-802a5ae8353d.png" 
@@ -174,3 +175,4 @@ const Auth = () => {
 };
 
 export default Auth;
+
