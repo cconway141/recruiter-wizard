@@ -1,5 +1,4 @@
-
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,26 +8,16 @@ import { supabase } from "@/integrations/supabase/client";
 const Auth = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [isProcessingAuth, setIsProcessingAuth] = useState(false);
   
   useEffect(() => {
-    // Check if user is already logged in
-    const checkSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
-        // Before redirecting, clear any hash fragments to prevent the access token from being exposed in the URL
-        if (window.location.hash) {
-          window.history.replaceState(null, document.title, window.location.pathname);
-        }
-        navigate("/");
-      }
-    };
-
-    // Fix for hash fragment in URL handling (from Google redirect)
-    if (location.hash && location.hash.includes('access_token')) {
-      // Process the hash fragment URL
-      const processHashParams = async () => {
-        try {
-          // Let Supabase client handle the hash parameters
+    const handleAuth = async () => {
+      try {
+        // If we have hash parameters from OAuth redirect, process them first
+        if (location.hash && location.hash.includes('access_token')) {
+          setIsProcessingAuth(true);
+          
+          // Let Supabase process the hash parameters
           const { data, error } = await supabase.auth.getUser();
           
           if (error) {
@@ -39,25 +28,38 @@ const Auth = () => {
               variant: "destructive"
             });
           } else if (data.user) {
+            // Authentication successful, redirect to home page
             toast({
               title: "Authentication successful",
               description: "You are now signed in!"
             });
             
-            // Clear the URL hash and navigate to home
+            // Clear the hash and navigate to home
             window.history.replaceState(null, document.title, window.location.pathname);
             navigate('/');
+            return;
           }
-        } catch (err) {
-          console.error('Error processing hash params:', err);
+        } else {
+          // Otherwise check if user is already logged in
+          const { data } = await supabase.auth.getSession();
+          if (data.session) {
+            navigate("/");
+            return;
+          }
         }
-      };
-      
-      processHashParams();
-    } else {
-      // Only check session if we're not processing the hash params
-      checkSession();
-    }
+      } catch (err) {
+        console.error('Error in auth process:', err);
+        toast({
+          title: "Authentication error",
+          description: "An unexpected error occurred",
+          variant: "destructive"
+        });
+      } finally {
+        setIsProcessingAuth(false);
+      }
+    };
+
+    handleAuth();
   }, [navigate, location]);
 
   const handleGoogleSignIn = async () => {
@@ -72,6 +74,7 @@ const Auth = () => {
           }
         }
       });
+      
       if (error) {
         toast({
           title: "Google sign in failed",
@@ -88,7 +91,8 @@ const Auth = () => {
     }
   };
 
-  return <div className="flex justify-center items-center min-h-screen bg-gray-50">
+  return (
+    <div className="flex justify-center items-center min-h-screen bg-gray-50">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 flex flex-col items-center">
           <img 
@@ -102,20 +106,31 @@ const Auth = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="flex justify-center flex-col items-center">
-          <Button 
-            onClick={handleGoogleSignIn} 
-            className="w-full bg-blue-900 hover:bg-blue-950 text-white flex items-center justify-center gap-2" 
-            variant="default"
-          >
-            Sign in with Google
-          </Button>
-          <img 
-            src="/lovable-uploads/84c3c664-fba4-4005-985a-802a5ae8353d.png" 
-            alt="Google Logo" 
-            className="w-16 h-16 object-contain mt-4" 
-          />
+          {isProcessingAuth ? (
+            <div className="flex items-center justify-center py-4">
+              <div className="w-6 h-6 border-2 border-t-blue-500 border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin mr-2"></div>
+              <span>Processing authentication...</span>
+            </div>
+          ) : (
+            <>
+              <Button 
+                onClick={handleGoogleSignIn} 
+                className="w-full bg-blue-900 hover:bg-blue-950 text-white flex items-center justify-center gap-2" 
+                variant="default"
+              >
+                Sign in with Google
+              </Button>
+              <img 
+                src="/lovable-uploads/84c3c664-fba4-4005-985a-802a5ae8353d.png" 
+                alt="Google Logo" 
+                className="w-16 h-16 object-contain mt-4" 
+              />
+            </>
+          )}
         </CardContent>
       </Card>
-    </div>;
+    </div>
+  );
 };
+
 export default Auth;
