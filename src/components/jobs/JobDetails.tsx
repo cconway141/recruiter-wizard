@@ -74,7 +74,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job }) => {
         </div>
         
         <div className="mb-6">
-          <div className="flex items-center mb-1">
+          <div className="flex items-center justify-start">
             <h4 className="font-medium text-gray-500 mr-2">Job Description</h4>
             <Collapsible>
               <CollapsibleTrigger asChild>
