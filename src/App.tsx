@@ -5,7 +5,7 @@ import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { AuthProvider } from "./contexts/AuthContext";
-import { JobProvider } from "./contexts/JobContext"; // Import JobProvider
+import { JobProvider } from "./contexts/JobContext";
 import AddJob from "./pages/AddJob";
 import EditJob from "./pages/EditJob";
 import ViewJob from "./pages/ViewJob";
@@ -14,15 +14,17 @@ import MessageTemplates from "./pages/MessageTemplates";
 import Profile from "./pages/Profile";
 import { Toaster } from "./components/ui/toaster";
 import { GmailCallback } from "./components/candidates/email/GmailCallback";
+import { GoogleCallback } from "./components/auth/GoogleCallback";
 
 function App() {
   return (
     <Router>
       <AuthProvider>
-        <JobProvider> {/* Add JobProvider here */}
+        <JobProvider>
           <Routes>
             <Route path="/auth" element={<Auth />} />
-            <Route path="/auth/callback" element={<GmailCallback />} />
+            <Route path="/auth/callback" element={<GoogleCallback />} />
+            <Route path="/auth/gmail-callback" element={<GmailCallback />} />
             <Route
               path="/"
               element={
@@ -90,7 +92,7 @@ function App() {
             <Route path="*" element={<NotFound />} />
           </Routes>
           <Toaster />
-        </JobProvider> {/* Close JobProvider */}
+        </JobProvider>
       </AuthProvider>
     </Router>
   );

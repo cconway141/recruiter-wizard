@@ -1,208 +1,179 @@
 
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { useMessageTemplates } from "@/hooks/useMessageTemplates";
-import { useJobs } from "@/contexts/JobContext";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
 import { EmailTemplateSelector } from "./EmailTemplateSelector";
 import { EmailContent } from "./EmailContent";
 import { EmailDialogFooter } from "./EmailDialogFooter";
 import { EmailErrorAlert } from "./EmailErrorAlert";
-import { useEmailActions } from "./useEmailActions";
-import { Button } from "@/components/ui/button";
-import { ExternalLink, Mail } from "lucide-react";
+import { useMessageTemplates } from "@/hooks/useMessageTemplates";
+import { useEmailActions } from "@/hooks/useEmailActions";
+import { useGmailAuth } from "@/hooks/useGmailAuth";
+import { useNavigate } from "react-router-dom";
+import { GmailConnectButton } from "./GmailConnectButton";
 
 interface EmailDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  candidate: {
-    id: string;
-    name: string;
-    email?: string | null;
-    threadIds?: Record<string, string>; // Store thread IDs for each job
-  };
+  isOpen: boolean;
+  onClose: () => void;
+  candidateName: string;
+  candidateEmail?: string | null;
+  jobId?: string;
+  jobTitle?: string;
+  candidateId?: string;
+  threadId?: string | null;
+  threadTitle?: string;
 }
 
-export const EmailDialog: React.FC<EmailDialogProps> = ({
-  open,
-  onOpenChange,
-  candidate
-}) => {
-  const [selectedTemplate, setSelectedTemplate] = useState<string>("custom");
+export function EmailDialog({
+  isOpen,
+  onClose,
+  candidateName,
+  candidateEmail,
+  jobId,
+  jobTitle,
+  candidateId,
+  threadId,
+  threadTitle,
+}: EmailDialogProps) {
+  const { data: templates = [], isLoading: templatesLoading } = useMessageTemplates();
+  const [selectedTemplate, setSelectedTemplate] = useState("m1");
   const navigate = useNavigate();
-  const {
-    templates,
-    loading: templatesLoading
-  } = useMessageTemplates();
-  const {
-    id: jobId
-  } = useParams<{
-    id: string;
-  }>();
-  const {
-    getJob
-  } = useJobs();
-  const job = jobId ? getJob(jobId) : undefined;
+  
+  const { checkGmailConnection, isConnected: isGmailConnected, isChecking } = useGmailAuth();
+  const { sendEmail, isSending, error: sendError, resetState } = useEmailActions();
 
-  // Make sure we have templates before proceeding
+  // Reset selected template when dialog reopens
   useEffect(() => {
-    if (templates && templates.length > 0) {
-      console.log("Available templates:", templates.length);
+    if (isOpen) {
+      setSelectedTemplate(threadId ? "custom" : "m1");
+      resetState();
     }
-  }, [templates]);
-  
-  const threadTitle = job ? `ITBC ${job.candidateFacingTitle} - ${candidate.name}` : `ITBC - ${candidate.name}`;
-  const hasExistingThread = jobId && candidate.threadIds && candidate.threadIds[jobId];
-  
-  const {
-    isSending,
-    errorMessage,
-    isGmailConnected,
-    checkGmailConnection,
-    sendEmailViaGmail,
-    composeEmail,
-    getEmailContent,
-    threadId
-  } = useEmailActions({
-    candidate,
-    jobId,
-    jobTitle: job?.candidateFacingTitle,
-    templates,
-    selectedTemplate,
-    onSuccess: () => onOpenChange(false)
-  });
-  
-  const [previewContent, setPreviewContent] = useState({
-    subject: '',
-    body: ''
-  });
+  }, [isOpen, threadId, resetState]);
 
-  // Max attempts to check Gmail connection to prevent infinite calls
-  const [connectionCheckAttempts, setConnectionCheckAttempts] = useState(0);
-
-  // Only check Gmail connection once when dialog opens
+  // Check Gmail connection when dialog opens
   useEffect(() => {
-    if (open && connectionCheckAttempts === 0) {
-      setConnectionCheckAttempts(1);
-      checkGmailConnection().catch(() => {
-        console.log("Gmail connection check failed, but won't retry automatically");
-      });
+    if (isOpen) {
+      checkGmailConnection();
     }
+  }, [isOpen, checkGmailConnection]);
+
+  const handleSendEmail = async () => {
+    if (!candidateEmail || !candidateName) return;
     
-    // Reset attempts counter when dialog closes
-    if (!open) {
-      setConnectionCheckAttempts(0);
+    await sendEmail({
+      candidateName,
+      candidateEmail,
+      jobTitle,
+      selectedTemplate,
+      templates,
+      jobId,
+      candidateId,
+      threadId,
+      threadTitle,
+    });
+    
+    if (!sendError) {
+      onClose();
     }
-  }, [open, checkGmailConnection]);
+  };
+  
+  const navigateToProfile = () => {
+    onClose();
+    navigate('/profile');
+  };
 
-  // Update preview when template changes
-  useEffect(() => {
-    if (getEmailContent) {
-      const content = getEmailContent();
-      setPreviewContent(content);
-      console.log("Preview content updated - Body length:", content.body?.length || 0);
-    }
-  }, [selectedTemplate, getEmailContent]);
-  
-  const openGmailThread = () => {
-    if (jobId && candidate.threadIds && candidate.threadIds[jobId]) {
-      window.open(`https://mail.google.com/mail/u/0/#search/rfc822msgid:${candidate.threadIds[jobId]}`, '_blank');
-    } else {
-      const searchQuery = encodeURIComponent(`"${threadTitle}"`);
-      window.open(`https://mail.google.com/mail/u/0/#search/${searchQuery}`, '_blank');
-    }
-  };
-  
-  const goToProfilePage = () => {
-    onOpenChange(false); // Close the dialog
-    navigate('/profile'); // Navigate to profile page
-  };
-  
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Email {candidate.name}</DialogTitle>
+          <DialogTitle>Send Email to {candidateName}</DialogTitle>
           <DialogDescription>
-            Select a template or compose a custom email to this candidate.
-            {hasExistingThread ? ' This will continue the existing email thread.' : ' This will start a new email thread.'}
+            Send a recruitment email to this candidate.
           </DialogDescription>
         </DialogHeader>
-        
-        <div className="bg-gray-50 p-3 rounded-md flex justify-between items-center">
-          <div className="text-sm font-medium text-gray-700">
-            <span className="block">Thread: {threadTitle}</span>
-            {hasExistingThread && <span className="text-xs text-gray-500">Continuing existing thread for this job</span>}
+
+        {/* Gmail connection check at the top */}
+        {!isGmailConnected && !isChecking && (
+          <div className="mb-4">
+            <EmailErrorAlert 
+              errorMessage="You need to connect your Gmail account to send emails."
+              onGoToProfile={navigateToProfile}
+            />
+            <div className="mt-4 flex justify-between items-center">
+              <GmailConnectButton />
+              <Button variant="outline" size="sm" onClick={navigateToProfile}>
+                Go to Profile
+              </Button>
+            </div>
+            <Separator className="my-4" />
           </div>
-          {(hasExistingThread || jobId) && 
-            <Button variant="outline" size="sm" className="flex items-center gap-1" onClick={openGmailThread}>
-              <Mail className="h-4 w-4" />
-              <span>Go to thread in Gmail</span>
-              <ExternalLink className="h-3 w-3 ml-1" />
-            </Button>
-          }
-        </div>
-        
-        {/* Display Gmail connection alert if not connected */}
-        {errorMessage && errorMessage.includes("Gmail") && (
+        )}
+
+        {sendError && (
           <EmailErrorAlert 
-            errorMessage={errorMessage} 
-            onGoToProfile={goToProfilePage}
+            errorMessage={sendError}
+            onGoToProfile={navigateToProfile}
           />
         )}
-        
-        {isGmailConnected !== false ? (
-          <>
-            {templatesLoading ? 
-              <div className="py-4 text-center">Loading templates...</div> 
-            : 
-              <>
-                <EmailContent 
-                  selectedTemplate={selectedTemplate} 
-                  templates={templates} 
-                  candidateName={candidate.name} 
-                  candidateEmail={candidate.email} 
-                  job={job} 
-                  threadTitle={threadTitle} 
-                  threadId={threadId} 
-                />
-                
-                {candidate.email && 
-                  <EmailTemplateSelector 
-                    selectedTemplate={selectedTemplate} 
-                    onSelectTemplate={setSelectedTemplate} 
-                    templates={templates} 
-                  />
-                }
-              </>
-            }
-          </>
+
+        {!threadId ? (
+          <Tabs defaultValue={selectedTemplate} value={selectedTemplate} onValueChange={setSelectedTemplate}>
+            <TabsList className="grid grid-cols-3">
+              <TabsTrigger value="m1">Initial Contact</TabsTrigger>
+              <TabsTrigger value="m2">Follow-up</TabsTrigger>
+              <TabsTrigger value="m3">Closing</TabsTrigger>
+            </TabsList>
+            <TabsContent value="m1">
+              <EmailTemplateSelector
+                templates={templates}
+                selectedTemplate={selectedTemplate}
+                isLoading={templatesLoading}
+              />
+            </TabsContent>
+            <TabsContent value="m2">
+              <EmailTemplateSelector
+                templates={templates}
+                selectedTemplate={selectedTemplate}
+                isLoading={templatesLoading}
+              />
+            </TabsContent>
+            <TabsContent value="m3">
+              <EmailTemplateSelector
+                templates={templates}
+                selectedTemplate={selectedTemplate}
+                isLoading={templatesLoading}
+              />
+            </TabsContent>
+          </Tabs>
         ) : (
-          <div className="py-6 text-center space-y-4">
-            <p className="text-amber-600 font-medium">You need to connect your Gmail account to send emails</p>
-            <Button onClick={goToProfilePage} variant="default">
-              Go to Profile Page to Connect Gmail
-            </Button>
+          <div className="mb-4">
+            <p className="text-sm text-gray-500">
+              Replying to previous email thread: {threadTitle || "No subject"}
+            </p>
           </div>
         )}
-        
-        {/* Only show non-Gmail errors in this section */}
-        {errorMessage && !errorMessage.includes("Gmail") && (
-          <EmailErrorAlert errorMessage={errorMessage} />
-        )}
-        
+
+        <EmailContent
+          selectedTemplate={selectedTemplate}
+          templates={templates}
+          candidateName={candidateName}
+          job={jobTitle ? { candidateFacingTitle: jobTitle } : undefined}
+          candidateEmail={candidateEmail}
+          threadTitle={threadTitle}
+          threadId={threadId}
+        />
+
         <DialogFooter>
-          <EmailDialogFooter 
-            candidateEmail={candidate.email} 
-            isSending={isSending} 
-            onSendEmail={sendEmailViaGmail} 
-            onComposeEmail={composeEmail} 
-            isGmailConnected={isGmailConnected} 
-            checkGmailConnection={checkGmailConnection}
-            goToProfilePage={goToProfilePage}
+          <EmailDialogFooter
+            onClose={onClose}
+            onSendEmail={handleSendEmail}
+            isSending={isSending}
+            isGmailConnected={isGmailConnected}
           />
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
-};
+}

@@ -8,12 +8,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Separator } from "@/components/ui/separator";
+import { Google } from "lucide-react";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("login");
+  const [showLinkingDialog, setShowLinkingDialog] = useState(false);
+  const [googleUserData, setGoogleUserData] = useState<any>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -26,6 +31,19 @@ const Auth = () => {
     };
     
     checkSession();
+
+    // Check URL for OAuth result
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const error = hashParams.get("error");
+    const errorDescription = hashParams.get("error_description");
+    
+    if (error) {
+      toast({
+        title: "Authentication Error",
+        description: errorDescription || "Failed to authenticate with Google",
+        variant: "destructive",
+      });
+    }
   }, [navigate]);
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -80,6 +98,59 @@ const Auth = () => {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
+        }
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      // The user will be redirected to Google's consent page
+    } catch (error: any) {
+      toast({
+        title: "Google sign in failed",
+        description: error.message,
+        variant: "destructive",
+      });
+      setLoading(false);
+    }
+  };
+
+  const handleAccountLinking = async (confirm: boolean) => {
+    if (!confirm || !googleUserData) {
+      setShowLinkingDialog(false);
+      setGoogleUserData(null);
+      return;
+    }
+    
+    try {
+      // Link the accounts
+      // This would be handled in the callback component
+      setShowLinkingDialog(false);
+      navigate("/");
+    } catch (error: any) {
+      toast({
+        title: "Account linking failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+    
+    setGoogleUserData(null);
+  };
+
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-50">
       <Card className="w-full max-w-md">
@@ -97,6 +168,27 @@ const Auth = () => {
             </TabsList>
             
             <TabsContent value="login">
+              <div className="mb-4">
+                <Button 
+                  onClick={handleGoogleSignIn} 
+                  className="w-full flex items-center justify-center gap-2" 
+                  variant="outline"
+                  disabled={loading}
+                >
+                  <Google className="h-4 w-4" />
+                  Sign in with Google
+                </Button>
+              </div>
+              
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center">
+                  <Separator className="w-full" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
+                </div>
+              </div>
+              
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
@@ -131,6 +223,27 @@ const Auth = () => {
             </TabsContent>
             
             <TabsContent value="signup">
+              <div className="mb-4">
+                <Button 
+                  onClick={handleGoogleSignIn} 
+                  className="w-full flex items-center justify-center gap-2" 
+                  variant="outline"
+                  disabled={loading}
+                >
+                  <Google className="h-4 w-4" />
+                  Sign up with Google
+                </Button>
+              </div>
+              
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center">
+                  <Separator className="w-full" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
+                </div>
+              </div>
+              
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="signup-email">Email</Label>
@@ -166,6 +279,23 @@ const Auth = () => {
           </Tabs>
         </CardContent>
       </Card>
+      
+      <AlertDialog open={showLinkingDialog} onOpenChange={setShowLinkingDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Link your accounts?</AlertDialogTitle>
+            <AlertDialogDescription>
+              We found an existing account with the email {googleUserData?.email}. Would you like to link your Google account to this existing account?
+              <br /><br />
+              Once linked, you'll only be able to log in using Google.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => handleAccountLinking(false)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => handleAccountLinking(true)}>Link Accounts</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

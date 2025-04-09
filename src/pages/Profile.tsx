@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Navbar } from "@/components/layout/Navbar";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
@@ -39,13 +40,15 @@ import {
 } from "@/components/ui/alert-dialog";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { User, Mail, Lock, ShieldAlert, MailCheck } from "lucide-react";
+import { User, Mail, Lock, ShieldAlert, MailCheck, FileSignature } from "lucide-react";
 import { GmailConnectButton } from "@/components/candidates/email/GmailConnectButton";
+import { useQuery } from "@tanstack/react-query";
 
 const profileFormSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
   email: z.string().email("Invalid email address"),
+  emailSignature: z.string().optional(),
 });
 
 const passwordFormSchema = z.object({
@@ -63,13 +66,38 @@ const Profile = () => {
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
 
+  // Fetch user profile data
+  const { data: profile, isLoading: profileLoading } = useQuery({
+    queryKey: ['profile', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+        
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id
+  });
+
   const profileForm = useForm<z.infer<typeof profileFormSchema>>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
       firstName: user?.user_metadata?.first_name || '',
       lastName: user?.user_metadata?.last_name || '',
       email: user?.email || '',
+      emailSignature: profile?.email_signature || '',
     },
+    values: {
+      firstName: profile?.first_name || user?.user_metadata?.first_name || '',
+      lastName: profile?.last_name || user?.user_metadata?.last_name || '',
+      email: user?.email || '',
+      emailSignature: profile?.email_signature || '',
+    }
   });
 
   const passwordForm = useForm<z.infer<typeof passwordFormSchema>>({
@@ -94,7 +122,8 @@ const Profile = () => {
         .update({ 
           first_name: values.firstName, 
           last_name: values.lastName,
-          display_name: `${values.firstName} ${values.lastName}`.trim()
+          display_name: `${values.firstName} ${values.lastName}`.trim(),
+          email_signature: values.emailSignature || ''
         })
         .eq('id', user.id);
 
@@ -198,6 +227,8 @@ const Profile = () => {
     }
   };
 
+  const isGoogleLinked = profile?.google_linked || user?.app_metadata?.provider === 'google';
+
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
@@ -265,6 +296,27 @@ const Profile = () => {
                     )}
                   />
                   
+                  <FormField
+                    control={profileForm.control}
+                    name="emailSignature"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email Signature</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Your email signature" 
+                            className="min-h-[100px]" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          This signature will be added to all emails you send through the platform.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
                   <Button type="submit" className="w-full md:w-auto">
                     Update Profile
                   </Button>
@@ -289,63 +341,81 @@ const Profile = () => {
               </CardContent>
             </Card>
             
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Lock className="h-5 w-5" /> Password
-                </CardTitle>
-                <CardDescription>Manage your password</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {isChangingPassword ? (
-                  <Form {...passwordForm}>
-                    <form onSubmit={passwordForm.handleSubmit(handleChangePassword)} className="space-y-4">
-                      <FormField
-                        control={passwordForm.control}
-                        name="newPassword"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>New Password</FormLabel>
-                            <FormControl>
-                              <Input type="password" placeholder="Enter new password" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={passwordForm.control}
-                        name="confirmPassword"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Confirm Password</FormLabel>
-                            <FormControl>
-                              <Input type="password" placeholder="Confirm new password" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <div className="flex space-x-2">
-                        <Button type="submit">Update Password</Button>
-                        <Button variant="outline" onClick={() => setIsChangingPassword(false)}>
-                          Cancel
-                        </Button>
-                      </div>
-                    </form>
-                  </Form>
-                ) : (
-                  <div className="space-y-2">
-                    <p className="text-sm text-muted-foreground">Change your password to a secure combination of letters, numbers, and symbols.</p>
-                    <Button onClick={() => setIsChangingPassword(true)}>
-                      Change Password
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            {!isGoogleLinked && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Lock className="h-5 w-5" /> Password
+                  </CardTitle>
+                  <CardDescription>Manage your password</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {isChangingPassword ? (
+                    <Form {...passwordForm}>
+                      <form onSubmit={passwordForm.handleSubmit(handleChangePassword)} className="space-y-4">
+                        <FormField
+                          control={passwordForm.control}
+                          name="newPassword"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>New Password</FormLabel>
+                              <FormControl>
+                                <Input type="password" placeholder="Enter new password" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <FormField
+                          control={passwordForm.control}
+                          name="confirmPassword"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Confirm Password</FormLabel>
+                              <FormControl>
+                                <Input type="password" placeholder="Confirm new password" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        
+                        <div className="flex space-x-2">
+                          <Button type="submit">Update Password</Button>
+                          <Button variant="outline" onClick={() => setIsChangingPassword(false)}>
+                            Cancel
+                          </Button>
+                        </div>
+                      </form>
+                    </Form>
+                  ) : (
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">Change your password to a secure combination of letters, numbers, and symbols.</p>
+                      <Button onClick={() => setIsChangingPassword(true)}>
+                        Change Password
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+            
+            {isGoogleLinked && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Mail className="h-5 w-5" /> Google Account
+                  </CardTitle>
+                  <CardDescription>Your account is linked with Google</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    Your account is currently linked with Google. You can use your Google account to sign in.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
             
             <Card>
               <CardHeader>

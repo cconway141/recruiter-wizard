@@ -9,6 +9,7 @@ interface AuthContextType {
   user: User | null;
   signOut: () => Promise<void>;
   loading: boolean;
+  isGoogleLinked: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -17,6 +18,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isGoogleLinked, setIsGoogleLinked] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -43,6 +45,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (event === 'SIGNED_IN') {
           resetInactivityTimer();
+          
+          // Check if user is Google-linked
+          const checkGoogleLink = async () => {
+            if (currentSession?.user) {
+              const isGoogle = currentSession.user.app_metadata?.provider === 'google';
+              
+              if (isGoogle) {
+                setIsGoogleLinked(true);
+              } else {
+                // Check profiles table
+                const { data } = await supabase
+                  .from('profiles')
+                  .select('google_linked')
+                  .eq('id', currentSession.user.id)
+                  .single();
+                  
+                setIsGoogleLinked(!!data?.google_linked);
+              }
+            }
+          };
+          
+          checkGoogleLink();
         } else if (event === 'SIGNED_OUT') {
           navigate('/auth');
         }
@@ -53,6 +77,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
+      
+      if (currentSession?.user) {
+        // Check if user is Google-linked
+        const isGoogle = currentSession.user.app_metadata?.provider === 'google';
+        if (isGoogle) {
+          setIsGoogleLinked(true);
+        } else {
+          // Check profiles table
+          supabase
+            .from('profiles')
+            .select('google_linked')
+            .eq('id', currentSession.user.id)
+            .single()
+            .then(({ data }) => {
+              setIsGoogleLinked(!!data?.google_linked);
+            });
+        }
+      }
+      
       setLoading(false);
       
       if (currentSession) {
@@ -73,7 +116,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ session, user, signOut, loading }}>
+    <AuthContext.Provider value={{ session, user, signOut, loading, isGoogleLinked }}>
       {children}
     </AuthContext.Provider>
   );

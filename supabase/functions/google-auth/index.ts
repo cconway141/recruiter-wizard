@@ -41,7 +41,7 @@ serve(async (req) => {
       );
     }
     
-    // Route for getting the authorization URL
+    // Route for getting the authorization URL for Gmail
     if (action === 'get-auth-url') {
       const { userId } = await req.json();
       
@@ -54,7 +54,7 @@ serve(async (req) => {
       
       // Generate a state parameter to prevent CSRF attacks
       // This will include the user ID so we can associate the tokens with the correct user
-      const state = btoa(JSON.stringify({ userId, timestamp: Date.now() }));
+      const state = btoa(JSON.stringify({ userId, timestamp: Date.now(), action: 'gmail' }));
       
       // Build the authorization URL
       const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
@@ -100,6 +100,7 @@ serve(async (req) => {
       }
       
       const userId = stateData.userId;
+      const action = stateData.action || 'gmail'; // Default to gmail if not specified
       
       // Exchange the code for tokens
       const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
@@ -125,27 +126,35 @@ serve(async (req) => {
       }
       
       // Store the tokens in Supabase
-      const { error } = await supabase
-        .from('gmail_tokens')
-        .upsert({
-          user_id: userId,
-          access_token: tokenData.access_token,
-          refresh_token: tokenData.refresh_token,
-          expires_at: new Date(Date.now() + tokenData.expires_in * 1000).toISOString(),
-          token_type: tokenData.token_type,
-          scope: tokenData.scope,
-        });
-      
-      if (error) {
-        console.error('Error storing tokens:', error);
+      if (action === 'gmail') {
+        const { error } = await supabase
+          .from('gmail_tokens')
+          .upsert({
+            user_id: userId,
+            access_token: tokenData.access_token,
+            refresh_token: tokenData.refresh_token,
+            expires_at: new Date(Date.now() + tokenData.expires_in * 1000).toISOString(),
+            token_type: tokenData.token_type,
+            scope: tokenData.scope,
+          });
+        
+        if (error) {
+          console.error('Error storing tokens:', error);
+          return new Response(
+            JSON.stringify({ error: 'Failed to store tokens', details: error }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
         return new Response(
-          JSON.stringify({ error: 'Failed to store tokens', details: error }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ success: true, message: 'Gmail connected successfully' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       
+      // This could be enhanced for other Google services in the future
       return new Response(
-        JSON.stringify({ success: true, message: 'Gmail connected successfully' }),
+        JSON.stringify({ success: true, message: 'Google service connected successfully' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
