@@ -81,25 +81,30 @@ serve(async (req) => {
     
     const accessToken = tokenData.access_token;
 
-    // Create the email content - ensure proper MIME formatting
-    const emailLines = [
+    // Create the email content - ensure proper MIME formatting for threading
+    let emailLines = [
       `To: ${to}`,
       cc ? `Cc: ${cc}` : '', // Add CC if provided
       `Subject: ${emailSubject}`,
       'MIME-Version: 1.0',
       'Content-Type: text/html; charset=utf-8',
-      '',  // Empty line to separate headers from body
-      body
-    ].filter(line => line !== ''); // Remove empty lines (in case cc is not provided)
+    ];
     
-    // If we have a thread ID, add the References and In-Reply-To headers
+    // Add thread-related headers if a thread ID is provided
     if (threadId) {
-      emailLines.splice(2, 0, `References: <${threadId}>`);
-      emailLines.splice(3, 0, `In-Reply-To: <${threadId}>`);
+      emailLines.push(`References: <${threadId}@mail.gmail.com>`);
+      emailLines.push(`In-Reply-To: <${threadId}@mail.gmail.com>`);
+      emailLines.push(`Thread-ID: ${threadId}`);
     }
     
+    // Add empty line to separate headers from body and then the body
+    emailLines.push('', body);
+    
+    // Remove empty lines (in case cc is not provided)
+    emailLines = emailLines.filter(line => line !== '');
+    
     const emailContent = emailLines.join('\r\n');
-    console.log("Email content prepared");
+    console.log("Email content prepared with proper threading headers");
 
     // Encode the email in base64 URL-safe format
     const encodedEmail = btoa(emailContent)
@@ -109,7 +114,7 @@ serve(async (req) => {
 
     console.log("Sending email via Gmail API with OAuth token");
     
-    // Send the email using the Gmail API with OAuth token
+    // Send the email using the Gmail API with OAuth token and explicit threadId parameter
     const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
       method: 'POST',
       headers: {
