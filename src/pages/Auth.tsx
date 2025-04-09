@@ -1,6 +1,6 @@
 
 import React, { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const Auth = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   
   useEffect(() => {
     // Check if user is already logged in
@@ -21,32 +22,39 @@ const Auth = () => {
     };
     checkSession();
 
-    // Check for hash fragment in URL (from Google redirect)
-    const handleHashParams = async () => {
-      if (window.location.hash && window.location.hash.includes('access_token')) {
-        // Let the Supabase client handle the token
-        const {
-          data,
-          error
-        } = await supabase.auth.getUser();
-        if (error) {
-          console.error('Error getting user from hash params:', error);
-          toast({
-            title: "Authentication failed",
-            description: error.message,
-            variant: "destructive"
-          });
-        } else if (data.user) {
-          toast({
-            title: "Authentication successful",
-            description: "You are now signed in!"
-          });
-          navigate('/');
+    // Fix for hash fragment in URL handling (from Google redirect)
+    if (location.hash && location.hash.includes('access_token')) {
+      // Process the hash fragment URL
+      const processHashParams = async () => {
+        try {
+          // Let Supabase client handle the hash parameters
+          const { data, error } = await supabase.auth.getUser();
+          
+          if (error) {
+            console.error('Error getting user from hash params:', error);
+            toast({
+              title: "Authentication failed",
+              description: error.message,
+              variant: "destructive"
+            });
+          } else if (data.user) {
+            toast({
+              title: "Authentication successful",
+              description: "You are now signed in!"
+            });
+            
+            // Clear the URL hash and navigate to home
+            window.history.replaceState(null, document.title, window.location.pathname);
+            navigate('/');
+          }
+        } catch (err) {
+          console.error('Error processing hash params:', err);
         }
-      }
-    };
-    handleHashParams();
-  }, [navigate]);
+      };
+      
+      processHashParams();
+    }
+  }, [navigate, location]);
 
   const handleGoogleSignIn = async () => {
     try {
@@ -56,7 +64,7 @@ const Auth = () => {
       } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: `${window.location.origin}/auth`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent'
