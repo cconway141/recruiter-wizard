@@ -36,10 +36,17 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({
   candidate 
 }) => {
   const [selectedTemplate, setSelectedTemplate] = useState<string>("custom");
-  const { templates } = useMessageTemplates();
+  const { templates, loading: templatesLoading } = useMessageTemplates();
   const { id: jobId } = useParams<{ id: string }>();
   const { getJob } = useJobs();
   const job = jobId ? getJob(jobId) : undefined;
+  
+  // Make sure we have templates before proceeding
+  useEffect(() => {
+    if (templates && templates.length > 0) {
+      console.log("Available templates:", templates.length);
+    }
+  }, [templates]);
   
   const threadTitle = job ? `ITBC ${job.candidateFacingTitle} - ${candidate.name}` : `ITBC - ${candidate.name}`;
   
@@ -70,6 +77,7 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({
     if (getEmailContent) {
       const content = getEmailContent();
       setPreviewContent(content);
+      console.log("Preview content updated - Body length:", content.body?.length || 0);
     }
   }, [selectedTemplate, getEmailContent]);
 
@@ -116,22 +124,28 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({
           )}
         </div>
         
-        <EmailContent 
-          selectedTemplate={selectedTemplate}
-          templates={templates}
-          candidateName={candidate.name}
-          candidateEmail={candidate.email}
-          job={job}
-          threadTitle={threadTitle}
-          threadId={threadId}
-        />
-        
-        {candidate.email && (
-          <EmailTemplateSelector
-            selectedTemplate={selectedTemplate}
-            onSelectTemplate={setSelectedTemplate}
-            templates={templates}
-          />
+        {templatesLoading ? (
+          <div className="py-4 text-center">Loading templates...</div>
+        ) : (
+          <>
+            <EmailContent 
+              selectedTemplate={selectedTemplate}
+              templates={templates}
+              candidateName={candidate.name}
+              candidateEmail={candidate.email}
+              job={job}
+              threadTitle={threadTitle}
+              threadId={threadId}
+            />
+            
+            {candidate.email && (
+              <EmailTemplateSelector
+                selectedTemplate={selectedTemplate}
+                onSelectTemplate={setSelectedTemplate}
+                templates={templates}
+              />
+            )}
+          </>
         )}
         
         {/* Preview actual email being sent */}

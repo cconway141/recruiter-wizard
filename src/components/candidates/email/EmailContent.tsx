@@ -1,5 +1,6 @@
 
 import React from "react";
+import { useEmailContent } from "@/hooks/useEmailContent";
 
 interface EmailContentProps {
   selectedTemplate: string;
@@ -28,7 +29,17 @@ export const EmailContent: React.FC<EmailContentProps> = ({
     );
   }
 
-  // Get the template content for preview
+  // Generate the actual email content that will be sent
+  const { getEmailContent } = useEmailContent({
+    candidateName,
+    jobTitle: job?.candidateFacingTitle,
+    templates,
+    selectedTemplate
+  });
+  
+  const emailContent = getEmailContent();
+  
+  // Get just the template content for preview
   const getTemplateContent = () => {
     if (selectedTemplate && selectedTemplate !== "custom") {
       const template = templates.find(t => t.id === selectedTemplate);
@@ -75,6 +86,16 @@ export const EmailContent: React.FC<EmailContentProps> = ({
           <p className="text-sm">
             A standard greeting and signature will be added to your email.
           </p>
+        </div>
+      )}
+      
+      {/* Show actual email preview with full greeting and signature */}
+      {emailContent.body && (
+        <div className="mt-4 p-3 bg-gray-100 rounded-md">
+          <h4 className="font-medium text-sm mb-1">Complete Email Preview:</h4>
+          <div className="max-h-[180px] overflow-y-auto bg-white p-2 rounded border text-sm">
+            <div dangerouslySetInnerHTML={{ __html: emailContent.body }} />
+          </div>
         </div>
       )}
     </div>

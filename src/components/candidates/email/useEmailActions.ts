@@ -57,6 +57,13 @@ export const useEmailActions = ({
   
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
+  // Log when templates change for debugging
+  useEffect(() => {
+    if (templates && templates.length > 0) {
+      console.log(`useEmailActions has ${templates.length} templates, selected: ${selectedTemplate}`);
+    }
+  }, [templates, selectedTemplate]);
+  
   // Sync error messages from child hooks
   useEffect(() => {
     setErrorMessage(authErrorMessage || sendErrorMessage);
@@ -72,6 +79,17 @@ export const useEmailActions = ({
       return;
     }
     
+    // Validate templates are loaded
+    if (!templates || templates.length === 0) {
+      console.error("No templates available when trying to send email");
+      toast({
+        title: "Cannot Send Email",
+        description: "Email templates failed to load. Please try again.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     const { subject, body } = getEmailContent();
     
     // Log what's being sent for debugging
@@ -79,7 +97,9 @@ export const useEmailActions = ({
     console.log("Subject:", subject);
     console.log("Thread ID:", threadId);
     console.log("Body length:", body.length);
+    console.log("Selected template:", selectedTemplate);
     console.log("Body preview:", body.substring(0, 100));
+    console.log("Template count:", templates.length);
     
     if (!body || body.trim() === '') {
       toast({
@@ -137,6 +157,16 @@ export const useEmailActions = ({
     }
     
     const { subject, body } = getEmailContent();
+    
+    if (!body || body.trim() === '') {
+      toast({
+        title: "Cannot Compose Email",
+        description: "The email content is empty. Please select a valid template.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     composeEmailInGmail(candidate.email, subject, body);
     onSuccess();
   };
