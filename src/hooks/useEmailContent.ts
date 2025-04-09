@@ -21,7 +21,7 @@ export const useEmailContent = ({ candidateName, jobTitle, templates, selectedTe
       if (user?.id) {
         const { data, error } = await supabase
           .from('profiles')
-          .select('*')
+          .select('email_signature')
           .eq('id', user.id)
           .single();
           
@@ -94,6 +94,7 @@ export const useEmailContent = ({ candidateName, jobTitle, templates, selectedTe
     console.log("Returning email content:", { body: emailBody });
     return {
       body: emailBody,
+      subject: `ITBC ${jobTitle || ''} - ${candidateName}`.trim()
     };
   };
 

@@ -129,18 +129,21 @@ export function EmailDialog({
               <EmailTemplateSelector
                 templates={templates || []}
                 selectedTemplate={selectedTemplate}
+                onSelectTemplate={setSelectedTemplate}
               />
             </TabsContent>
             <TabsContent value="m2">
               <EmailTemplateSelector
                 templates={templates || []}
                 selectedTemplate={selectedTemplate}
+                onSelectTemplate={setSelectedTemplate}
               />
             </TabsContent>
             <TabsContent value="m3">
               <EmailTemplateSelector
                 templates={templates || []}
                 selectedTemplate={selectedTemplate}
+                onSelectTemplate={setSelectedTemplate}
               />
             </TabsContent>
           </Tabs>

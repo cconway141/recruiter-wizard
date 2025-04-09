@@ -38,8 +38,12 @@ export const GoogleCallback = () => {
             throw existingUserError;
           }
 
-          // Check if any of the existing users don't have google_linked set
-          const unlinkedUsers = existingUsers?.filter(user => !user.google_linked);
+          // Check if any of the existing users don't have google_linked set to true
+          const unlinkedUsers = existingUsers?.filter(profile => {
+            // Use optional chaining to safely access the property
+            return profile && profile.google_linked === false;
+          });
+
           if (unlinkedUsers && unlinkedUsers.length > 0) {
             // An existing user with the same email exists but isn't linked to Google
             setExistingUserEmail(user.email || '');
