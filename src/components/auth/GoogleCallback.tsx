@@ -28,6 +28,7 @@ export const GoogleCallback = () => {
           }
 
           const { user } = session;
+          const avatarUrl = user.user_metadata?.avatar_url || user.user_metadata?.picture;
           
           // Check or create profile for the Google user
           const { data: profile, error: profileError } = await supabase
@@ -50,6 +51,7 @@ export const GoogleCallback = () => {
                 first_name: user.user_metadata?.first_name || user.user_metadata?.full_name?.split(' ')?.[0] || '',
                 last_name: user.user_metadata?.last_name || user.user_metadata?.full_name?.split(' ')?.[1] || '',
                 display_name: user.user_metadata?.full_name || user.email?.split('@')[0],
+                avatar_url: avatarUrl,
                 google_linked: true,
                 role: 'user'
               });
@@ -58,10 +60,13 @@ export const GoogleCallback = () => {
               throw insertError;
             }
           } else {
-            // Update existing profile to mark as Google linked
+            // Update existing profile to mark as Google linked and update avatar
             await supabase
               .from('profiles')
-              .update({ google_linked: true })
+              .update({ 
+                google_linked: true,
+                avatar_url: avatarUrl
+              })
               .eq('id', user.id);
           }
 
@@ -99,6 +104,7 @@ export const GoogleCallback = () => {
         }
 
         const { user } = session;
+        const avatarUrl = user.user_metadata?.avatar_url || user.user_metadata?.picture;
         
         // Check or create profile for the Google user
         const { data: profile, error: profileError } = await supabase
@@ -121,6 +127,7 @@ export const GoogleCallback = () => {
               first_name: user.user_metadata?.first_name || user.user_metadata?.full_name?.split(' ')?.[0] || '',
               last_name: user.user_metadata?.last_name || user.user_metadata?.full_name?.split(' ')?.[1] || '',
               display_name: user.user_metadata?.full_name || user.email?.split('@')[0],
+              avatar_url: avatarUrl,
               google_linked: true,
               role: 'user'
             });
@@ -129,10 +136,13 @@ export const GoogleCallback = () => {
             throw insertError;
           }
         } else {
-          // Update existing profile to mark as Google linked
+          // Update existing profile to mark as Google linked and update avatar
           await supabase
             .from('profiles')
-            .update({ google_linked: true })
+            .update({ 
+              google_linked: true,
+              avatar_url: avatarUrl
+            })
             .eq('id', user.id);
         }
 
