@@ -105,7 +105,10 @@ export const GoogleCallback = () => {
             navigate('/');
             return;
           } else {
-            throw new Error('No code parameter found in callback URL');
+            // No need to throw an error here, just set a more user-friendly message
+            setError('Authentication incomplete. Please try signing in again.');
+            setLoading(false);
+            return; // Return early to prevent further error handling
           }
         }
 
