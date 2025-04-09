@@ -139,10 +139,11 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
       }
       
       // Use the Supabase adapter for the client to delete tokens
-      // Fixed TypeScript error by using a proper RPC call with user_id_param
-      const { error } = await supabase.rpc('delete_gmail_token', { 
-        user_id_param: user.id 
-      });
+      // Explicitly type the RPC call parameters
+      const { error } = await supabase
+        .rpc('delete_gmail_token', { 
+          user_id_param: user.id as string 
+        });
       
       if (error) {
         console.error("Error disconnecting Gmail:", error);
