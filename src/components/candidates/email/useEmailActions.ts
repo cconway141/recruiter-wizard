@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -29,7 +28,6 @@ export const useEmailActions = ({
   selectedTemplate,
   onSuccess
 }: UseEmailActionsProps) => {
-  // Get thread ID for this specific job if it exists
   const threadId = jobId && candidate.threadIds ? candidate.threadIds[jobId] || null : null;
   const { user } = useAuth();
   const { toast } = useToast();
@@ -57,14 +55,12 @@ export const useEmailActions = ({
   
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
-  // Log when templates change for debugging
   useEffect(() => {
     if (templates && templates.length > 0) {
       console.log(`useEmailActions has ${templates.length} templates, selected: ${selectedTemplate}`);
     }
   }, [templates, selectedTemplate]);
   
-  // Sync error messages from child hooks
   useEffect(() => {
     setErrorMessage(authErrorMessage || sendErrorMessage);
   }, [authErrorMessage, sendErrorMessage]);
@@ -79,7 +75,6 @@ export const useEmailActions = ({
       return;
     }
     
-    // Validate templates are loaded
     if (!templates || templates.length === 0) {
       console.error("No templates available when trying to send email");
       toast({
@@ -92,7 +87,6 @@ export const useEmailActions = ({
     
     const { subject, body } = getEmailContent();
     
-    // Log what's being sent for debugging
     console.log("Sending email to:", candidate.email);
     console.log("Subject:", subject);
     console.log("Thread ID:", threadId);
@@ -119,7 +113,6 @@ export const useEmailActions = ({
       threadId
     );
     
-    // Update candidate's thread ID if a new one was created
     if (newThreadId && jobId && (!threadId || newThreadId !== threadId)) {
       console.log("New thread ID created:", newThreadId);
       console.log("Saving thread ID for job:", jobId);
@@ -179,7 +172,6 @@ export const useEmailActions = ({
     sendEmailViaGmail,
     composeEmail,
     checkGmailConnection,
-    // Return these for debugging
     getEmailContent,
     threadId
   };
