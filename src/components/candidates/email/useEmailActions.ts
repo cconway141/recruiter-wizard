@@ -1,10 +1,9 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGmailAuth } from "@/hooks/useGmailAuth";
 import { useEmailContent } from "@/hooks/useEmailContent";
-import { useEmailSender } from "@/hooks/useEmailSender";
 import { useToast } from "@/hooks/use-toast";
 
 interface UseEmailActionsProps {
@@ -47,25 +46,9 @@ export const useEmailActions = ({
     selectedTemplate
   });
   
-  const { 
-    isSending, 
-    errorMessage: sendErrorMessage, 
-    sendEmailViaGmail: sendEmail, 
-    composeEmailInGmail 
-  } = useEmailSender({ onSuccess });
-  
+  const [isSending, setIsSending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
-  useEffect(() => {
-    if (templates && templates.length > 0) {
-      console.log(`useEmailActions has ${templates.length} templates, selected: ${selectedTemplate}`);
-    }
-  }, [templates, selectedTemplate]);
-  
-  useEffect(() => {
-    setErrorMessage(authErrorMessage || sendErrorMessage);
-  }, [authErrorMessage, sendErrorMessage]);
-
   const sendEmailViaGmail = async () => {
     if (!candidate.email) {
       toast({
@@ -105,38 +88,70 @@ export const useEmailActions = ({
       return;
     }
     
-    const newThreadId = await sendEmail(
-      candidate.email,
-      subject,
-      body,
-      candidate.name,
-      jobTitle,
-      threadId
-    );
-    
-    if (newThreadId && jobId && (!threadId || newThreadId !== threadId)) {
-      console.log("New thread ID created:", newThreadId);
-      console.log("Saving thread ID for job:", jobId);
+    try {
+      setIsSending(true);
+      setErrorMessage(null);
+
+      const { data, error } = await supabase.functions.invoke('send-gmail', {
+        body: {
+          to: candidate.email,
+          subject,
+          body,
+          candidateName: candidate.name,
+          jobTitle,
+          threadId,
+          userId: user?.id
+        }
+      });
       
-      const threadIdsUpdate = { ...(candidate.threadIds || {}), [jobId]: newThreadId };
-      
-      const { error: updateError } = await supabase
-        .from('candidates')
-        .update({
-          thread_ids: threadIdsUpdate
-        })
-        .eq('id', candidate.id);
-        
-      if (updateError) {
-        console.error("Error updating candidate thread ID:", updateError);
-        toast({
-          title: "Warning",
-          description: "Email sent, but failed to save thread ID for future emails.",
-          variant: "destructive"
-        });
-      } else {
-        console.log("Thread ID saved for job:", jobId, "Thread ID:", newThreadId);
+      if (error) {
+        throw error;
       }
+      
+      toast({
+        title: "Email Sent",
+        description: `Your email to ${candidate.name} was sent successfully.`,
+      });
+      
+      // If we have a job ID and there's a new thread ID, update the candidate
+      if (jobId && data?.threadId && (!threadId || data.threadId !== threadId)) {
+        console.log("New thread ID created:", data.threadId);
+        console.log("Saving thread ID for job:", jobId);
+        
+        const threadIdsUpdate = { ...(candidate.threadIds || {}), [jobId]: data.threadId };
+        
+        const { error: updateError } = await supabase
+          .from('candidates')
+          .update({
+            thread_ids: threadIdsUpdate
+          })
+          .eq('id', candidate.id);
+          
+        if (updateError) {
+          console.error("Error updating candidate thread ID:", updateError);
+          toast({
+            title: "Warning",
+            description: "Email sent, but failed to save thread ID for future emails.",
+            variant: "destructive"
+          });
+        } else {
+          console.log("Thread ID saved for job:", jobId, "Thread ID:", data.threadId);
+        }
+      }
+      
+      onSuccess();
+      return data?.threadId;
+    } catch (err: any) {
+      console.error("Error sending email:", err);
+      setErrorMessage(err.message || "Failed to send email");
+      toast({
+        title: "Failed to send email",
+        description: err.message || "An unexpected error occurred",
+        variant: "destructive"
+      });
+      return null;
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -163,6 +178,18 @@ export const useEmailActions = ({
     
     composeEmailInGmail(candidate.email, subject, body);
     onSuccess();
+  };
+  
+  const composeEmailInGmail = (email: string, subject: string, body: string) => {
+    // Create a Gmail compose URL
+    const params = new URLSearchParams({
+      to: email,
+      subject: subject || "",
+      body: body.replace(/<[^>]*>/g, '') // Strip HTML for mailto links
+    });
+    
+    const composeUrl = `https://mail.google.com/mail/?view=cm&fs=1&${params.toString()}`;
+    window.open(composeUrl, '_blank');
   };
 
   return {

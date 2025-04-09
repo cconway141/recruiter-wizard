@@ -1,43 +1,37 @@
 
-import React from "react";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
-import { MessageTemplate } from "@/types/messageTemplate";
+import React from 'react';
+import { Label } from "@/components/ui/label";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 
-interface EmailTemplateSelectorProps {
+export interface EmailTemplateSelectorProps {
+  templates: any[];
   selectedTemplate: string;
-  onSelectTemplate: (templateId: string) => void;
-  templates: MessageTemplate[];
+  onSelectTemplate: (value: string) => void;
 }
 
-export const EmailTemplateSelector: React.FC<EmailTemplateSelectorProps> = ({
+export const EmailTemplateSelector: React.FC<EmailTemplateSelectorProps> = ({ 
+  templates, 
   selectedTemplate,
-  onSelectTemplate,
-  templates
+  onSelectTemplate
 }) => {
   return (
-    <div className="space-y-2">
-      <label htmlFor="template-select" className="block text-sm font-medium text-gray-700">
-        Email Template
-      </label>
-      <Select value={selectedTemplate} onValueChange={onSelectTemplate}>
-        <SelectTrigger id="template-select" className="w-full">
-          <SelectValue placeholder="Select a template" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="custom">Custom Email</SelectItem>
-          {templates.map((template) => (
-            <SelectItem key={template.id} value={template.id}>
-              {template.category} - {template.situation}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+    <div className="space-y-4">
+      <div className="grid w-full max-w-sm items-center gap-1.5">
+        <Label htmlFor="template">Select Template</Label>
+        <Select value={selectedTemplate} onValueChange={onSelectTemplate}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select a template" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="custom">Custom Message</SelectItem>
+            {templates.map((template) => (
+              <SelectItem key={template.id} value={template.id}>
+                {template.name || `Template ${template.id}`}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
     </div>
   );
 };

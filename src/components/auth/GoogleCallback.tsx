@@ -40,7 +40,7 @@ export const GoogleCallback = () => {
 
           // Check if any of the existing users don't have google_linked set to true
           const unlinkedUsers = existingUsers?.filter(profile => {
-            // Use optional chaining to safely access the property
+            // Use optional chaining and explicit check for false
             return profile && profile.google_linked === false;
           });
 

@@ -431,7 +431,9 @@ export type Database = {
           created_at: string
           display_name: string | null
           email: string | null
+          email_signature: string | null
           first_name: string | null
+          google_linked: boolean | null
           id: string
           last_name: string | null
           role: string | null
@@ -441,7 +443,9 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           email?: string | null
+          email_signature?: string | null
           first_name?: string | null
+          google_linked?: boolean | null
           id: string
           last_name?: string | null
           role?: string | null
@@ -451,7 +455,9 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           email?: string | null
+          email_signature?: string | null
           first_name?: string | null
+          google_linked?: boolean | null
           id?: string
           last_name?: string | null
           role?: string | null
