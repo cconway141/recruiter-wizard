@@ -59,7 +59,7 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({
   });
 
   const openGmailThread = () => {
-    const searchQuery = encodeURIComponent(threadTitle);
+    const searchQuery = encodeURIComponent(`"${threadTitle}"`);
     window.open(`https://mail.google.com/mail/u/0/#search/${searchQuery}`, '_blank');
   };
 
