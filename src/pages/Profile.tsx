@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -47,6 +46,7 @@ interface Profile {
   role: string;
   email_signature?: string;
   google_linked?: boolean;
+  avatar_url?: string;
 }
 
 const Profile = () => {
