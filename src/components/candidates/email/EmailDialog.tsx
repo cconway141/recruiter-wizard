@@ -47,7 +47,7 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({
   const { templates } = useMessageTemplates();
   const { toast } = useToast();
   const { id: jobId } = useParams<{ id: string }>();
-  const { getJob, updateCandidateStatus } = useJobs();
+  const { getJob } = useJobs();
   const job = jobId ? getJob(jobId) : undefined;
 
   // Get thread ID for this candidate and job if it exists
@@ -116,12 +116,12 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({
         // We need to use a type assertion to handle the thread_ids property
         const threadIdsUpdate = { ...(candidate.threadIds || {}), [jobId]: data.threadId };
         
+        // Use a simple update structure with type assertions
         const { error: updateError } = await supabase
           .from('candidates')
           .update({
-            // Use type assertion since TypeScript doesn't know about thread_ids yet
-            thread_ids: threadIdsUpdate as any
-          })
+            thread_ids: threadIdsUpdate
+          } as any)
           .eq('id', candidate.id);
           
         if (updateError) {
