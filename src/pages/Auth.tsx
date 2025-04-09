@@ -98,7 +98,11 @@ const Auth = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="flex justify-center flex-col items-center">
-          <Button onClick={handleGoogleSignIn} className="w-full flex items-center justify-center gap-2" variant="outline">
+          <Button 
+            onClick={handleGoogleSignIn} 
+            className="w-full bg-blue-900 hover:bg-blue-950 text-white flex items-center justify-center gap-2" 
+            variant="default"
+          >
             <Google />
             Sign in with Google
           </Button>
