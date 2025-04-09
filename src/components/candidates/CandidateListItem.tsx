@@ -21,7 +21,7 @@ export const CandidateListItem: React.FC<CandidateListItemProps> = ({
   onStatusChange 
 }) => {
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<string>("");
+  const [selectedTemplate, setSelectedTemplate] = useState<string>("custom");
   const { templates } = useMessageTemplates();
 
   const handleEmailClick = (e: React.MouseEvent) => {
@@ -37,7 +37,7 @@ export const CandidateListItem: React.FC<CandidateListItemProps> = ({
     let body = `Hello ${candidate.name},\n\nI hope this email finds you well.`;
     
     // If a template is selected, use its content
-    if (selectedTemplate) {
+    if (selectedTemplate && selectedTemplate !== "custom") {
       const template = templates.find(t => t.id === selectedTemplate);
       if (template) {
         body = template.message.replace(/\[First Name\]/g, candidate.name.split(' ')[0]);
@@ -187,7 +187,7 @@ export const CandidateListItem: React.FC<CandidateListItemProps> = ({
                     <SelectValue placeholder="Select a template" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Custom Email</SelectItem>
+                    <SelectItem value="custom">Custom Email</SelectItem>
                     {templates.map((template) => (
                       <SelectItem key={template.id} value={template.id}>
                         {template.category} - {template.situation}
@@ -196,7 +196,7 @@ export const CandidateListItem: React.FC<CandidateListItemProps> = ({
                   </SelectContent>
                 </Select>
                 
-                {selectedTemplate && (
+                {selectedTemplate && selectedTemplate !== "custom" && (
                   <div className="mt-2 p-3 bg-gray-50 rounded-md max-h-[200px] overflow-y-auto">
                     <p className="whitespace-pre-line text-sm">
                       {templates
