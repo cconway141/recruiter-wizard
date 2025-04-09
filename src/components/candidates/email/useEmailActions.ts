@@ -115,8 +115,10 @@ export const useEmailActions = ({
   const getEmailContent = (): EmailContentReturn => {
     if (!candidate.email) return { subject: '', body: '' };
     
-    // Default subject and body
-    let subject = jobTitle ? `Regarding ${jobTitle} position` : `Regarding your application`;
+    // Always use a consistent subject format to maintain threading
+    const subject = `ITBC ${jobTitle || ''} - ${candidate.name}`;
+    
+    // Default body
     let body = `Hello ${candidate.name},<br><br>I hope this email finds you well.`;
     
     // If a template is selected, use its content

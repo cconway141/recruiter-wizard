@@ -16,6 +16,8 @@ import { EmailContent } from "./EmailContent";
 import { EmailDialogFooter } from "./EmailDialogFooter";
 import { EmailErrorAlert } from "./EmailErrorAlert";
 import { useEmailActions } from "./useEmailActions";
+import { Button } from "@/components/ui/button";
+import { ExternalLink, Mail } from "lucide-react";
 
 interface EmailDialogProps {
   open: boolean;
@@ -38,6 +40,9 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({
   const { id: jobId } = useParams<{ id: string }>();
   const { getJob } = useJobs();
   const job = jobId ? getJob(jobId) : undefined;
+  
+  // Generate email subject (thread title)
+  const threadTitle = job ? `ITBC ${job.candidateFacingTitle} - ${candidate.name}` : `ITBC - ${candidate.name}`;
 
   const { 
     isSending,
@@ -55,6 +60,12 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({
     onSuccess: () => onOpenChange(false)
   });
 
+  // Function to open Gmail search with the thread title
+  const openGmailThread = () => {
+    const searchQuery = encodeURIComponent(threadTitle);
+    window.open(`https://mail.google.com/mail/u/0/#search/${searchQuery}`, '_blank');
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -68,12 +79,30 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
         
+        {/* Thread title and Gmail button */}
+        <div className="bg-gray-50 p-3 rounded-md flex justify-between items-center">
+          <div className="text-sm font-medium text-gray-700">
+            <span className="block">Thread: {threadTitle}</span>
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex items-center gap-1"
+            onClick={openGmailThread}
+          >
+            <Mail className="h-4 w-4" />
+            <span>Go to thread in Gmail</span>
+            <ExternalLink className="h-3 w-3 ml-1" />
+          </Button>
+        </div>
+        
         <EmailContent 
           selectedTemplate={selectedTemplate}
           templates={templates}
           candidateName={candidate.name}
           candidateEmail={candidate.email}
           job={job}
+          threadTitle={threadTitle}
         />
         
         {candidate.email && (

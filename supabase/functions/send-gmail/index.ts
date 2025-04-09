@@ -41,8 +41,9 @@ serve(async (req) => {
       );
     }
 
-    // Generate the subject for new threads if not provided
-    const emailSubject = threadId ? subject : `ITBC ${jobTitle || ''} - ${candidateName}`;
+    // Always use the consistent subject format for threading
+    // This ensures all emails to the same candidate about the same job are in one thread
+    const emailSubject = subject || `ITBC ${jobTitle || ''} - ${candidateName}`;
 
     console.log(`Preparing to send email to ${to} with subject "${emailSubject}"`);
     console.log(`Using thread ID: ${threadId || 'New thread'}`);

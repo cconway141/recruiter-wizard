@@ -7,6 +7,7 @@ interface EmailContentProps {
   candidateName: string;
   job?: { candidateFacingTitle: string } | undefined;
   candidateEmail?: string | null;
+  threadTitle?: string;
 }
 
 export const EmailContent: React.FC<EmailContentProps> = ({ 
@@ -14,7 +15,8 @@ export const EmailContent: React.FC<EmailContentProps> = ({
   templates,
   candidateName,
   job,
-  candidateEmail
+  candidateEmail,
+  threadTitle
 }) => {
   if (!candidateEmail) {
     return (
@@ -29,6 +31,7 @@ export const EmailContent: React.FC<EmailContentProps> = ({
       <div>
         <p className="mb-2"><strong>To:</strong> {candidateName} ({candidateEmail})</p>
         {job && <p className="mb-2 text-sm text-gray-600"><strong>Job:</strong> {job.candidateFacingTitle}</p>}
+        {threadTitle && <p className="mb-2 text-sm text-gray-600"><strong>Subject:</strong> {threadTitle}</p>}
       </div>
       
       {selectedTemplate && selectedTemplate !== "custom" && (
