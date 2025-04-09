@@ -8,6 +8,11 @@ const GOOGLE_CLIENT_ID = Deno.env.get("GOOGLE_CLIENT_ID") || "";
 const GOOGLE_CLIENT_SECRET = Deno.env.get("GOOGLE_CLIENT_SECRET") || "";
 const REDIRECT_URI = "https://recruit.theitbootcamp.com/auth/callback";
 
+// Basic validation of required environment variables
+if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
+  console.error("Missing required environment variables: GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET");
+}
+
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 const corsHeaders = {
@@ -25,6 +30,17 @@ serve(async (req) => {
   const action = url.pathname.split('/').pop();
   
   try {
+    // Check if required environment variables are set
+    if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Configuration error', 
+          message: 'Google OAuth credentials are not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in the Supabase Edge Function secrets.' 
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     // Route for getting the authorization URL
     if (action === 'get-auth-url') {
       const { userId } = await req.json();

@@ -1,6 +1,6 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Mail } from "lucide-react";
+import { Mail, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,6 +18,7 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
   const { user } = useAuth();
   const [isConnected, setIsConnected] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(true);
+  const [configError, setConfigError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     const checkGmailConnection = async () => {
@@ -25,12 +26,18 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
       
       try {
         setIsLoading(true);
+        setConfigError(null);
         const { data, error } = await supabase.functions.invoke('google-auth/check-connection', {
           body: { userId: user.id }
         });
         
         if (error) {
           console.error("Error checking Gmail connection:", error);
+          return;
+        }
+        
+        if (data?.error === 'Configuration error') {
+          setConfigError(data.message || 'Google OAuth is not properly configured');
           return;
         }
         
@@ -86,6 +93,7 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
     
     try {
       setIsLoading(true);
+      setConfigError(null);
       
       const { data, error } = await supabase.functions.invoke('google-auth/get-auth-url', {
         body: { userId: user.id }
@@ -96,6 +104,16 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
         toast({
           title: "Error",
           description: "Failed to initiate Gmail connection.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (data?.error === 'Configuration error') {
+        setConfigError(data.message || 'Google OAuth is not properly configured');
+        toast({
+          title: "Configuration Error",
+          description: "Gmail integration is not properly configured. Please contact the administrator.",
           variant: "destructive",
         });
         return;
@@ -163,6 +181,20 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
       setIsLoading(false);
     }
   };
+  
+  if (configError) {
+    return (
+      <Button
+        type="button"
+        variant="outline"
+        className={`flex items-center gap-2 ${className}`}
+        disabled={true}
+      >
+        <AlertCircle className="h-4 w-4 text-red-500" />
+        <span className="text-red-500">Gmail Setup Required</span>
+      </Button>
+    );
+  }
   
   return (
     <Button
