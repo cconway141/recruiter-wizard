@@ -74,8 +74,11 @@ const Auth = () => {
 
   const handleGoogleSignIn = async () => {
     try {
-      // Use the specific auth/callback route which is set up to handle Google redirects
-      const redirectTo = `${window.location.origin}/auth/callback`;
+      // Use the current site URL to build the redirect URL
+      const currentSiteURL = window.location.origin;
+      const redirectTo = `${currentSiteURL}/auth/callback`;
+      
+      console.log("Redirecting to Google with callback URL:", redirectTo);
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -153,4 +156,3 @@ const Auth = () => {
 };
 
 export default Auth;
-
