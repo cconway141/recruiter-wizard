@@ -40,7 +40,6 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({
   const { getJob } = useJobs();
   const job = jobId ? getJob(jobId) : undefined;
   
-  // Generate email subject (thread title)
   const threadTitle = job ? `ITBC ${job.candidateFacingTitle} ${candidate.name}` : `ITBC ${candidate.name}`;
 
   const { 
@@ -59,7 +58,6 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({
     onSuccess: () => onOpenChange(false)
   });
 
-  // Function to open Gmail search with the thread title
   const openGmailThread = () => {
     const searchQuery = encodeURIComponent(threadTitle);
     window.open(`https://mail.google.com/mail/u/0/#search/${searchQuery}`, '_blank');
@@ -78,7 +76,6 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
         
-        {/* Thread title and Gmail button */}
         <div className="bg-gray-50 p-3 rounded-md flex justify-between items-center">
           <div className="text-sm font-medium text-gray-700">
             <span className="block">Thread: {threadTitle}</span>
