@@ -192,7 +192,8 @@ export const useEmailActions = ({
       if (data?.threadId && jobId && (!threadId || data.threadId !== threadId)) {
         console.log("New thread ID created:", data.threadId);
         
-        // Update the candidate in Supabase with the new thread ID
+        // Fix TypeScript error: Update the type definition for the update operation
+        // We need to properly format the thread_ids field as expected by Supabase
         const threadIdsUpdate = { ...(candidate.threadIds || {}), [jobId]: data.threadId };
         
         const { error: updateError } = await supabase
