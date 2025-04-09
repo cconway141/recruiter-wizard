@@ -1,3 +1,4 @@
+
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -82,8 +83,8 @@ const Auth = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 flex flex-col items-center">
           <img 
-            src="/lovable-uploads/4add4393-d8ec-4a30-970d-3bc3ad2bcd83.png" 
-            alt="The IT Bootcamp Logo" 
+            src="/lovable-uploads/c52867a5-bcb6-4787-a1d0-6dafe3716176.png" 
+            alt="Company Logo" 
             className="w-32 h-32 object-contain mb-4" 
           />
           <CardTitle className="text-2xl font-bold text-center">ITBC Recruitment Portal</CardTitle>
