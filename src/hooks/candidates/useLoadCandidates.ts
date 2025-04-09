@@ -67,7 +67,8 @@ export function useLoadCandidates(
           name: `${candidate.first_name} ${candidate.last_name}`,
           email: candidate.email,
           linkedinUrl: candidate.linkedin_url,
-          threadIds: candidate.thread_ids,
+          // Use the thread_ids column from the database, defaulting to an empty object if not present
+          threadIds: candidate.thread_ids || {},
           status: {
             approved: application?.approved || false,
             preparing: application?.preparing || false,
