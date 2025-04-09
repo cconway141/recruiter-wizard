@@ -7,6 +7,17 @@ import { StatusCheckbox } from "./status/StatusCheckbox";
 import { EmailButton } from "./email/EmailButton";
 import { LinkedinButton } from "./social/LinkedinButton";
 import { EmailDialog } from "./email/EmailDialog";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from "@/components/ui/alert-dialog";
 
 interface CandidateListItemProps {
   candidate: Candidate;
@@ -30,14 +41,35 @@ export const CandidateListItem: React.FC<CandidateListItemProps> = ({
     <>
       <div className="grid grid-cols-8 gap-2 items-center p-2 rounded hover:bg-gray-50">
         <div className="flex items-center col-span-3 gap-2">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-7 w-7 text-red-500 hover:text-red-700 hover:bg-red-50"
-            onClick={() => onRemove(candidate.id)}
-          >
-            <Trash className="h-4 w-4" />
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-7 w-7 text-red-500 hover:text-red-700 hover:bg-red-50"
+              >
+                <Trash className="h-4 w-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Remove Candidate</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to remove {candidate.name} from this job? 
+                  This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => onRemove(candidate.id)}
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                >
+                  Remove
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
           <div className="flex flex-col">
             <span className="font-medium truncate">{candidate.name}</span>
             <div className="flex items-center text-xs text-gray-500 space-x-2">
