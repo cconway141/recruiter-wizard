@@ -35,9 +35,19 @@ serve(async (req) => {
       );
     }
 
+    console.log(`Preparing to send email to ${to} with subject "${subject}"`);
+
     // Get service account credentials from environment
     const serviceAccountKey = JSON.parse(Deno.env.get("GMAIL_SERVICE_ACCOUNT") || "{}");
     
+    if (!serviceAccountKey.client_email || !serviceAccountKey.private_key) {
+      console.error("Invalid service account credentials");
+      return new Response(
+        JSON.stringify({ error: 'Invalid service account credentials' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Initialize the Google Auth client with the service account
     const auth = new GoogleAuth({
       credentials: serviceAccountKey,
@@ -47,22 +57,28 @@ serve(async (req) => {
     // Create Gmail client
     const gmail = google.gmail({ version: 'v1', auth });
 
-    // Create the email content
-    const emailContent = [
+    // Create the email content - ensure proper MIME formatting
+    const emailLines = [
       `From: ${serviceAccountKey.client_email}`,
       `To: ${to}`,
       `Subject: ${subject}`,
+      'MIME-Version: 1.0',
       'Content-Type: text/html; charset=utf-8',
-      '',
+      '',  // Empty line to separate headers from body
       body
-    ].join('\n');
+    ];
+    
+    const emailContent = emailLines.join('\r\n');
+    console.log("Email content prepared");
 
-    // Encode the email to base64url format
+    // Encode the email in base64 URL-safe format
     const encodedEmail = btoa(emailContent)
       .replace(/\+/g, '-')
       .replace(/\//g, '_')
       .replace(/=+$/, '');
 
+    console.log("Sending email via Gmail API");
+    
     // Send the email using the Gmail API
     const response = await gmail.users.messages.send({
       userId: 'me',
@@ -87,10 +103,20 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error sending email:', error);
     
+    // More detailed error information for debugging
+    const errorDetails = {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+    };
+    
+    console.error('Error details:', JSON.stringify(errorDetails));
+    
     return new Response(
       JSON.stringify({ 
         error: 'Failed to send email', 
-        details: error.message 
+        details: error.message,
+        errorInfo: errorDetails
       }),
       { 
         status: 500, 

@@ -1,8 +1,7 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Trash, Mail, Linkedin, ExternalLink, Loader2 } from "lucide-react";
+import { Trash, Mail, Linkedin, ExternalLink, Loader2, AlertCircle } from "lucide-react";
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -10,6 +9,7 @@ import { useMessageTemplates } from "@/hooks/useMessageTemplates";
 import { Candidate } from "./types";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface CandidateListItemProps {
   candidate: Candidate;
@@ -25,12 +25,14 @@ export const CandidateListItem: React.FC<CandidateListItemProps> = ({
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string>("custom");
   const [isSending, setIsSending] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { templates } = useMessageTemplates();
   const { toast } = useToast();
 
   const handleEmailClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     setEmailDialogOpen(true);
+    setErrorMessage(null);
   };
 
   const getEmailContent = () => {
@@ -55,9 +57,13 @@ export const CandidateListItem: React.FC<CandidateListItemProps> = ({
     if (!candidate.email) return;
     
     setIsSending(true);
+    setErrorMessage(null);
     
     try {
       const { subject, body } = getEmailContent();
+      
+      console.log("Sending email to:", candidate.email);
+      console.log("Subject:", subject);
       
       // Call our Supabase edge function to send the email via Gmail API
       const { data, error } = await supabase.functions.invoke('send-gmail', {
@@ -69,8 +75,16 @@ export const CandidateListItem: React.FC<CandidateListItemProps> = ({
         }
       });
       
+      console.log("Email function response:", data);
+      
       if (error) {
-        throw new Error(error.message);
+        console.error("Supabase function error:", error);
+        throw new Error(error.message || "Failed to call email function");
+      }
+      
+      if (data?.error) {
+        console.error("Email sending error:", data.error);
+        throw new Error(data.error);
       }
       
       toast({
@@ -82,6 +96,7 @@ export const CandidateListItem: React.FC<CandidateListItemProps> = ({
       setEmailDialogOpen(false);
     } catch (error) {
       console.error("Error sending email:", error);
+      setErrorMessage(`Failed to send email: ${error.message}`);
       toast({
         title: "Email Failed",
         description: `Failed to send email: ${error.message}`,
@@ -99,7 +114,7 @@ export const CandidateListItem: React.FC<CandidateListItemProps> = ({
     const { subject, body } = getEmailContent();
     
     // Create Gmail compose URL with prefilled fields
-    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(candidate.email)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(candidate.email)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body.replace(/<br>/g, '%0A').replace(/<[^>]*>/g, ''))}`;
     
     // Open Gmail in a new tab
     window.open(gmailUrl, '_blank');
@@ -260,6 +275,15 @@ export const CandidateListItem: React.FC<CandidateListItemProps> = ({
                   </div>
                 )}
               </div>
+              
+              {errorMessage && (
+                <Alert variant="destructive" className="mt-4">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    {errorMessage}
+                  </AlertDescription>
+                </Alert>
+              )}
             </div>
           ) : (
             <div className="py-4 text-red-500">
