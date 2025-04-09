@@ -62,13 +62,16 @@ export function useLoadCandidates(
       const mappedCandidates = candidatesData.map(candidate => {
         const application = applications.find(app => app.candidate_id === candidate.id);
         
+        // Since TypeScript doesn't know about our new thread_ids column yet,
+        // we need to use a type assertion to access it safely
+        const threadIds = (candidate as any).thread_ids || {};
+        
         return {
           id: candidate.id,
           name: `${candidate.first_name} ${candidate.last_name}`,
           email: candidate.email,
           linkedinUrl: candidate.linkedin_url,
-          // Use the thread_ids column from the database, defaulting to an empty object if not present
-          threadIds: candidate.thread_ids || {},
+          threadIds: threadIds,
           status: {
             approved: application?.approved || false,
             preparing: application?.preparing || false,

@@ -113,10 +113,14 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({
         console.log("New thread ID created:", data.threadId);
         
         // Update the candidate in Supabase with the new thread ID
+        // We need to use a type assertion to handle the thread_ids property
+        const threadIdsUpdate = { ...(candidate.threadIds || {}), [jobId]: data.threadId };
+        
         const { error: updateError } = await supabase
           .from('candidates')
           .update({
-            thread_ids: { ...(candidate.threadIds || {}), [jobId]: data.threadId }
+            // Use type assertion since TypeScript doesn't know about thread_ids yet
+            thread_ids: threadIdsUpdate as any
           })
           .eq('id', candidate.id);
           
