@@ -138,12 +138,11 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
         console.error("Error revoking token:", revokeError);
       }
       
-      // Use the Supabase adapter for the client to delete tokens
-      // Explicitly type the RPC call parameters
-      const { error } = await supabase
-        .rpc('delete_gmail_token', { 
-          user_id_param: user.id as string 
-        });
+      // Use the Supabase function to delete tokens from database
+      // Cast parameters to correct type to fix TypeScript error
+      const { error } = await supabase.rpc('delete_gmail_token', {
+        user_id_param: user.id
+      } as { user_id_param: string });
       
       if (error) {
         console.error("Error disconnecting Gmail:", error);
