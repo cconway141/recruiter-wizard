@@ -129,6 +129,15 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
     try {
       setIsLoading(true);
       
+      // Call the edge function to revoke tokens
+      const { error: revokeError } = await supabase.functions.invoke('google-auth/revoke-token', {
+        body: { userId: user.id }
+      });
+      
+      if (revokeError) {
+        console.error("Error revoking token:", revokeError);
+      }
+      
       // Delete the tokens from the database
       const { error } = await supabase
         .from('gmail_tokens')

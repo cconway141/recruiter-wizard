@@ -253,6 +253,48 @@ serve(async (req) => {
       );
     }
     
+    // Route for revoking tokens
+    if (action === 'revoke-token') {
+      const { userId } = await req.json();
+      
+      if (!userId) {
+        return new Response(
+          JSON.stringify({ error: 'User ID is required' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      // Get the token for this user
+      const { data: tokenData, error: tokenError } = await supabase
+        .from('gmail_tokens')
+        .select('access_token')
+        .eq('user_id', userId)
+        .single();
+      
+      if (tokenError || !tokenData) {
+        console.error('Error fetching token:', tokenError);
+        return new Response(
+          JSON.stringify({ error: 'No Gmail connection found for this user' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      // Revoke the token
+      const revokeResponse = await fetch(`https://oauth2.googleapis.com/revoke?token=${tokenData.access_token}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      });
+      
+      if (!revokeResponse.ok) {
+        console.error('Token revocation error:', await revokeResponse.text());
+      }
+      
+      return new Response(
+        JSON.stringify({ success: true, message: 'Token revoked successfully' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     return new Response(
       JSON.stringify({ error: 'Invalid action' }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

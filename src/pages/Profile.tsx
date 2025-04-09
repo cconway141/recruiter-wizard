@@ -39,7 +39,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { User, Mail, Lock, ShieldAlert } from "lucide-react";
+import { User, Mail, Lock, ShieldAlert, MailCheck } from "lucide-react";
+import { GmailConnectButton } from "@/components/candidates/email/GmailConnectButton";
 
 const profileFormSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -273,6 +274,21 @@ const Profile = () => {
           </Card>
           
           <div className="col-span-full md:col-span-1 space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MailCheck className="h-5 w-5" /> Gmail Integration
+                </CardTitle>
+                <CardDescription>Connect your Gmail account to send emails</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Connect your Gmail account to send emails directly from the platform.
+                </p>
+                <GmailConnectButton />
+              </CardContent>
+            </Card>
+            
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">

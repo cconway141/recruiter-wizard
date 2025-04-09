@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -41,6 +41,13 @@ export const useEmailActions = ({
   // Get thread ID for this candidate and job if it exists
   const threadId = candidate.threadIds?.[jobId || ''] || null;
 
+  // Check connection status when component mounts
+  useEffect(() => {
+    if (user) {
+      checkGmailConnection();
+    }
+  }, [user]);
+
   // Check if Gmail is connected
   const checkGmailConnection = async (): Promise<boolean> => {
     if (!user) {
@@ -50,6 +57,7 @@ export const useEmailActions = ({
     
     try {
       setIsCheckingGmail(true);
+      setErrorMessage(null);
       
       const { data, error } = await supabase.functions.invoke('google-auth/check-connection', {
         body: { userId: user.id }
@@ -156,8 +164,6 @@ export const useEmailActions = ({
         }
       });
       
-      console.log("Email function response:", data);
-      
       if (error) {
         console.error("Supabase function error:", error);
         throw new Error(error.message || "Failed to call email function");
@@ -174,6 +180,7 @@ export const useEmailActions = ({
           const refreshSucceeded = await refreshGmailToken();
           if (refreshSucceeded) {
             // Retry sending the email
+            setIsSending(false);
             return sendEmailViaGmail();
           }
         }
@@ -193,7 +200,7 @@ export const useEmailActions = ({
           .from('candidates')
           .update({
             thread_ids: threadIdsUpdate
-          } as any)
+          })
           .eq('id', candidate.id);
           
         if (updateError) {

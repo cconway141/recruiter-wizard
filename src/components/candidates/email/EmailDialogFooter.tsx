@@ -67,10 +67,12 @@ export const EmailDialogFooter: React.FC<EmailDialogFooterProps> = ({
             <ExternalLink className="h-3 w-3" />
           </Button>
           
-          <GmailConnectButton 
-            onConnectionChange={handleConnectionChange}
-            className="mb-2 sm:mb-0"
-          />
+          {!gmailStatus && (
+            <GmailConnectButton 
+              onConnectionChange={handleConnectionChange}
+              className="mb-2 sm:mb-0"
+            />
+          )}
           
           <Button 
             onClick={onSendEmail}
@@ -82,7 +84,7 @@ export const EmailDialogFooter: React.FC<EmailDialogFooterProps> = ({
             ) : (
               <Mail className="h-4 w-4" />
             )}
-            <span>Send Email Now</span>
+            <span>{gmailStatus ? "Send Email Now" : "Connect Gmail to Send"}</span>
           </Button>
         </>
       )}

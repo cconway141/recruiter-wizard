@@ -119,14 +119,27 @@ serve(async (req) => {
     });
     
     if (!response.ok) {
-      const errorDetails = await response.json();
-      console.error('Gmail API error:', errorDetails);
+      const errorData = await response.json();
+      console.error('Gmail API error:', errorData);
+      
+      let errorMessage = 'Failed to send email through Gmail API';
+      let statusCode = response.status;
+      
+      // Handle specific Gmail API errors with more user-friendly messages
+      if (errorData.error?.code === 401) {
+        errorMessage = 'Gmail authentication failed. Please reconnect your account.';
+      } else if (errorData.error?.code === 403) {
+        errorMessage = 'Gmail access denied. You may need additional permissions.';
+      } else if (errorData.error?.message) {
+        errorMessage = `Gmail error: ${errorData.error.message}`;
+      }
+      
       return new Response(
         JSON.stringify({ 
-          error: 'Failed to send email through Gmail API', 
-          details: errorDetails 
+          error: errorMessage, 
+          details: errorData 
         }),
-        { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: statusCode, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
