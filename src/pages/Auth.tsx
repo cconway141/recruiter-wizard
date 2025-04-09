@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -89,28 +88,27 @@ const Auth = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 flex flex-col items-center">
           <img 
-            src="/lovable-uploads/84c3c664-fba4-4005-985a-802a5ae8353d.png" 
-            alt="Google Logo" 
-            className="w-24 h-24 object-contain mb-4" 
-          />
-          <img 
             src="/lovable-uploads/4add4393-d8ec-4a30-970d-3bc3ad2bcd83.png" 
             alt="The IT Bootcamp Logo" 
             className="w-32 h-32 object-contain mb-4" 
           />
           <CardTitle className="text-2xl font-bold text-center">ITBC Recruitment Portal</CardTitle>
           <CardDescription className="text-center">
-            Sign in with Google to access the application
+            Sign in with Google to access this application
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex justify-center">
+        <CardContent className="flex justify-center flex-col items-center">
           <Button onClick={handleGoogleSignIn} className="w-full flex items-center justify-center gap-2" variant="outline">
             <Google />
             Sign in with Google
           </Button>
+          <img 
+            src="/lovable-uploads/84c3c664-fba4-4005-985a-802a5ae8353d.png" 
+            alt="Google Logo" 
+            className="w-16 h-16 object-contain mt-4" 
+          />
         </CardContent>
       </Card>
     </div>;
 };
 export default Auth;
-
