@@ -40,6 +40,14 @@ export const useGmailAuth = () => {
       const isConnected = data.connected && !data.expired;
       setIsGmailConnected(isConnected);
       
+      if (!isConnected) {
+        toast({
+          title: "Gmail Not Connected",
+          description: "Please connect your Gmail account to send emails.",
+          variant: "destructive"
+        });
+      }
+      
       if (data.needsRefresh) {
         const refreshResult = await refreshGmailToken();
         return refreshResult;
