@@ -35,10 +35,59 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Rate limiting setup
+const RATE_LIMIT_WINDOW = 60000; // 1 minute
+const RATE_LIMIT_MAX_REQUESTS = 20; // Max 20 requests per minute per IP
+const ipRequestCounts = new Map<string, {count: number, timestamp: number}>();
+
+// Clear rate limit entries older than RATE_LIMIT_WINDOW
+function cleanupRateLimits() {
+  const now = Date.now();
+  for (const [ip, data] of ipRequestCounts.entries()) {
+    if (now - data.timestamp > RATE_LIMIT_WINDOW) {
+      ipRequestCounts.delete(ip);
+    }
+  }
+}
+
+// Check if IP is rate limited
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  cleanupRateLimits();
+  
+  const data = ipRequestCounts.get(ip);
+  if (!data) {
+    ipRequestCounts.set(ip, { count: 1, timestamp: now });
+    return false;
+  }
+  
+  if (now - data.timestamp > RATE_LIMIT_WINDOW) {
+    // Reset counter for new window
+    ipRequestCounts.set(ip, { count: 1, timestamp: now });
+    return false;
+  }
+  
+  // Increment counter
+  data.count++;
+  ipRequestCounts.set(ip, data);
+  
+  return data.count > RATE_LIMIT_MAX_REQUESTS;
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+  
+  // Apply rate limiting
+  const clientIp = req.headers.get('x-forwarded-for') || 'unknown';
+  if (isRateLimited(clientIp)) {
+    console.log(`Rate limit exceeded for IP: ${clientIp}`);
+    return new Response(
+      JSON.stringify({ error: 'Too many requests', message: 'Rate limit exceeded. Please try again later.' }),
+      { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   }
   
   try {
@@ -53,56 +102,44 @@ serve(async (req) => {
       );
     }
     
-    // Critical fix: Parse the request body ONCE and store it
-    let requestBody;
-    try {
-      // Only try to parse the body for non-GET requests
-      if (req.method !== 'GET') {
-        requestBody = await req.json();
-      }
-    } catch (error) {
-      console.error("Error parsing request body:", error);
-      return new Response(
-        JSON.stringify({ error: 'Invalid JSON in request body' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-    
     // Parse the request for action
-    const url = new URL(req.url);
+    let requestBody;
     let action;
+    let userId;
     
-    try {
-      // First try to get action from path
-      action = url.pathname.split('/').pop();
-      
-      // If not found in path or it's just 'google-auth', get from body
-      if (!action || action === 'google-auth') {
+    const url = new URL(req.url);
+    
+    // Extract action from URL query parameters if it's a GET request
+    if (req.method === 'GET') {
+      action = url.searchParams.get('action');
+      userId = url.searchParams.get('userId');
+    } else {
+      // For non-GET requests, parse the body once
+      try {
+        requestBody = await req.json();
         action = requestBody?.action;
+        userId = requestBody?.userId;
+      } catch (error) {
+        console.error("Error parsing request body:", error);
+        return new Response(
+          JSON.stringify({ error: 'Invalid JSON in request body' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
-      
-      // If still no action, try to get from URL params (for GET requests)
-      if (!action) {
-        action = url.searchParams.get('action');
-      }
-      
-      if (!action) {
-        throw new Error("No action specified");
-      }
-    } catch (error) {
-      console.error("Error determining action:", error);
+    }
+    
+    if (!action) {
+      console.error("No action specified");
       return new Response(
-        JSON.stringify({ error: 'Invalid request format or missing action' }),
+        JSON.stringify({ error: 'Missing action parameter' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
     
-    console.log("Processing action:", action);
+    console.log(`Processing action: ${action} for user: ${userId || 'not specified'}`);
     
     // Route for getting the authorization URL for Gmail
     if (action === 'get-auth-url') {
-      const { userId, redirectUri: customRedirectUri } = requestBody || {};
-      
       if (!userId) {
         return new Response(
           JSON.stringify({ error: 'User ID is required' }),
@@ -111,7 +148,7 @@ serve(async (req) => {
       }
       
       // Use provided redirect URI or generate from request
-      const redirectUri = customRedirectUri || getRedirectUri(req);
+      const redirectUri = requestBody?.redirectUri || getRedirectUri(req);
       console.log("Using redirect URI:", redirectUri);
       
       // Generate a state parameter to prevent CSRF attacks
@@ -296,8 +333,6 @@ serve(async (req) => {
     
     // Route for refreshing an expired access token
     if (action === 'refresh-token') {
-      const { userId } = requestBody || {};
-      
       if (!userId) {
         return new Response(
           JSON.stringify({ error: 'User ID is required' }),
@@ -375,15 +410,6 @@ serve(async (req) => {
     
     // Route for checking if a user has connected Gmail
     if (action === 'check-connection') {
-      // Extract userId from either body or URL params for GET requests
-      let userId;
-      if (requestBody) {
-        userId = requestBody.userId;
-      } else {
-        // Try getting from URL params (for GET requests)
-        userId = url.searchParams.get('userId');
-      }
-      
       if (!userId) {
         return new Response(
           JSON.stringify({ error: 'User ID is required' }),
@@ -440,8 +466,6 @@ serve(async (req) => {
     
     // Route for revoking tokens
     if (action === 'revoke-token') {
-      const { userId } = requestBody || {};
-      
       if (!userId) {
         return new Response(
           JSON.stringify({ error: 'User ID is required' }),
