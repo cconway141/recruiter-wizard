@@ -64,7 +64,7 @@ serve(async (req) => {
     const accessToken = tokenData.access_token;
     const emailCC = cc || "recruitment@theitbc.com";
     
-    // Generate a unique Message-ID for this email
+    // Generate a unique Message-ID for this email if not replying
     const currentMessageId = `<itbc-${Date.now()}-${Math.random().toString(36).substring(2, 10)}@mail.gmail.com>`;
     
     // Basic email structure
@@ -76,18 +76,20 @@ serve(async (req) => {
       `Message-ID: ${currentMessageId}`,
     ];
     
-    // Only add Subject for new emails, not for replies
+    // Only add Subject for new emails
     if (!threadId) {
       emailLines.push(`Subject: ${subject}`);
     }
     
-    // Add threading headers for replies
+    // Add threading headers for replies to ensure proper threading
     if (threadId && messageId) {
+      // Format messageId properly (ensure angle brackets)
       const formattedMessageId = messageId.startsWith('<') ? messageId : `<${messageId}>`;
       emailLines.push(`References: ${formattedMessageId}`);
       emailLines.push(`In-Reply-To: ${formattedMessageId}`);
     }
     
+    // Separate headers from body
     emailLines.push('', body);
     
     const emailContent = emailLines.join('\r\n');
@@ -96,11 +98,12 @@ serve(async (req) => {
       .replace(/\//g, '_')
       .replace(/=+$/, '');
 
-    // Construct the request body - add threadId if it's a reply
-    const requestBody: any = {
+    // Create request body, including threadId for replies
+    const requestBody = {
       raw: encodedEmail
     };
     
+    // Add threadId only for replies
     if (threadId) {
       requestBody.threadId = threadId;
     }
@@ -127,15 +130,12 @@ serve(async (req) => {
       );
     }
 
-    // Extract thread ID and message ID from the response
-    const newThreadId = responseData.threadId || threadId;
-    const newMessageId = responseData.id;
-
+    // Return both thread ID and message ID from the response
     return new Response(
       JSON.stringify({ 
         success: true,
-        threadId: newThreadId,
-        messageId: newMessageId,
+        threadId: responseData.threadId || threadId,
+        messageId: responseData.id
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

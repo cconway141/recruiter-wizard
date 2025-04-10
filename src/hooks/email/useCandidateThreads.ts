@@ -32,11 +32,6 @@ export const useCandidateThreads = () => {
     }
     
     try {
-      console.group("THREAD STORAGE");
-      console.log(`Saving thread info for candidate ${candidateId}, job ${jobId}`);
-      console.log(`Thread ID: ${newThreadId}`);
-      console.log(`Message ID: ${newMessageId || newThreadId}`);
-      
       // Convert legacy format if needed
       const convertedThreadIds: Record<string, ThreadInfo> = {};
       
@@ -45,7 +40,6 @@ export const useCandidateThreads = () => {
         if (typeof value === 'string') {
           // Legacy format, just threadId as string
           convertedThreadIds[key] = { threadId: value, messageId: value };
-          console.log(`Converting legacy thread format for job ${key}: ${value}`);
         } else {
           // Already in new format
           convertedThreadIds[key] = value as ThreadInfo;
@@ -57,9 +51,6 @@ export const useCandidateThreads = () => {
         threadId: newThreadId,
         messageId: newMessageId || newThreadId // Fallback to threadId if messageId not provided
       };
-      
-      console.log(`Updated thread info for job ${jobId}:`, convertedThreadIds[jobId]);
-      console.log("Full thread_ids object:", convertedThreadIds);
       
       const { error: updateError } = await supabase
         .from('candidates')
@@ -75,30 +66,22 @@ export const useCandidateThreads = () => {
           description: "Email sent, but failed to save thread ID for future emails.",
           variant: "destructive"
         });
-        console.groupEnd();
         return false;
       } 
       
-      console.log(`Thread info successfully saved for job: ${jobId}`);
-      console.groupEnd();
       return true;
     } catch (err) {
       console.error("Error saving thread ID:", err);
-      console.groupEnd();
       return false;
     }
   };
   
   const getThreadInfo = async (candidateId: string, jobId: string): Promise<ThreadInfo | null> => {
     if (!candidateId || !jobId) {
-      console.error("Missing candidateId or jobId for getThreadInfo:", { candidateId, jobId });
       return null;
     }
     
     try {
-      console.group("THREAD RETRIEVAL");
-      console.log(`Retrieving thread info for candidate ${candidateId} and job ${jobId}`);
-      
       const { data, error } = await supabase
         .from('candidates')
         .select('thread_ids')
@@ -106,36 +89,25 @@ export const useCandidateThreads = () => {
         .single();
         
       if (error || !data || !data.thread_ids) {
-        console.error("Error getting thread IDs or data not found:", error);
-        console.groupEnd();
         return null;
       }
-      
-      console.log(`Thread IDs data retrieved:`, data.thread_ids);
       
       // Handle both legacy format and new format
       const threadInfo = data.thread_ids[jobId];
       
       if (!threadInfo) {
-        console.log(`No thread info found for job ${jobId}`);
-        console.groupEnd();
         return null;
       }
       
       if (typeof threadInfo === 'string') {
         // Legacy format - convert on the fly
-        console.log(`Found legacy thread format for job ${jobId}: ${threadInfo}`);
-        console.groupEnd();
         return { threadId: threadInfo, messageId: threadInfo };
       }
       
       // New format
-      console.log(`Found thread info for job ${jobId}:`, threadInfo);
-      console.groupEnd();
       return threadInfo as ThreadInfo;
     } catch (err) {
       console.error("Error retrieving thread info:", err);
-      console.groupEnd();
       return null;
     }
   };
