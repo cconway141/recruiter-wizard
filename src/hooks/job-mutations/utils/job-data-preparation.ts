@@ -1,4 +1,3 @@
-
 import { uuid } from "@/utils/uuid";
 import { Job } from "@/types/job";
 import { calculateRates } from "@/utils/rateUtils";
@@ -10,6 +9,12 @@ import { generateInternalTitle } from "@/utils/titleUtils";
 export const prepareJobForCreate = async (
   job: Omit<Job, "id" | "internalTitle" | "highRate" | "mediumRate" | "lowRate" | "workDetails" | "payDetails" | "m1" | "m2" | "m3">
 ): Promise<Omit<Job, "workDetails" | "payDetails" | "m1" | "m2" | "m3">> => {
+  // Validate and set a default job title if missing
+  if (!job.candidateFacingTitle) {
+    console.warn("No job title provided. Using a default title.");
+    job.candidateFacingTitle = "Untitled Position";
+  }
+
   const now = new Date();
   const date = now.toISOString().split("T")[0]; // YYYY-MM-DD
 
@@ -23,7 +28,7 @@ export const prepareJobForCreate = async (
   
   // Calculate rates based on the main rate using our utility function
   const rate = Number(job.rate) || 0;
-  const { high: highRate, medium: mediumRate, low: lowRate } = calculateRates(rate);
+  const { high: highRate, medium: mediumRate, low: lowRate = 0 } = calculateRates(rate);
 
   return {
     ...job,
