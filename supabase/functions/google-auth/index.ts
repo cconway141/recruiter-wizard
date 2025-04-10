@@ -7,9 +7,21 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "
 const GOOGLE_CLIENT_ID = Deno.env.get("GOOGLE_CLIENT_ID") || "";
 const GOOGLE_CLIENT_SECRET = Deno.env.get("GOOGLE_CLIENT_SECRET") || "";
 
-// IMPORTANT: This needs to exactly match what's registered in Google Cloud Console
-// Using hardcoded value to ensure exact match
-const REDIRECT_URI = "https://recruit.theitbootcamp.com/auth/gmail-callback";
+// Use dynamic redirect URI generation with fallback for consistency
+const getRedirectUri = (req: Request) => {
+  // Extract the host from the request
+  const url = new URL(req.url);
+  const host = url.hostname;
+  
+  // If we're in production, use the hardcoded value
+  if (host.includes('theitbootcamp.com')) {
+    return "https://recruit.theitbootcamp.com/auth/gmail-callback";
+  }
+  
+  // For local development/testing, generate from request origin
+  const origin = req.headers.get("origin") || url.origin;
+  return `${origin}/auth/gmail-callback`;
+};
 
 // Basic validation of required environment variables
 if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
@@ -29,9 +41,6 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
   
-  const url = new URL(req.url);
-  const action = url.pathname.split('/').pop();
-  
   try {
     // Check if required environment variables are set
     if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
@@ -44,9 +53,43 @@ serve(async (req) => {
       );
     }
     
+    // Parse the request for action
+    const url = new URL(req.url);
+    let action;
+    
+    try {
+      // First try to get action from path
+      action = url.pathname.split('/').pop();
+      
+      // If not found in path or it's just 'google-auth', get from body
+      if (!action || action === 'google-auth') {
+        const body = await req.json();
+        action = body.action;
+      }
+    } catch (error) {
+      console.error("Error parsing request:", error);
+      return new Response(
+        JSON.stringify({ error: 'Invalid request format' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    console.log("Processing action:", action);
+    
     // Route for getting the authorization URL for Gmail
     if (action === 'get-auth-url') {
-      const { userId } = await req.json();
+      let body;
+      try {
+        body = await req.json();
+      } catch (error) {
+        console.error("Error parsing request body:", error);
+        return new Response(
+          JSON.stringify({ error: 'Invalid JSON in request body' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      const { userId, redirectUri: customRedirectUri } = body;
       
       if (!userId) {
         return new Response(
@@ -55,6 +98,10 @@ serve(async (req) => {
         );
       }
       
+      // Use provided redirect URI or generate from request
+      const redirectUri = customRedirectUri || getRedirectUri(req);
+      console.log("Using redirect URI:", redirectUri);
+      
       // Generate a state parameter to prevent CSRF attacks
       // This will include the user ID so we can associate the tokens with the correct user
       const state = btoa(JSON.stringify({ userId, timestamp: Date.now(), action: 'gmail' }));
@@ -62,7 +109,7 @@ serve(async (req) => {
       // Build the authorization URL with correct redirect URI
       const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
       authUrl.searchParams.append('client_id', GOOGLE_CLIENT_ID);
-      authUrl.searchParams.append('redirect_uri', REDIRECT_URI);
+      authUrl.searchParams.append('redirect_uri', redirectUri);
       authUrl.searchParams.append('response_type', 'code');
       authUrl.searchParams.append('scope', 'https://www.googleapis.com/auth/gmail.send');
       authUrl.searchParams.append('access_type', 'offline');
@@ -72,7 +119,7 @@ serve(async (req) => {
       // Enhanced logging for debugging
       console.log(`=== GMAIL AUTH DEBUG INFO ===`);
       console.log(`Client ID: ${GOOGLE_CLIENT_ID.substring(0, 10)}...`);
-      console.log(`Redirect URI: ${REDIRECT_URI}`);
+      console.log(`Redirect URI: ${redirectUri}`);
       console.log(`Full auth URL: ${authUrl.toString()}`);
       console.log(`State parameter: ${state}`);
       console.log(`===========================`);
@@ -80,7 +127,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           url: authUrl.toString(), 
-          redirectUri: REDIRECT_URI,
+          redirectUri: redirectUri,
           clientId: GOOGLE_CLIENT_ID.substring(0, 10) + '...'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -89,7 +136,18 @@ serve(async (req) => {
     
     // Route for handling the callback and exchanging the code for tokens
     if (action === 'exchange-code') {
-      const { code, state } = await req.json();
+      let body;
+      try {
+        body = await req.json();
+      } catch (error) {
+        console.error("Error parsing exchange-code body:", error);
+        return new Response(
+          JSON.stringify({ error: 'Invalid JSON in request body' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      const { code, state } = body;
       
       if (!code || !state) {
         return new Response(
@@ -118,8 +176,11 @@ serve(async (req) => {
       const userId = stateData.userId;
       const action = stateData.action || 'gmail'; // Default to gmail if not specified
       
+      // Use the same redirect URI logic for consistency
+      const redirectUri = getRedirectUri(req);
+      
       console.log(`Exchanging code for tokens:`);
-      console.log(`- Redirect URI: ${REDIRECT_URI}`);
+      console.log(`- Redirect URI: ${redirectUri}`);
       console.log(`- Code length: ${code.length} characters`);
       console.log(`- State data: ${JSON.stringify(stateData)}`);
       
@@ -131,7 +192,7 @@ serve(async (req) => {
           code,
           client_id: GOOGLE_CLIENT_ID,
           client_secret: GOOGLE_CLIENT_SECRET,
-          redirect_uri: REDIRECT_URI,
+          redirect_uri: redirectUri,
           grant_type: 'authorization_code'
         }).toString()
       });
@@ -144,14 +205,14 @@ serve(async (req) => {
         // Enhanced error logging with request details
         console.log('Request details that caused the error:');
         console.log(`- Client ID: ${GOOGLE_CLIENT_ID.substring(0, 10)}...`);
-        console.log(`- Redirect URI: ${REDIRECT_URI}`);
+        console.log(`- Redirect URI: ${redirectUri}`);
         console.log(`- Code length: ${code.length} characters`);
         
         return new Response(
           JSON.stringify({ 
             error: 'Failed to exchange code for tokens', 
             details: tokenData,
-            redirectUriUsed: REDIRECT_URI,
+            redirectUriUsed: redirectUri,
             requestDetails: {
               clientIdPrefix: GOOGLE_CLIENT_ID.substring(0, 10) + '...',
               codeLength: code.length,

@@ -1,3 +1,4 @@
+
 import { useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -66,7 +67,7 @@ export const useGmailApi = (options: {
     }
   }, [user, onConnectionChange]);
 
-  // Connect Gmail using OAuth flow - FIX: Simplified implementation to ensure it works
+  // Connect Gmail using OAuth flow - Simplified implementation to ensure it works
   const connectGmail = useCallback(async () => {
     console.log("useGmailApi: connectGmail called");
     
@@ -98,12 +99,17 @@ export const useGmailApi = (options: {
       sessionStorage.setItem('gmailConnectionAttemptTime', Date.now().toString());
       
       console.log("Getting auth URL from backend");
-      // Get auth URL from backend
+      
+      // Determine the current origin for the redirect URI
+      const redirectUri = `${window.location.origin}/auth/gmail-callback`;
+      console.log("Using redirect URI:", redirectUri);
+      
+      // Get auth URL from backend with explicit redirect URI
       const { data, error } = await supabase.functions.invoke('google-auth', {
         body: {
           action: 'get-auth-url',
           userId: user.id,
-          redirectUri: `${window.location.origin}/auth/gmail-callback`
+          redirectUri: redirectUri
         }
       });
       
@@ -121,7 +127,7 @@ export const useGmailApi = (options: {
       console.log("Redirect URI:", data.redirectUri);
       console.log("About to redirect to Google's OAuth flow");
       
-      // Redirect to Google's OAuth flow - IMPORTANT FIX: make sure this happens
+      // Redirect to Google's OAuth flow
       window.location.href = data.url;
       return data;
     } catch (error) {
