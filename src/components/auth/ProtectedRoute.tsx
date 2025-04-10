@@ -19,12 +19,12 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
       // Set auth as resolved immediately when loading is false
       setAuthResolved(true);
     } else {
-      // Set a maximum wait time for auth check (3 seconds)
+      // Set a maximum wait time for auth check (2 seconds)
       // This prevents indefinite loading state if auth check stalls
       const timeoutId = setTimeout(() => {
         console.log("Auth check timeout reached, forcing resolution");
         setAuthResolved(true);
-      }, 3000);
+      }, 2000); // Reduced from 3000ms to 2000ms for faster fallback
       
       return () => clearTimeout(timeoutId);
     }
@@ -40,7 +40,7 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     );
   }
 
-  // Once auth is resolved, either redirect or show content
+  // Once auth is resolved or timed out, either redirect or show content
   if (!user) {
     console.log("User not authenticated, redirecting to /auth");
     return <Navigate to="/auth" state={{ from: location }} replace />;

@@ -27,8 +27,8 @@ interface ProfileContentProps {
 export const ProfileContent = ({ setError }: ProfileContentProps) => {
   const { user, isGoogleLinked } = useAuth();
 
-  // Get profile data with optimized settings
-  const { data: profile, isLoading: profileLoading, error: profileError } = useQuery({
+  // Get profile data with optimized settings - but NEVER block rendering on this
+  const { data: profile, error: profileError } = useQuery({
     queryKey: ['profile', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
@@ -50,12 +50,22 @@ export const ProfileContent = ({ setError }: ProfileContentProps) => {
     },
     enabled: !!user?.id,
     // Don't refetch on window focus to reduce unnecessary loads
-    refetchOnWindowFocus: false
+    refetchOnWindowFocus: false,
+    // Use a meaningful staleTime to reduce unnecessary refetches
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 1, // Only retry once
   });
+
+  // Handle errors but don't block rendering
+  if (profileError) {
+    console.error("Profile fetch error:", profileError);
+    // We don't return or block rendering here - just log the error
+  }
 
   const isProfileGoogleLinked = profile?.google_linked || isGoogleLinked;
 
   // Always render content immediately - even during profile loading
+  // This ensures the page doesn't remain blank
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
       {/* Email Signature Card */}

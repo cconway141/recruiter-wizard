@@ -100,6 +100,8 @@ export const useGmailConnectionStatus = ({
     refetchOnWindowFocus: false, // Prevents checks when tab regains focus
     retry: 1, // Only retry once to avoid excessive requests
     gcTime: 60 * 60 * 1000, // 1 hour to keep in cache
+    // Critical: Set a timeout to prevent indefinite loading
+    refetchOnMount: "always",
   });
 
   // Silently handle errors - no UI updates
@@ -139,7 +141,7 @@ export const useGmailConnectionStatus = ({
   };
 
   return {
-    // If skipLoading is true, assume not connected when loading
+    // If skipLoading is true, default to not connected when loading
     isConnected: isLoading && skipLoading ? false : !!connectionInfo?.connected && !connectionInfo?.expired,
     isLoading: skipLoading ? false : isLoading, // Never report loading if skipLoading is true
     configError: errorMessage,

@@ -47,7 +47,8 @@ const Profile = () => {
     return <ProfileError error={error} />;
   }
 
-  // Always render content immediately without loading states
+  // Always render content immediately without waiting for loading states
+  // This ensures the UI doesn't get stuck in a blank state
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />

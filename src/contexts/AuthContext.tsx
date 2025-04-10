@@ -23,6 +23,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     let inactivityTimer: NodeJS.Timeout;
+    let authInitialized = false;
 
     const resetInactivityTimer = () => {
       if (inactivityTimer) clearTimeout(inactivityTimer);
@@ -36,9 +37,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const events = ['mousedown', 'keydown', 'mousemove', 'scroll'];
     events.forEach(event => document.addEventListener(event, resetInactivityTimer));
 
+    // Force resolve loading state after a maximum timeout
+    // This prevents UI from being blocked indefinitely if auth check fails
+    const authTimeoutId = setTimeout(() => {
+      if (loading && !authInitialized) {
+        console.log("Auth initialization timed out, forcing resolution");
+        setLoading(false);
+      }
+    }, 3000);
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
+        authInitialized = true;
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         setLoading(false);
@@ -77,6 +88,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Initial session check
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      authInitialized = true;
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
       
@@ -111,6 +123,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => {
       subscription.unsubscribe();
       clearTimeout(inactivityTimer);
+      clearTimeout(authTimeoutId);
       events.forEach(event => document.removeEventListener(event, resetInactivityTimer));
     };
   }, [navigate]);
