@@ -11,21 +11,16 @@ import { JobMessages } from "@/components/jobs/JobMessages";
 
 const ViewJob = () => {
   const { id } = useParams<{ id: string }>();
-  const { getJob, loadCandidatesForJob } = useJobs();
+  const { getJob } = useJobs();
   const navigate = useNavigate();
   const job = id ? getJob(id) : undefined;
-  const hasLoadedCandidates = useRef(false);
 
   useEffect(() => {
     if (id && !job) {
       // Job not found, redirect to dashboard
       navigate("/");
-    } else if (id && !hasLoadedCandidates.current) {
-      // Load candidates for this job only once
-      loadCandidatesForJob(id);
-      hasLoadedCandidates.current = true;
     }
-  }, [id, job, navigate, loadCandidatesForJob]);
+  }, [id, job, navigate]);
 
   if (!job) {
     return null;

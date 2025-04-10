@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useCallback, useRef } from "react";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Candidate } from "@/components/candidates/types";
@@ -10,11 +10,28 @@ export function useLoadCandidates(
   setCandidates: (candidates: CandidateState) => void
 ) {
   const [isLoading, setIsLoading] = useState(false);
+  const loadingJobsRef = useRef<Record<string, boolean>>({});
   
   // Load candidates for a specific job
-  const loadCandidatesForJob = async (jobId: string) => {
+  const loadCandidatesForJob = useCallback(async (jobId: string) => {
+    // Prevent multiple simultaneous loads for the same job
+    if (loadingJobsRef.current[jobId]) {
+      console.log(`Already loading candidates for job ${jobId}`);
+      return;
+    }
+    
+    // Check if we already have candidates for this job
+    if (candidates[jobId] && candidates[jobId].length > 0) {
+      console.log(`Using cached candidates for job ${jobId}`);
+      return;
+    }
+    
     setIsLoading(true);
+    loadingJobsRef.current[jobId] = true;
+    
     try {
+      console.log(`Loading candidates for job ${jobId}`);
+      
       // Get all applications for this job
       const { data: applications, error: applicationsError } = await supabase
         .from('applications')
@@ -39,7 +56,6 @@ export function useLoadCandidates(
       
       if (!applications || applications.length === 0) {
         setCandidates({...candidates, [jobId]: []});
-        setIsLoading(false);
         return;
       }
       
@@ -54,7 +70,6 @@ export function useLoadCandidates(
       
       if (!candidatesData) {
         setCandidates({...candidates, [jobId]: []});
-        setIsLoading(false);
         return;
       }
       
@@ -82,6 +97,7 @@ export function useLoadCandidates(
         } as Candidate;
       });
       
+      console.log(`Loaded ${mappedCandidates.length} candidates for job ${jobId}`);
       setCandidates({...candidates, [jobId]: mappedCandidates});
     } catch (error) {
       console.error("Error loading candidates:", error);
@@ -92,8 +108,12 @@ export function useLoadCandidates(
       });
     } finally {
       setIsLoading(false);
+      // Clear loading flag after a short delay to prevent rapid re-fetching
+      setTimeout(() => {
+        loadingJobsRef.current[jobId] = false;
+      }, 1000);
     }
-  };
+  }, [candidates, setCandidates]);
 
   return { loadCandidatesForJob, isLoading };
 }

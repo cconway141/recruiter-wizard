@@ -16,17 +16,17 @@ export const EmailTemplateSelector: React.FC<EmailTemplateSelectorProps> = ({
 }) => {
   return (
     <div className="space-y-4">
-      <div className="grid w-full max-w-sm items-center gap-1.5">
-        <Label htmlFor="template">Select Template</Label>
+      <div className="grid w-full items-center gap-1.5">
+        <Label htmlFor="template">Select Email Template</Label>
         <Select value={selectedTemplate} onValueChange={onSelectTemplate}>
-          <SelectTrigger>
+          <SelectTrigger id="template">
             <SelectValue placeholder="Select a template" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="custom">Custom Message</SelectItem>
             {templates.map((template) => (
               <SelectItem key={template.id} value={template.id}>
-                {template.name || `Template ${template.id}`}
+                {template.id}: {template.situation || template.name || "Template"}
               </SelectItem>
             ))}
           </SelectContent>

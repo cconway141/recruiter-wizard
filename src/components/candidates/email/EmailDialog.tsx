@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { EmailTemplateSelector } from "./EmailTemplateSelector";
 import { EmailContent } from "./EmailContent";
@@ -37,7 +36,7 @@ export function EmailDialog({
   threadTitle,
 }: EmailDialogProps) {
   const { templates, loading: templatesLoading } = useMessageTemplates();
-  const [selectedTemplate, setSelectedTemplate] = useState("m1");
+  const [selectedTemplate, setSelectedTemplate] = useState("custom");
   const navigate = useNavigate();
   
   // Use the component-specific useEmailActions hook for improved functionality
@@ -67,7 +66,7 @@ export function EmailDialog({
   // Reset selected template when dialog reopens
   useEffect(() => {
     if (isOpen) {
-      setSelectedTemplate(threadId ? "custom" : "m1");
+      setSelectedTemplate(threadId ? "custom" : "custom");
     }
   }, [isOpen, threadId]);
 
@@ -86,17 +85,6 @@ export function EmailDialog({
   const navigateToProfile = () => {
     onClose();
     navigate('/profile');
-  };
-
-  const templateCategories = {
-    m1: "Initial Contact",
-    m2: "Follow-up",
-    m3: "Closing"
-  };
-
-  // Filter templates by category
-  const getTemplatesByCategory = (category: string) => {
-    return templates?.filter(t => t.category === category) || [];
   };
 
   return (
@@ -133,36 +121,17 @@ export function EmailDialog({
           />
         )}
 
-        {!threadId ? (
-          <Tabs defaultValue={selectedTemplate} value={selectedTemplate} onValueChange={setSelectedTemplate}>
-            <TabsList className="grid grid-cols-3">
-              <TabsTrigger value="m1">Initial Contact</TabsTrigger>
-              <TabsTrigger value="m2">Follow-up</TabsTrigger>
-              <TabsTrigger value="m3">Closing</TabsTrigger>
-            </TabsList>
-            <TabsContent value="m1">
-              <EmailTemplateSelector
-                templates={getTemplatesByCategory("M1")}
-                selectedTemplate={selectedTemplate}
-                onSelectTemplate={setSelectedTemplate}
-              />
-            </TabsContent>
-            <TabsContent value="m2">
-              <EmailTemplateSelector
-                templates={getTemplatesByCategory("M2")}
-                selectedTemplate={selectedTemplate}
-                onSelectTemplate={setSelectedTemplate}
-              />
-            </TabsContent>
-            <TabsContent value="m3">
-              <EmailTemplateSelector
-                templates={getTemplatesByCategory("M3")}
-                selectedTemplate={selectedTemplate}
-                onSelectTemplate={setSelectedTemplate}
-              />
-            </TabsContent>
-          </Tabs>
-        ) : (
+        {!threadId && (
+          <div className="py-3">
+            <EmailTemplateSelector
+              templates={templates || []}
+              selectedTemplate={selectedTemplate}
+              onSelectTemplate={setSelectedTemplate}
+            />
+          </div>
+        )}
+
+        {threadId && (
           <div className="mb-4">
             <p className="text-sm text-gray-500">
               Replying to previous email thread: {threadTitle || "No subject"}
