@@ -5,10 +5,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useOperationState } from "@/hooks/useOperationState";
 
-// Cache key for local storage
-const CONNECTION_CACHE_KEY = 'gmail_api_connection_cache';
-const CACHE_EXPIRY_KEY = 'gmail_api_cache_expiry';
-
 /**
  * Core hook for Gmail API operations
  * Provides a unified interface for all Gmail-related functionality
@@ -33,54 +29,11 @@ export const useGmailApi = (options: {
     showLoadingUI
   });
 
-  // Get cached connection status
-  const getCachedConnection = useCallback(() => {
-    try {
-      const expiryStr = localStorage.getItem(CACHE_EXPIRY_KEY);
-      if (!expiryStr) return null;
-      
-      const expiry = parseInt(expiryStr);
-      if (Date.now() > expiry) {
-        // Cache expired
-        localStorage.removeItem(CONNECTION_CACHE_KEY);
-        localStorage.removeItem(CACHE_EXPIRY_KEY);
-        return null;
-      }
-      
-      const data = localStorage.getItem(CONNECTION_CACHE_KEY);
-      return data ? data === 'true' : null;
-    } catch (e) {
-      return null;
-    }
-  }, []);
-  
-  // Set cached connection status
-  const setCachedConnection = useCallback((isConnected: boolean) => {
-    try {
-      localStorage.setItem(CONNECTION_CACHE_KEY, isConnected.toString());
-      // Cache for 1 hour
-      const expiry = Date.now() + (60 * 60 * 1000);
-      localStorage.setItem(CACHE_EXPIRY_KEY, expiry.toString());
-    } catch (e) {
-      console.error("Failed to cache connection status:", e);
-    }
-  }, []);
-
-  // Check connection status with caching
+  // Check connection status
   const checkConnection = useCallback(async () => {
     if (!user) return false;
     
     try {
-      // Check cache first
-      const cached = getCachedConnection();
-      if (cached !== null) {
-        console.log("Using cached Gmail connection status");
-        if (onConnectionChange) {
-          onConnectionChange(cached);
-        }
-        return cached;
-      }
-      
       console.log("useGmailApi: Checking Gmail connection for user", user.id);
       
       // Use the correct method to call the edge function
@@ -104,9 +57,6 @@ export const useGmailApi = (options: {
       const isConnected = !!data?.connected && !data?.expired;
       console.log("Gmail connection status:", isConnected);
       
-      // Cache the result
-      setCachedConnection(isConnected);
-      
       // Notify about connection state change
       if (onConnectionChange) {
         onConnectionChange(isConnected);
@@ -117,7 +67,7 @@ export const useGmailApi = (options: {
       console.error("Error checking Gmail connection:", error);
       return false;
     }
-  }, [user, onConnectionChange, getCachedConnection, setCachedConnection]);
+  }, [user, onConnectionChange]);
 
   // Connect Gmail using OAuth flow
   const connectGmail = useCallback(async () => {
@@ -215,17 +165,7 @@ export const useGmailApi = (options: {
         console.error("Error revoking Gmail token:", revokeError);
       }
       
-      // Clear all caches
-      try {
-        localStorage.removeItem(CONNECTION_CACHE_KEY);
-        localStorage.removeItem(CACHE_EXPIRY_KEY);
-        sessionStorage.removeItem('gmail_connection_cache');
-        sessionStorage.removeItem('gmail_connection_cache_expiry');
-        sessionStorage.removeItem('gmail_connection_status');
-        sessionStorage.removeItem('gmail_connection_check_time');
-      } catch (e) {
-        console.error("Error clearing connection caches:", e);
-      }
+      // Token deletion is handled in the edge function
       
       // Clear connection flags
       sessionStorage.removeItem('gmailConnectionInProgress');
@@ -261,12 +201,9 @@ export const useGmailApi = (options: {
         throw new Error(`Failed to refresh Gmail token: ${error.message}`);
       }
       
-      // Update cache after successful refresh
-      setCachedConnection(true);
-      
       return true;
     });
-  }, [user, executeOperation, setCachedConnection]);
+  }, [user, executeOperation]);
 
   // Background connection check (without UI indicators)
   const silentCheckConnection = useCallback(async () => {

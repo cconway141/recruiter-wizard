@@ -21,36 +21,19 @@ export const useGmailConnectionStatus = ({
   const { refreshGmailToken, setRefreshError } = useGmailTokenRefresh();
   const { checkGmailConnection, connectionError, setConnectionError } = useGmailStatusCheck();
   
-  // Significantly increased throttling to reduce API calls
+  // Enhanced rate limiting with a significant timeout
   const lastCheckRef = useRef<number>(0);
-  const checkThrottleMs = 5 * 60 * 1000; // 5 minutes minimum between checks (increased from 30s)
-  const maxErrorsBeforeBackoff = 2;
+  const checkThrottleMs = 30000; // 30 seconds minimum between checks (increased from 10s)
+  const maxErrorsBeforeBackoff = 2; // Reduced threshold to activate backoff sooner
   const errorCountRef = useRef<number>(0);
   const backoffActiveRef = useRef<boolean>(false);
-  const backoffTimeMs = 10 * 60 * 1000; // 10 minutes of backoff time (increased from 2 min)
+  const backoffTimeMs = 120000; // 2 minutes of backoff time (increased from implicit 30s)
 
-  // Session storage key for caching
-  const CONNECTION_CACHE_KEY = 'gmail_connection_cache';
-  const CACHE_EXPIRY_KEY = 'gmail_connection_cache_expiry';
-
-  // Cache-first throttled check with drastically reduced API calls
+  // Rate limiting function with enhanced protection
   const throttledCheck = async () => {
     const now = Date.now();
     
-    // First check session storage cache to avoid API calls entirely
-    try {
-      const cachedExpiry = sessionStorage.getItem(CACHE_EXPIRY_KEY);
-      const cachedData = sessionStorage.getItem(CONNECTION_CACHE_KEY);
-      
-      if (cachedExpiry && cachedData && parseInt(cachedExpiry) > now) {
-        console.log("Using cached Gmail connection data from session storage");
-        return JSON.parse(cachedData);
-      }
-    } catch (err) {
-      console.log("Error reading from cache:", err);
-    }
-    
-    // Try to get from React Query cache first
+    // First, check if we already have cached data we can use
     const cachedData = queryClient.getQueryData(['gmail-connection', user?.id]);
     
     // If we're in backoff mode due to repeated errors, use cached data
@@ -59,7 +42,7 @@ export const useGmailConnectionStatus = ({
       return cachedData || { connected: false, expired: false, hasRefreshToken: false };
     }
     
-    // Enhanced throttling with much longer timeout
+    // Enhanced throttling with longer timeout
     if (now - lastCheckRef.current < checkThrottleMs) {
       console.log(`Gmail connection check throttled (${Math.round((now - lastCheckRef.current)/1000)}s < ${checkThrottleMs/1000}s), using cached data`);
       return cachedData || { connected: false, expired: false, hasRefreshToken: false };
@@ -106,17 +89,7 @@ export const useGmailConnectionStatus = ({
         }
         
         // Use simplified response after refresh
-        data.connected = true;
-        data.expired = false;
-      }
-      
-      // Store successful result in session storage to reduce future API calls
-      try {
-        const cacheExpiry = now + (30 * 60 * 1000); // 30 minutes cache
-        sessionStorage.setItem(CACHE_EXPIRY_KEY, cacheExpiry.toString());
-        sessionStorage.setItem(CONNECTION_CACHE_KEY, JSON.stringify(data || { connected: false, expired: false }));
-      } catch (err) {
-        console.log("Error writing to cache:", err);
+        return { connected: true, expired: false, hasRefreshToken: true };
       }
       
       return data || { connected: false, expired: false };
@@ -143,7 +116,7 @@ export const useGmailConnectionStatus = ({
     }
   };
 
-  // Use React Query with drastically improved cache strategy
+  // Use React Query with significantly improved cache strategy
   const { 
     data: connectionInfo,
     isLoading,
@@ -153,13 +126,13 @@ export const useGmailConnectionStatus = ({
     queryKey: ['gmail-connection', user?.id],
     queryFn: throttledCheck,
     enabled: !!user,
-    // Drastically increased caching parameters to reduce API calls
-    staleTime: 60 * 60 * 1000, // 1 hour - keeps data fresh much longer
-    refetchInterval: 2 * 60 * 60 * 1000, // 2 hours - very infrequent background checks
+    // Significantly increased caching parameters to reduce API calls
+    staleTime: 5 * 60 * 1000, // 5 minutes - keeps data fresh much longer
+    refetchInterval: 10 * 60 * 1000, // 10 minutes - very infrequent background checks
     refetchOnWindowFocus: false, // Prevents checks when tab regains focus
     retry: 0, // No retries to avoid cascading failures
-    gcTime: 4 * 60 * 60 * 1000, // 4 hours to keep in cache
-    refetchOnMount: false, // Don't refetch when component mounts
+    gcTime: 30 * 60 * 1000, // 30 minutes to keep in cache
+    refetchOnMount: "always",
   });
 
   // Silently handle errors - no UI updates
@@ -186,13 +159,6 @@ export const useGmailConnectionStatus = ({
     if (!user) return false;
     
     try {
-      // Clear session storage cache to force a fresh check
-      sessionStorage.removeItem(CONNECTION_CACHE_KEY);
-      sessionStorage.removeItem(CACHE_EXPIRY_KEY);
-      
-      // Reset the last check time to force a real check
-      lastCheckRef.current = 0;
-      
       // Use a throttled invalidation to prevent UI flickering
       setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ['gmail-connection', user.id] });
