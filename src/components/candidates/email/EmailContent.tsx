@@ -57,8 +57,12 @@ export const EmailContent: React.FC<EmailContentProps> = ({
   return <div className="space-y-4 py-4">
       <div>
         <p className="mb-2"><strong>To:</strong> {candidateName} ({candidateEmail})</p>
-        {job && <p className="mb-2 text-sm text-gray-600"><strong>Job:</strong> {job.candidateFacingTitle}</p>}
-        {threadTitle && <p className="mb-2 text-sm text-gray-600"><strong>Subject:</strong> {threadTitle}</p>}
+        {job && <p className="mb-2 text-sm text-gray-600">
+          <strong>Job:</strong> {job.candidateFacingTitle}
+        </p>}
+        <p className="mb-2 text-sm text-gray-600">
+          <strong>Subject:</strong> {`ITBC ${job?.candidateFacingTitle || ''} ${candidateName}`.trim()}
+        </p>
         {threadId && <p className="mb-2 text-xs text-gray-500"><strong>Thread ID:</strong> {threadId}</p>}
       </div>
       

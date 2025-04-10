@@ -48,8 +48,8 @@ export const useEmailActions = () => {
       setIsSending(true);
       setError(null);
       
-      // Generate a unique subject line per candidate-job combination
-      const subject = `ITBC ${jobTitle || ''} - ${candidateName}`.trim();
+      // Always use the consistent subject line format for threading
+      const subject = `ITBC ${jobTitle || ''} ${candidateName}`.trim();
       
       const { getEmailContent } = useEmailContent({ 
         candidateName, 

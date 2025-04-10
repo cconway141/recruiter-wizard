@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
@@ -51,8 +50,8 @@ serve(async (req) => {
       );
     }
 
-    // Always ensure the subject line follows the correct format
-    const emailSubject = subject || `ITBC ${jobTitle || ''} - ${candidateName}`;
+    // Always ensure the subject line follows the correct format: "ITBC Candidate Facing Title Candidate Full Name"
+    const emailSubject = subject || `ITBC ${jobTitle || ''} ${candidateName}`;
     console.log(`Email subject: "${emailSubject}"`);
 
     // Always CC the recruitment team

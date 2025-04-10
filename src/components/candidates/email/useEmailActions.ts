@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -92,7 +91,9 @@ export const useEmailActions = ({
       setIsSending(true);
       setErrorMessage(null);
 
-      // Always include recruitment@theitbc.com as CC
+      const subject = `ITBC ${jobTitle || ''} ${candidate.name}`.trim();
+      console.log("Email subject:", subject);
+
       const cc = "recruitment@theitbc.com";
 
       const { data, error } = await supabase.functions.invoke('send-gmail', {
@@ -117,7 +118,6 @@ export const useEmailActions = ({
         description: `Your email to ${candidate.name} was sent successfully.`,
       });
       
-      // If we have a job ID and there's a new thread ID, update the candidate
       if (jobId && data?.threadId && (!threadId || data.threadId !== threadId)) {
         console.log("New thread ID created:", data.threadId);
         console.log("Saving thread ID for job:", jobId);
@@ -180,13 +180,13 @@ export const useEmailActions = ({
       return;
     }
     
-    composeEmailInGmail(candidate.email, subject, body);
+    const formattedSubject = `ITBC ${jobTitle || ''} ${candidate.name}`.trim();
+    
+    composeEmailInGmail(candidate.email, formattedSubject, body);
     onSuccess();
   };
   
   const composeEmailInGmail = (email: string, subject: string, body: string) => {
-    // Create a Gmail compose URL
-    // Always include CC in the compose URL
     const cc = "recruitment@theitbc.com";
     const params = new URLSearchParams({
       to: email,

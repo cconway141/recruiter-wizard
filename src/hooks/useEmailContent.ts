@@ -92,9 +92,8 @@ export const useEmailContent = ({ candidateName, jobTitle, templates, selectedTe
 
   const getEmailContent = () => {
     console.log("Returning email content:", { body: emailBody });
-    // Use the correct subject format: "ITBC Job Title - Candidate Full Name"
-    const formattedJobTitle = jobTitle ? jobTitle : '';
-    const subject = `ITBC ${formattedJobTitle} - ${candidateName}`.trim();
+    // Always use the correct subject format: "ITBC Candidate Facing Title Candidate Full Name"
+    const subject = `ITBC ${jobTitle || ''} ${candidateName}`.trim();
     console.log("Generated subject line:", subject);
     
     return {
