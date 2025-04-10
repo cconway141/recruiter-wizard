@@ -31,12 +31,26 @@ export const useEmailDialogState = ({
   const hasCheckedConnectionRef = useRef(false);
   const [connectionChecked, setConnectionChecked] = useState(false);
   
+  // Enhanced Gmail connection with better connection handler
   const {
     isConnected: isGmailConnected,
     connectGmail,
     checkGmailConnection,
+    silentCheckConnection,
   } = useGmailConnection({
     showLoadingUI: false,
+    onConnectionChange: (connected) => {
+      if (connected) {
+        // Immediately cache connection status when changed
+        try {
+          sessionStorage.setItem('gmail_connection_status', 'true');
+          localStorage.setItem('gmail_connected', 'true');
+          sessionStorage.setItem('gmail_connection_check_time', Date.now().toString());
+        } catch (e) {
+          console.warn("Failed to cache Gmail connection status:", e);
+        }
+      }
+    }
   });
 
   // Logging initialization - only once
@@ -57,14 +71,38 @@ export const useEmailDialogState = ({
     console.groupEnd();
   }, [candidateName, candidateEmail, jobId, candidateFacingTitle, candidateId, threadId, threadTitle]);
 
-  // Background check for Gmail connection - only once with improved checking logic
+  // Improved connection check with better caching logic
   useEffect(() => {
     if (hasCheckedConnectionRef.current || connectionChecked) return;
     
+    // First check URL parameters (highest priority for post-auth)
+    const urlParams = new URLSearchParams(window.location.search);
+    const gmailConnected = urlParams.get('gmail_connected');
+    
+    if (gmailConnected === 'true') {
+      console.log("Gmail connected based on URL parameter");
+      hasCheckedConnectionRef.current = true;
+      setConnectionChecked(true);
+      
+      try {
+        // Update cached status
+        sessionStorage.setItem('gmail_connection_status', 'true');
+        localStorage.setItem('gmail_connected', 'true');
+        sessionStorage.setItem('gmail_connection_check_time', Date.now().toString());
+      } catch (e) {
+        console.warn("Failed to cache Gmail connection status:", e);
+      }
+      
+      return;
+    }
+    
     // Check if we already have a stored connection state
     const cachedStatus = sessionStorage.getItem('gmail_connection_status');
-    if (cachedStatus === 'true') {
+    const localStatus = localStorage.getItem('gmail_connected');
+    
+    if (cachedStatus === 'true' || localStatus === 'true') {
       console.log("Using cached Gmail connection status: connected");
+      hasCheckedConnectionRef.current = true;
       setConnectionChecked(true);
       return;
     }
@@ -73,13 +111,16 @@ export const useEmailDialogState = ({
     const timer = setTimeout(() => {
       hasCheckedConnectionRef.current = true;
       
-      checkGmailConnection()
+      silentCheckConnection()
         .then(isConnected => {
           console.log("Background Gmail connection check result:", isConnected);
           // Cache the result to prevent redundant checks
           try {
             sessionStorage.setItem('gmail_connection_status', isConnected.toString());
             sessionStorage.setItem('gmail_connection_check_time', Date.now().toString());
+            if (isConnected) {
+              localStorage.setItem('gmail_connected', 'true');
+            }
           } catch (e) {
             console.warn("Failed to cache Gmail connection status:", e);
           }
@@ -92,7 +133,7 @@ export const useEmailDialogState = ({
     }, 1000);
     
     return () => clearTimeout(timer);
-  }, [checkGmailConnection, connectionChecked]);
+  }, [silentCheckConnection, connectionChecked]);
 
   // Use our hooks with proper logging
   const { subject, setSubject } = useEmailSubject({
