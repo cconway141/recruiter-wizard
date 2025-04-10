@@ -1,7 +1,6 @@
 
 import React, { useEffect } from "react";
 import { Button } from "@/components/ui/button";
-// Updated import with the correct hook from our new structure
 import { useGmailConnection } from "@/hooks/gmail";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -17,7 +16,9 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
   onConnectionChange 
 }) => {
   const { user } = useAuth();
-  // Use the combined hook that provides all Gmail functionality with showLoadingUI to prevent UI blocking
+  const { toast } = useToast();
+  
+  // Use our enhanced hook with explicit loading UI control
   const { 
     isConnected: isGmailConnected, 
     isLoading: isCheckingGmail,
@@ -25,9 +26,8 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
     disconnectGmail
   } = useGmailConnection({ 
     onConnectionChange,
-    showLoadingUI: false // Critical: prevent blocking UI with loading states
+    showLoadingUI: false // Prevent blocking UI with loading states
   });
-  const { toast } = useToast();
 
   // Notify parent component when connection status changes
   useEffect(() => {

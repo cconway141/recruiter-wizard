@@ -1,5 +1,5 @@
 
-import React, { useEffect } from "react";
+import React from "react";
 import { MailCheck } from "lucide-react";
 import { 
   Card, 
@@ -11,23 +11,24 @@ import {
 } from "@/components/ui/card";
 import { GmailConnectButton } from "@/components/candidates/email/GmailConnectButton";
 import { GmailDisconnectButton } from "./gmail/GmailDisconnectButton";
-import { useGmailCardState } from "./gmail/useGmailCardState";
 import { useGmailConnection } from "@/hooks/gmail";
 import { useAuth } from "@/contexts/AuthContext";
 import { LoadingIndicator } from "@/components/ui/loading-indicator";
 
 export const GmailCard: React.FC = () => {
   const { user } = useAuth();
-  // Using the hook with our new pattern that replaced skipLoading
-  const { isGmailConnected, handleDisconnectGmail } = useGmailCardState();
-  
-  // Get checkGmailConnection function for the background check
-  const { silentCheckConnection } = useGmailConnection({ 
-    showLoadingUI: false // Explicit setting replacing skipLoading
+  // Using our enhanced hook for Gmail connection management
+  const { 
+    isConnected: isGmailConnected, 
+    isLoading: isCheckingConnection,
+    disconnectGmail,
+    silentCheckConnection
+  } = useGmailConnection({ 
+    showLoadingUI: true
   });
   
-  // Run a single background connection check on mount
-  useEffect(() => {
+  // Run a silent background connection check on mount
+  React.useEffect(() => {
     if (user?.id) {
       // Clear any stale connection flags
       sessionStorage.removeItem('gmailConnectionInProgress');
@@ -74,8 +75,8 @@ export const GmailCard: React.FC = () => {
         {/* Show either connect or disconnect button based on connection status */}
         {isGmailConnected ? (
           <GmailDisconnectButton 
-            onDisconnect={handleDisconnectGmail}
-            isLoading={false}
+            onDisconnect={disconnectGmail}
+            isLoading={isCheckingConnection}
           />
         ) : (
           <div className="mb-2">
