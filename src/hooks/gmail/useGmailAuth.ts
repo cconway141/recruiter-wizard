@@ -36,6 +36,10 @@ export const useGmailAuthFlow = ({ onConnectionChange }: UseGmailAuthFlowProps =
       
       console.log("Initiating Gmail connection for user:", user.id);
       
+      // Record the connection attempt time
+      sessionStorage.setItem('gmailConnectionInProgress', 'true');
+      sessionStorage.setItem('gmailConnectionAttemptTime', Date.now().toString());
+      
       // Get the auth URL from our backend
       const { data, error } = await supabase.functions.invoke('google-auth', {
         body: {
@@ -57,10 +61,6 @@ export const useGmailAuthFlow = ({ onConnectionChange }: UseGmailAuthFlowProps =
       
       console.log("Received auth URL:", data.url.substring(0, 50) + "...");
       console.log("Redirect URI:", data.redirectUri);
-      
-      // Set flags in session storage to indicate connection in progress
-      sessionStorage.setItem('gmailConnectionInProgress', 'true');
-      sessionStorage.setItem('gmailConnectionAttemptTime', Date.now().toString());
       
       // Only redirect if we have a valid URL
       if (data.url) {
