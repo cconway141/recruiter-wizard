@@ -42,7 +42,12 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
       console.log("Sending email to:", to);
       console.log("Using subject:", subject);
       console.log("Thread ID:", threadId || "New thread");
-      console.log("Job Title:", jobTitle || "None provided");
+      console.log("Job Title:", jobTitle || "No job title provided"); // Updated log message
+      
+      // Validate job title is present for new threads
+      if (!threadId && !jobTitle) {
+        console.warn("Creating new email thread without job title");
+      }
       
       // Always CC the recruitment team
       const cc = "recruitment@theitbc.com";
@@ -117,6 +122,14 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
       const subjectEncoded = encodeURIComponent(subject);
       const toEncoded = encodeURIComponent(to);
       const ccEncoded = encodeURIComponent(cc);
+      
+      // Log that we're opening Gmail compose
+      console.log("Opening Gmail compose with:", {
+        to,
+        subject,
+        jobTitle: jobTitle || "No job title provided",
+        candidateName
+      });
       
       const gmailComposeUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${toEncoded}&cc=${ccEncoded}&su=${subjectEncoded}&body=${bodyEncoded}`;
       

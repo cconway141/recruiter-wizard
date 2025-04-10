@@ -49,7 +49,7 @@ export function EmailDialog({
     candidateName,
     candidateEmail,
     jobId,
-    candidateFacingTitle: jobTitle, // Fix: Pass jobTitle as candidateFacingTitle
+    candidateFacingTitle: jobTitle, // Ensure jobTitle is correctly passed
     candidateId,
     threadId,
     threadTitle,
@@ -61,6 +61,7 @@ export function EmailDialog({
     isOpen,
     candidateName,
     candidateEmail,
+    jobTitle, // Log the job title to verify it's present
     isGmailConnected,
     hasConnectGmail: !!connectGmail,
     connectGmailType: typeof connectGmail

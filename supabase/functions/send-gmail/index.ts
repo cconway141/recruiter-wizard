@@ -46,18 +46,26 @@ serve(async (req) => {
       );
     }
 
-    // Fix for undefined in subject - construct a formatted subject
+    // Validate jobTitle exists for new threads
+    if (!threadId && !jobTitle) {
+      console.warn("Creating new email thread without job title");
+    }
+
+    // Format subject line
     let formattedSubject;
     if (threadId) {
       // For replies, use the original subject
       formattedSubject = subject;
+      console.log("Using existing subject for reply:", formattedSubject);
     } else {
-      // For new emails, format correctly
-      if (jobTitle) {
+      // For new emails, format correctly with job title
+      if (jobTitle && jobTitle.trim() !== '') {
         formattedSubject = `ITBC ${jobTitle} - ${candidateName}`.trim();
       } else {
+        console.warn("Missing job title for new email. Using fallback format.");
         formattedSubject = `ITBC ${candidateName}`.trim();
       }
+      console.log("Created new subject for email:", formattedSubject);
     }
     
     console.log(`Email subject: "${formattedSubject}"`);

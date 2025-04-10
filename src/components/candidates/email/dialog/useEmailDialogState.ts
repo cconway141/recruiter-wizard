@@ -68,11 +68,13 @@ export const useEmailDialogState = ({
       candidateFacingTitle,
     });
 
-    // Fix: Construct the subject in a way that avoids "undefined" appearing
+    // Always construct a proper subject with proper handling of job title
     let standardizedSubject;
     if (candidateFacingTitle) {
       standardizedSubject = `ITBC ${candidateFacingTitle} - ${candidateName}`.trim();
     } else {
+      // This fallback should ideally never happen since job title is required
+      console.warn("Missing candidateFacingTitle (job title) when constructing email subject");
       standardizedSubject = `ITBC ${candidateName}`.trim();
     }
     
@@ -120,6 +122,15 @@ export const useEmailDialogState = ({
     try {
       setIsSending(true);
       setErrorMessage(null);
+
+      // Log the values being sent to trace data flow
+      console.debug("Sending email with:", {
+        candidateEmail,
+        subject,
+        candidateName,
+        candidateFacingTitle,
+        threadId
+      });
 
       const newThreadId = await sendEmailViaGmail(
         candidateEmail,
