@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Trash } from "lucide-react";
 import { Candidate } from "./types";
@@ -7,6 +7,9 @@ import { StatusCheckbox } from "./status/StatusCheckbox";
 import { EmailButton } from "./email/EmailButton";
 import { LinkedinButton } from "./social/LinkedinButton";
 import { EmailDialog } from "./email/EmailDialog";
+import { useGmailAuth } from "@/hooks/useGmailAuth";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -31,10 +34,25 @@ export const CandidateListItem: React.FC<CandidateListItemProps> = ({
   onStatusChange 
 }) => {
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const { isGmailConnected, isCheckingGmail } = useGmailAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleEmailClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setEmailDialogOpen(true);
+    
+    if (isGmailConnected) {
+      setEmailDialogOpen(true);
+    } else {
+      toast({
+        title: "Gmail not connected",
+        description: "Please connect your Gmail account in the profile page before sending emails.",
+        variant: "destructive"
+      });
+      
+      // Optional: Navigate to profile page to connect Gmail
+      // navigate("/profile");
+    }
   };
 
   return (
@@ -100,13 +118,15 @@ export const CandidateListItem: React.FC<CandidateListItemProps> = ({
       </div>
 
       {/* Email Dialog */}
-      <EmailDialog
-        isOpen={emailDialogOpen}
-        onClose={() => setEmailDialogOpen(false)}
-        candidateName={candidate.name}
-        candidateEmail={candidate.email}
-        threadId={candidate.threadIds ? Object.values(candidate.threadIds)[0] : null}
-      />
+      {isGmailConnected && (
+        <EmailDialog
+          isOpen={emailDialogOpen}
+          onClose={() => setEmailDialogOpen(false)}
+          candidateName={candidate.name}
+          candidateEmail={candidate.email}
+          threadId={candidate.threadIds ? Object.values(candidate.threadIds)[0] : null}
+        />
+      )}
     </>
   );
 };
