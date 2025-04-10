@@ -1,11 +1,6 @@
+
 import React, { useEffect } from 'react';
-import {
-  BrowserRouter as Router,
-  Route,
-  Routes,
-  useNavigate,
-  useLocation,
-} from 'react-router-dom';
+import { Route, Routes, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Dashboard } from '@/pages/Dashboard';
 import Login from '@/pages/Login';
@@ -27,7 +22,7 @@ import { MainNav } from "@/components/layout/MainNav"
 import { SidebarNav } from "@/components/layout/SidebarNav"
 import { siteConfig } from "@/config/site"
 import { ModeToggle } from "@/components/layout/ModeToggle"
-import { Link } from "@radix-ui/react-navigation-menu"
+import { Link } from "react-router-dom"
 import {
   Sheet,
   SheetContent,
@@ -40,15 +35,6 @@ import { GmailCallback } from './components/candidates/email/GmailCallback';
 
 function App() {
   const { user, loading } = useAuth();
-
-  return (
-    <Router>
-      <AppContent user={user} loading={loading} />
-    </Router>
-  );
-}
-
-function AppContent({ user, loading }: { user: any, loading: boolean }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -79,7 +65,7 @@ function AppContent({ user, loading }: { user: any, loading: boolean }) {
     <div className="flex min-h-screen bg-background antialiased">
       <aside className="border-r bg-secondary w-60 flex-none hidden lg:block">
         <ScrollArea className="py-6 pr-4">
-          <Link href="/" className="flex items-center gap-2 px-4">
+          <Link to="/" className="flex items-center gap-2 px-4">
             {siteConfig.name}
           </Link>
           <Separator className="my-2" />
