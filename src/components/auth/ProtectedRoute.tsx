@@ -11,32 +11,37 @@ interface ProtectedRouteProps {
 export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
   const location = useLocation();
-  const [isChecking, setIsChecking] = useState(true);
-
+  const [authResolved, setAuthResolved] = useState(false);
+  
   useEffect(() => {
-    // Once the auth state is no longer loading, we can stop checking
+    // If auth state is no longer loading, mark as resolved
     if (!loading) {
-      // Add a small delay to ensure auth context is fully initialized
-      const timer = setTimeout(() => {
-        setIsChecking(false);
-      }, 300);
+      // Set auth as resolved immediately when loading is false
+      setAuthResolved(true);
+    } else {
+      // Set a maximum wait time for auth check (3 seconds)
+      // This prevents indefinite loading state if auth check stalls
+      const timeoutId = setTimeout(() => {
+        console.log("Auth check timeout reached, forcing resolution");
+        setAuthResolved(true);
+      }, 3000);
       
-      return () => clearTimeout(timer);
+      return () => clearTimeout(timeoutId);
     }
   }, [loading]);
 
-  if (isChecking || loading) {
-    // Show a loading indicator while checking auth status
+  // If auth is still loading but within acceptable time window, show minimal loading indicator
+  // This will only show briefly during initial auth check
+  if (loading && !authResolved) {
     return (
       <div className="flex items-center justify-center h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-gray-500" />
-        <span className="ml-2 text-gray-500">Checking authentication...</span>
       </div>
     );
   }
 
+  // Once auth is resolved, either redirect or show content
   if (!user) {
-    // Redirect to auth page if not authenticated
     console.log("User not authenticated, redirecting to /auth");
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
