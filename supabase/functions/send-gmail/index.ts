@@ -115,36 +115,15 @@ async function sendGmailMessage(
   }
   
   try {
-    // Log request parameters
-    console.log("Sending Gmail with params:", {
-      to,
-      cc: cc ? "Set" : "Not set",
-      subject: subject ? "Set" : "Not set",
-      bodyLength: body?.length || 0,
-      threadId: threadId || "Not set",
-      messageId: messageId || "Not set",
-    });
-    
-    // Build email headers
-    let headers = `To: ${to}\r\n`;
-    if (cc) headers += `Cc: ${cc}\r\n`;
-    if (subject) headers += `Subject: ${subject}\r\n`;
-    
-    // Add threading headers if this is a reply (both threadId and messageId required)
-    if (messageId) {
-      console.log("Adding threading headers with messageId:", messageId);
-      headers += `In-Reply-To: <${messageId}>\r\n`;
-      headers += `References: <${messageId}>\r\n`;
-    }
-    
-    headers += 'Content-Type: text/html; charset=utf-8\r\n\r\n';
-    
     // Build email content
     let email: any = {
-      raw: btoa(headers + body)
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=+$/, '')
+      raw: btoa(
+        `To: ${to}\r\n` +
+        (cc ? `Cc: ${cc}\r\n` : '') +
+        (subject ? `Subject: ${subject}\r\n` : '') +
+        'Content-Type: text/html; charset=utf-8\r\n\r\n' +
+        body
+      ).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
     };
     
     // Add thread ID if provided (for replies)
@@ -152,8 +131,8 @@ async function sendGmailMessage(
       email.threadId = threadId;
     }
     
-    // Build API URL
-    const url = 'https://gmail.googleapis.com/gmail/v1/users/me/messages/send';
+    // Build API URL (different for new messages vs replies)
+    let url = 'https://gmail.googleapis.com/gmail/v1/users/me/messages/send';
     
     // Make the request to Gmail API
     const response = await fetch(url, {
@@ -181,11 +160,6 @@ async function sendGmailMessage(
     }
     
     const data = await response.json();
-    console.log("Gmail API response:", {
-      messageId: data.id,
-      threadId: data.threadId
-    });
-    
     return {
       success: true,
       messageId: data.id,
@@ -278,8 +252,6 @@ serve(async (req) => {
     
     // Send the email
     console.log(`Sending email to ${to} with subject "${subject || 'Reply'}"`);
-    console.log(`Thread ID: ${threadId || 'New thread'}, Message ID: ${messageId || 'None'}`);
-    
     const sendResult = await sendGmailMessage(
       to,
       cc || '',
