@@ -12,7 +12,7 @@ export function SidebarNav({ className }: { className?: string }) {
         <Link
           key={item.href}
           to={item.href}
-          className="px-2 py-1.5 text-sm font-medium rounded-md hover:bg-accent hover:text-accent-foreground"
+          className="text-sm font-medium transition-colors hover:text-primary"
         >
           {item.title}
         </Link>
