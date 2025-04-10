@@ -96,7 +96,13 @@ export const useGmailCallbackProcessor = () => {
 
             if (error) {
               console.error(`Attempt ${retryCount + 1}: Error exchanging code:`, error);
-              throw error;
+              retryCount++;
+              
+              if (retryCount < maxRetries) {
+                console.log(`Retrying in 1 second... (${retryCount}/${maxRetries})`);
+                await new Promise(resolve => setTimeout(resolve, 1000));
+              }
+              continue;
             }
 
             if (data?.error === 'Configuration error') {
