@@ -51,16 +51,16 @@ serve(async (req) => {
       );
     }
 
-    // Always use the consistent subject format for threading
-    // This ensures all emails to the same candidate about the same job are in one thread
-    const emailSubject = `ITBC ${jobTitle || ''} - ${candidateName}`;
+    // Always ensure the subject line follows the correct format
+    const emailSubject = subject || `ITBC ${jobTitle || ''} - ${candidateName}`;
+    console.log(`Email subject: "${emailSubject}"`);
 
     // Always CC the recruitment team
     const emailCC = cc || "recruitment@theitbc.com";
+    console.log(`CC'ing: ${emailCC}`);
 
     console.log(`Preparing to send email to ${to} with subject "${emailSubject}"`);
     console.log(`Using thread ID: ${threadId || 'New thread'}`);
-    console.log(`CC'ing: ${emailCC}`);
     
     // Get the user's Gmail access token
     const { data: tokenData, error: tokenError } = await supabase
@@ -105,7 +105,7 @@ serve(async (req) => {
     // Add thread-related headers if a thread ID is provided
     // These headers are critical for proper threading in Gmail
     if (threadId) {
-      // RFC 2822 threading headers
+      // RFC 2822 threading headers - These are essential for proper threading
       emailLines.push(`References: <${threadId}@mail.gmail.com>`);
       emailLines.push(`In-Reply-To: <${threadId}@mail.gmail.com>`);
       emailLines.push(`Thread-Topic: ${emailSubject}`);

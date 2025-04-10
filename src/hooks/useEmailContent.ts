@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -92,9 +93,13 @@ export const useEmailContent = ({ candidateName, jobTitle, templates, selectedTe
   const getEmailContent = () => {
     console.log("Returning email content:", { body: emailBody });
     // Use the correct subject format: "ITBC Job Title - Candidate Full Name"
+    const formattedJobTitle = jobTitle ? jobTitle : '';
+    const subject = `ITBC ${formattedJobTitle} - ${candidateName}`.trim();
+    console.log("Generated subject line:", subject);
+    
     return {
       body: emailBody,
-      subject: `ITBC ${jobTitle || ''} - ${candidateName}`.trim()
+      subject: subject
     };
   };
 
