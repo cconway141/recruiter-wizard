@@ -1,4 +1,3 @@
-
 import { useFormContext } from "react-hook-form";
 import {
   FormControl,
@@ -24,6 +23,7 @@ import {
 import { useUserOptions } from "@/hooks/useUserOptions";
 import { useRoleAbbreviations } from "@/hooks/useRoleAbbreviations";
 import { useEffect } from "react";
+import { useState } from "react";
 
 interface JobFormBasicInfoProps {
   handleClientSelection: (clientName: string) => void;
@@ -258,8 +258,12 @@ export function JobFormBasicInfo({ handleClientSelection }: JobFormBasicInfoProp
                   min={0} 
                   placeholder="Hourly rate" 
                   {...field} 
+                  onFocus={(e) => {
+                    e.target.select();
+                  }}
                   onChange={(e) => {
-                    field.onChange(parseFloat(e.target.value) || 0);
+                    const value = e.target.value;
+                    field.onChange(value === '' ? '' : parseFloat(value) || 0);
                   }}
                 />
               </FormControl>
