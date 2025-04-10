@@ -1,5 +1,5 @@
 
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useGmailConnection } from "@/hooks/gmail";
 import { useEmailSubject } from "@/hooks/email/useEmailSubject";
 import { useEmailTemplate } from "@/hooks/email/useEmailTemplate";
@@ -27,13 +27,20 @@ export const useEmailDialogState = ({
   threadTitle,
   onClose,
 }: UseEmailDialogStateProps) => {
+  // Check localStorage first for Gmail connection status
+  const savedConnectionStatus = localStorage.getItem('gmail_connected') === 'true';
+  const [localConnectionStatus, setLocalConnectionStatus] = useState<boolean>(savedConnectionStatus);
+  
   const {
-    isConnected: isGmailConnected,
+    isConnected: apiConnectionStatus,
     connectGmail,
     checkGmailConnection,
   } = useGmailConnection({
     showLoadingUI: false,
   });
+  
+  // Use saved connection status or API status
+  const isGmailConnected = localConnectionStatus || apiConnectionStatus;
 
   // Logging initialization
   useEffect(() => {
@@ -46,16 +53,27 @@ export const useEmailDialogState = ({
       candidateId: candidateId || 'MISSING',
       threadId: threadId || 'MISSING',
       threadTitle: threadTitle || 'MISSING',
+      savedConnectionStatus
     });
     console.groupEnd();
-
-    // Background check for Gmail connection
-    setTimeout(() => {
-      checkGmailConnection().catch((err) => {
+    
+    // Only check connection if we don't already have a saved connected status
+    if (!savedConnectionStatus) {
+      console.log("No saved connection status, checking Gmail connection...");
+      // Background check only once and not on a timer
+      checkGmailConnection().then(isConnected => {
+        if (isConnected) {
+          // Save successful connection to localStorage
+          localStorage.setItem('gmail_connected', 'true');
+          setLocalConnectionStatus(true);
+        }
+      }).catch((err) => {
         console.error("Background Gmail check failed:", err);
       });
-    }, 100);
-  }, [checkGmailConnection, candidateName, candidateEmail, jobId, candidateFacingTitle, candidateId, threadId, threadTitle]);
+    } else {
+      console.log("Using saved Gmail connection status: connected");
+    }
+  }, [checkGmailConnection, candidateName, candidateEmail, jobId, candidateFacingTitle, candidateId, threadId, threadTitle, savedConnectionStatus]);
 
   // Use our hooks with proper logging
   const { subject, setSubject } = useEmailSubject({
@@ -90,6 +108,18 @@ export const useEmailDialogState = ({
     onClose
   });
 
+  // Custom connect function that updates local state
+  const handleConnectGmail = async () => {
+    try {
+      await connectGmail();
+      // When connection succeeds, update local state
+      localStorage.setItem('gmail_connected', 'true');
+      setLocalConnectionStatus(true);
+    } catch (error) {
+      console.error("Failed to connect Gmail:", error);
+    }
+  };
+
   return {
     subject,
     body,
@@ -104,6 +134,6 @@ export const useEmailDialogState = ({
     handleSendEmail: () => handleSendEmail(subject, body),
     handleComposeInGmail: () => handleComposeInGmail(subject, body),
     handleOpenThreadInGmail: () => handleOpenThreadInGmail(subject),
-    connectGmail,
+    connectGmail: handleConnectGmail,
   };
 };

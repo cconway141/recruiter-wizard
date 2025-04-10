@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { ConfigErrorButton } from "../ConfigErrorButton";
 
 interface EmailConnectionAlertProps {
@@ -18,6 +18,15 @@ export const EmailConnectionAlert: React.FC<EmailConnectionAlertProps> = ({
     hasErrorMessage: !!errorMessage, 
     hasOnConnect: !!onConnect 
   });
+  
+  // Save Gmail connection status to localStorage for persistence
+  useEffect(() => {
+    if (isGmailConnected) {
+      // If connected, save this status for the long term
+      localStorage.setItem('gmail_connected', 'true');
+      console.debug("Saved Gmail connected status to localStorage");
+    }
+  }, [isGmailConnected]);
 
   if (isGmailConnected && !errorMessage) return null;
   
