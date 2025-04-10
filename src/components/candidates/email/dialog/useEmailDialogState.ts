@@ -1,5 +1,5 @@
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useGmailConnection } from "@/hooks/gmail";
 import { useEmailSubject } from "@/hooks/email/useEmailSubject";
 import { useEmailTemplate } from "@/hooks/email/useEmailTemplate";
@@ -27,6 +27,9 @@ export const useEmailDialogState = ({
   threadTitle,
   onClose,
 }: UseEmailDialogStateProps) => {
+  const hasLoggedRef = useRef(false);
+  const hasCheckedConnectionRef = useRef(false);
+  
   const {
     isConnected: isGmailConnected,
     connectGmail,
@@ -35,8 +38,11 @@ export const useEmailDialogState = ({
     showLoadingUI: false,
   });
 
-  // Logging initialization
+  // Logging initialization - only once
   useEffect(() => {
+    if (hasLoggedRef.current) return;
+    hasLoggedRef.current = true;
+    
     console.group('Email Dialog State Initialization');
     console.log('Props received:', {
       candidateName: candidateName || 'MISSING',
@@ -48,14 +54,22 @@ export const useEmailDialogState = ({
       threadTitle: threadTitle || 'MISSING',
     });
     console.groupEnd();
+  }, [candidateName, candidateEmail, jobId, candidateFacingTitle, candidateId, threadId, threadTitle]);
 
-    // Background check for Gmail connection
-    setTimeout(() => {
+  // Background check for Gmail connection - only once
+  useEffect(() => {
+    if (hasCheckedConnectionRef.current) return;
+    hasCheckedConnectionRef.current = true;
+    
+    // Only check after a delay and only once
+    const timer = setTimeout(() => {
       checkGmailConnection().catch((err) => {
         console.error("Background Gmail check failed:", err);
       });
-    }, 100);
-  }, [checkGmailConnection, candidateName, candidateEmail, jobId, candidateFacingTitle, candidateId, threadId, threadTitle]);
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, [checkGmailConnection]);
 
   // Use our hooks with proper logging
   const { subject, setSubject } = useEmailSubject({
