@@ -53,6 +53,21 @@ serve(async (req) => {
       );
     }
     
+    // Critical fix: Parse the request body ONCE and store it
+    let requestBody;
+    try {
+      // Only try to parse the body for non-GET requests
+      if (req.method !== 'GET') {
+        requestBody = await req.json();
+      }
+    } catch (error) {
+      console.error("Error parsing request body:", error);
+      return new Response(
+        JSON.stringify({ error: 'Invalid JSON in request body' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     // Parse the request for action
     const url = new URL(req.url);
     let action;
@@ -63,13 +78,21 @@ serve(async (req) => {
       
       // If not found in path or it's just 'google-auth', get from body
       if (!action || action === 'google-auth') {
-        const body = await req.json();
-        action = body.action;
+        action = requestBody?.action;
+      }
+      
+      // If still no action, try to get from URL params (for GET requests)
+      if (!action) {
+        action = url.searchParams.get('action');
+      }
+      
+      if (!action) {
+        throw new Error("No action specified");
       }
     } catch (error) {
-      console.error("Error parsing request:", error);
+      console.error("Error determining action:", error);
       return new Response(
-        JSON.stringify({ error: 'Invalid request format' }),
+        JSON.stringify({ error: 'Invalid request format or missing action' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -78,18 +101,7 @@ serve(async (req) => {
     
     // Route for getting the authorization URL for Gmail
     if (action === 'get-auth-url') {
-      let body;
-      try {
-        body = await req.json();
-      } catch (error) {
-        console.error("Error parsing request body:", error);
-        return new Response(
-          JSON.stringify({ error: 'Invalid JSON in request body' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      const { userId, redirectUri: customRedirectUri } = body;
+      const { userId, redirectUri: customRedirectUri } = requestBody || {};
       
       if (!userId) {
         return new Response(
@@ -136,18 +148,7 @@ serve(async (req) => {
     
     // Route for handling the callback and exchanging the code for tokens
     if (action === 'exchange-code') {
-      let body;
-      try {
-        body = await req.json();
-      } catch (error) {
-        console.error("Error parsing exchange-code body:", error);
-        return new Response(
-          JSON.stringify({ error: 'Invalid JSON in request body' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      const { code, state } = body;
+      const { code, state } = requestBody || {};
       
       if (!code || !state) {
         return new Response(
@@ -295,7 +296,7 @@ serve(async (req) => {
     
     // Route for refreshing an expired access token
     if (action === 'refresh-token') {
-      const { userId } = await req.json();
+      const { userId } = requestBody || {};
       
       if (!userId) {
         return new Response(
@@ -374,7 +375,14 @@ serve(async (req) => {
     
     // Route for checking if a user has connected Gmail
     if (action === 'check-connection') {
-      const { userId } = await req.json();
+      // Extract userId from either body or URL params for GET requests
+      let userId;
+      if (requestBody) {
+        userId = requestBody.userId;
+      } else {
+        // Try getting from URL params (for GET requests)
+        userId = url.searchParams.get('userId');
+      }
       
       if (!userId) {
         return new Response(
@@ -432,7 +440,7 @@ serve(async (req) => {
     
     // Route for revoking tokens
     if (action === 'revoke-token') {
-      const { userId } = await req.json();
+      const { userId } = requestBody || {};
       
       if (!userId) {
         return new Response(
@@ -457,17 +465,36 @@ serve(async (req) => {
       }
       
       // Revoke the token
-      const revokeResponse = await fetch(`https://oauth2.googleapis.com/revoke?token=${tokenData.access_token}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-      });
+      try {
+        const revokeResponse = await fetch(`https://oauth2.googleapis.com/revoke?token=${tokenData.access_token}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+        });
+        
+        if (!revokeResponse.ok) {
+          console.error('Token revocation error:', await revokeResponse.text());
+        }
+      } catch (error) {
+        console.error('Error revoking token:', error);
+        // Continue anyway to delete the local token
+      }
       
-      if (!revokeResponse.ok) {
-        console.error('Token revocation error:', await revokeResponse.text());
+      // Delete the token from the database
+      const { error: deleteError } = await supabase
+        .from('gmail_tokens')
+        .delete()
+        .eq('user_id', userId);
+        
+      if (deleteError) {
+        console.error('Error deleting token:', deleteError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to delete token', details: deleteError }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
       
       return new Response(
-        JSON.stringify({ success: true, message: 'Token revoked successfully' }),
+        JSON.stringify({ success: true, message: 'Token revoked and deleted successfully' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -479,7 +506,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in google-auth function:', error);
     return new Response(
-      JSON.stringify({ error: 'Internal server error', details: error.message }),
+      JSON.stringify({ error: 'Internal server error', details: error.message, stack: error.stack }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

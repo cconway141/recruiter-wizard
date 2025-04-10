@@ -35,12 +35,19 @@ export const useGmailApi = (options: {
     
     try {
       console.log("useGmailApi: Checking Gmail connection for user", user.id);
-      const { data, error } = await supabase.functions.invoke('google-auth', {
-        body: {
-          action: 'check-connection',
-          userId: user.id
+      
+      // Use URLSearchParams for GET request instead of body
+      const url = new URL(`${supabase.functions.url('google-auth')}`);
+      url.searchParams.append('action', 'check-connection');
+      url.searchParams.append('userId', user.id);
+      
+      const { data, error } = await fetch(url.toString(), {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabase.auth.session()?.access_token || ''}`
         }
-      });
+      }).then(r => r.json());
       
       if (error) {
         console.error("Error checking Gmail connection:", error);
@@ -67,7 +74,7 @@ export const useGmailApi = (options: {
     }
   }, [user, onConnectionChange]);
 
-  // Connect Gmail using OAuth flow - Simplified implementation to ensure it works
+  // Connect Gmail using OAuth flow
   const connectGmail = useCallback(async () => {
     console.log("useGmailApi: connectGmail called");
     
@@ -163,15 +170,7 @@ export const useGmailApi = (options: {
         console.error("Error revoking Gmail token:", revokeError);
       }
       
-      // Delete token from database
-      const { error: deleteError } = await supabase
-        .from('gmail_tokens')
-        .delete()
-        .eq('user_id', user.id);
-      
-      if (deleteError) {
-        throw new Error(`Failed to disconnect Gmail: ${deleteError.message}`);
-      }
+      // Token deletion is handled in the edge function
       
       // Clear connection flags
       sessionStorage.removeItem('gmailConnectionInProgress');
