@@ -21,10 +21,12 @@ export const useEmailSubject = ({
       return;
     }
     
-    // Simple subject line format: ITBC [Job Title] [Candidate Name]
-    const standardizedSubject = `ITBC ${candidateFacingTitle || ""} ${candidateName}`.trim();
+    // Format: ITBC [Job Title] [Candidate Name]
+    // Only use "General Position" if candidateFacingTitle is truly empty
+    const jobTitle = candidateFacingTitle?.trim() || "General Position";
+    const formattedSubject = `ITBC ${jobTitle} ${candidateName}`.trim();
     
-    setSubject(standardizedSubject);
+    setSubject(formattedSubject);
   }, [candidateName, candidateFacingTitle, threadTitle]);
 
   return {

@@ -64,7 +64,7 @@ serve(async (req) => {
     const accessToken = tokenData.access_token;
     const emailCC = cc || "recruitment@theitbc.com";
     
-    // Generate a unique Message-ID for this email if not replying
+    // Generate a unique Message-ID for this email
     const currentMessageId = `<itbc-${Date.now()}-${Math.random().toString(36).substring(2, 10)}@mail.gmail.com>`;
     
     // Basic email structure
@@ -76,12 +76,15 @@ serve(async (req) => {
       `Message-ID: ${currentMessageId}`,
     ];
     
-    // Only add Subject for new emails
+    // Only add Subject for new emails - format is "ITBC {JobTitle} {CandidateName}"
     if (!threadId) {
-      emailLines.push(`Subject: ${subject}`);
+      // Format subject with fallback if jobTitle is empty
+      const formattedJobTitle = jobTitle?.trim() || "General Position";
+      const formattedSubject = `ITBC ${formattedJobTitle} ${candidateName}`;
+      emailLines.push(`Subject: ${formattedSubject}`);
     }
     
-    // Add threading headers for replies to ensure proper threading
+    // Add threading headers for replies
     if (threadId && messageId) {
       // Format messageId properly (ensure angle brackets)
       const formattedMessageId = messageId.startsWith('<') ? messageId : `<${messageId}>`;

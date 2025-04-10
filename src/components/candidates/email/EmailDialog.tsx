@@ -35,26 +35,23 @@ export function EmailDialog({
   const { getJob } = useJobs();
   const job = jobId ? getJob(jobId) : undefined;
   
-  // Always use the job title from the job object for consistency
+  // Always use the candidateFacingTitle from the job object for consistency
   // Ensure we have a value even if the job can't be found
-  const actualJobTitle = job?.candidateFacingTitle || jobTitle || "General Position";
+  const candidateFacingTitle = job?.candidateFacingTitle || jobTitle || "";
 
-  // Debug initialization with better clarity
+  // Debug initialization
   useEffect(() => {
-    console.group('EmailDialog Initialization');
-    console.log('Props received in EmailDialog:', {
+    console.log('EmailDialog initialized with:', {
       candidateName,
       candidateEmail,
       jobId,
-      jobTitle, 
-      jobFromContext: job ? 'Found job in context' : 'No job found in context',
-      actualCandidateFacingTitle: actualJobTitle,
-      candidateId,
+      originalJobTitle: jobTitle,
+      jobFromContext: job ? job.candidateFacingTitle : 'Not found',
+      finalCandidateFacingTitle: candidateFacingTitle,
       threadId,
       threadTitle
     });
-    console.groupEnd();
-  }, [candidateName, candidateEmail, jobId, jobTitle, job, actualJobTitle, candidateId, threadId, threadTitle]);
+  }, [candidateName, candidateEmail, jobId, jobTitle, job, candidateFacingTitle, threadId, threadTitle]);
 
   const {
     subject,
@@ -75,35 +72,23 @@ export function EmailDialog({
     candidateName,
     candidateEmail,
     jobId,
-    candidateFacingTitle: actualJobTitle, // Always pass a valid job title
+    candidateFacingTitle, // Pass the correct job title
     candidateId,
     threadId,
     threadTitle,
     onClose,
   });
 
-  console.debug("EmailDialog rendered:", {
-    isOpen,
-    candidateName,
-    candidateEmail,
-    actualJobTitle,
-    isGmailConnected,
-    hasConnectGmail: !!connectGmail,
-    connectGmailType: typeof connectGmail
-  });
-  
   const handleConnectGmail = async () => {
-    console.debug("handleConnectGmail called in EmailDialog");
     if (!connectGmail) {
-      console.error("connectGmail is undefined in EmailDialog");
+      console.error("connectGmail is undefined");
       return;
     }
     
     try {
-      console.debug("Calling connectGmail from EmailDialog");
       await connectGmail();
     } catch (error) {
-      console.error("Error calling connectGmail in EmailDialog:", error);
+      console.error("Error connecting to Gmail:", error);
     }
   };
 
