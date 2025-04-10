@@ -69,10 +69,13 @@ serve(async (req) => {
       authUrl.searchParams.append('prompt', 'consent');
       authUrl.searchParams.append('state', state);
       
-      console.log(`Generated auth URL for user ${userId} with redirect URI: ${REDIRECT_URI}`);
+      // Log the exact redirect URI being used for debugging
+      console.log(`Generated auth URL with redirect URI: ${REDIRECT_URI}`);
+      console.log(`Full auth URL: ${authUrl.toString()}`);
+      console.log(`Client ID being used: ${GOOGLE_CLIENT_ID.substring(0, 10)}...`);
       
       return new Response(
-        JSON.stringify({ url: authUrl.toString() }),
+        JSON.stringify({ url: authUrl.toString(), redirectUri: REDIRECT_URI }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -108,7 +111,7 @@ serve(async (req) => {
       const userId = stateData.userId;
       const action = stateData.action || 'gmail'; // Default to gmail if not specified
       
-      console.log(`Exchanging code for tokens for user ${userId} with redirect URI: ${REDIRECT_URI}`);
+      console.log(`Exchanging code for tokens using redirect URI: ${REDIRECT_URI}`);
       
       // Exchange the code for tokens
       const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
@@ -128,7 +131,11 @@ serve(async (req) => {
       if (tokenData.error) {
         console.error('Token exchange error:', tokenData);
         return new Response(
-          JSON.stringify({ error: 'Failed to exchange code for tokens', details: tokenData }),
+          JSON.stringify({ 
+            error: 'Failed to exchange code for tokens', 
+            details: tokenData,
+            redirectUriUsed: REDIRECT_URI 
+          }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -177,7 +176,7 @@ export const useGmailConnection = ({ onConnectionChange }: UseGmailConnectionPro
         description: "Please log in to connect your Gmail account.",
         variant: "destructive",
       });
-      return;
+      return null;
     }
     
     try {
@@ -195,7 +194,7 @@ export const useGmailConnection = ({ onConnectionChange }: UseGmailConnectionPro
           description: "Failed to initiate Gmail connection.",
           variant: "destructive",
         });
-        return;
+        return null;
       }
       
       if (data?.error === 'Configuration error') {
@@ -205,10 +204,11 @@ export const useGmailConnection = ({ onConnectionChange }: UseGmailConnectionPro
           description: "Gmail integration is not properly configured. Please contact the administrator.",
           variant: "destructive",
         });
-        return;
+        return null;
       }
       
       console.log("Generated auth URL:", data.url);
+      console.log("Using redirect URI:", data.redirectUri);
       
       // Store a flag in sessionStorage to identify that we're in the process of connecting Gmail
       sessionStorage.setItem('gmailConnectionInProgress', 'true');
@@ -216,6 +216,9 @@ export const useGmailConnection = ({ onConnectionChange }: UseGmailConnectionPro
       
       // Redirect to Google's OAuth flow
       window.location.href = data.url;
+      
+      // Return the redirect URI for debugging
+      return { redirectUri: data.redirectUri };
     } catch (error) {
       console.error("Error connecting Gmail:", error);
       toast({
@@ -223,6 +226,7 @@ export const useGmailConnection = ({ onConnectionChange }: UseGmailConnectionPro
         description: "Failed to connect Gmail. Please try again.",
         variant: "destructive",
       });
+      return null;
     }
   };
   

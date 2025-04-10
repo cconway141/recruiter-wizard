@@ -3,14 +3,17 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2, CheckCircle, XCircle } from "lucide-react";
+import { Loader2, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 
 export const GmailCallback: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(true);
   const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
   const [error, setError] = useState<string | null>(null);
+  const [errorDetails, setErrorDetails] = useState<any>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
@@ -30,6 +33,21 @@ export const GmailCallback: React.FC = () => {
         const params = new URLSearchParams(location.search);
         const code = params.get("code");
         const state = params.get("state");
+        
+        // If there's an error parameter, handle it
+        const errorParam = params.get("error");
+        if (errorParam) {
+          console.error("OAuth error:", errorParam);
+          setError(`OAuth error: ${errorParam}`);
+          setStatus('error');
+          
+          // Store error for debugging
+          sessionStorage.setItem('gmailConnectionError', JSON.stringify({
+            message: `OAuth error: ${errorParam}`,
+            timestamp: Date.now()
+          }));
+          return;
+        }
 
         if (!code) {
           setError("No authorization code received from Google");
@@ -67,6 +85,16 @@ export const GmailCallback: React.FC = () => {
               setError(data.message || 'Google OAuth is not properly configured');
               setStatus('error');
               return;
+            }
+            
+            // If we received error details about redirect URI mismatch
+            if (data?.error && data?.redirectUriUsed) {
+              setErrorDetails({ 
+                error: data.error,
+                redirectUriUsed: data.redirectUriUsed,
+                details: data.details 
+              });
+              throw new Error(`Failed to exchange code: ${data.error}`);
             }
             
             console.log(`Attempt ${retryCount + 1}: Token exchange successful:`, data);
@@ -118,7 +146,14 @@ export const GmailCallback: React.FC = () => {
         }
         
         if (!success) {
-          throw new Error(`Failed to exchange code after ${maxRetries} attempts`);
+          setError(`Failed to exchange code after ${maxRetries} attempts`);
+          setStatus('error');
+          
+          // Store error for debugging
+          sessionStorage.setItem('gmailConnectionError', JSON.stringify({
+            message: `Failed to exchange code after ${maxRetries} attempts`,
+            timestamp: Date.now()
+          }));
         }
       } catch (err) {
         console.error("Error processing callback:", err);
@@ -162,12 +197,32 @@ export const GmailCallback: React.FC = () => {
             <XCircle className="w-8 h-8 mx-auto text-red-500" />
             <h2 className="text-xl font-semibold text-red-600">Connection Failed</h2>
             <p className="text-gray-500">{error}</p>
-            <button 
+            
+            {errorDetails && errorDetails.redirectUriUsed && (
+              <Alert variant="destructive" className="mt-4 text-left">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Redirect URI Mismatch</AlertTitle>
+                <AlertDescription className="text-xs">
+                  <p className="mb-2">The OAuth redirect URI doesn't match what's configured in Google Cloud Console.</p>
+                  <p className="font-semibold">URI used: <code className="bg-muted p-1 rounded break-all">{errorDetails.redirectUriUsed}</code></p>
+                  <p className="mt-2">Please ensure this exact URI is added to your OAuth client's authorized redirect URIs in Google Cloud Console.</p>
+                  
+                  {errorDetails.details && errorDetails.details.error === "redirect_uri_mismatch" && (
+                    <div className="mt-2 p-2 bg-black/10 rounded text-xs">
+                      <p className="font-bold">Google API Error:</p>
+                      <pre className="whitespace-pre-wrap break-all mt-1">{JSON.stringify(errorDetails.details, null, 2)}</pre>
+                    </div>
+                  )}
+                </AlertDescription>
+              </Alert>
+            )}
+            
+            <Button 
               onClick={() => navigate("/profile")}
-              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+              className="mt-4 w-full"
             >
               Return to Profile
-            </button>
+            </Button>
           </>
         )}
       </div>
