@@ -127,17 +127,25 @@ serve(async (req) => {
     ];
     
     // Add proper threading headers for replies - this is critical for Gmail threading
+    // Ensure messageId has angle brackets as required by RFC 2822
     if (threadId && messageId) {
       console.log("Adding proper threading headers for reply to existing conversation");
+      
+      // Ensure messageId has angle brackets for RFC 2822 compliance
+      const formattedMessageId = messageId.startsWith('<') ? messageId : `<${messageId}>`;
+      
       // The References header should contain the message ID we're replying to
-      emailLines.push(`References: ${messageId}`);
+      emailLines.push(`References: ${formattedMessageId}`);
+      
       // The In-Reply-To header should also contain the message ID we're replying to
-      emailLines.push(`In-Reply-To: ${messageId}`);
+      emailLines.push(`In-Reply-To: ${formattedMessageId}`);
+      
+      // Include thread topic for additional threading support
       emailLines.push(`Thread-Topic: ${formattedSubject}`);
       
       console.log("Added threading headers:");
-      console.log(`References: ${messageId}`);
-      console.log(`In-Reply-To: ${messageId}`);
+      console.log(`References: ${formattedMessageId}`);
+      console.log(`In-Reply-To: ${formattedMessageId}`);
     }
     
     emailLines.push('', body);
