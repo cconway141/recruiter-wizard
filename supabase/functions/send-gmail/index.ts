@@ -25,6 +25,7 @@ interface EmailRequest {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -32,57 +33,14 @@ serve(async (req) => {
   try {
     const { to, cc, subject, body, candidateName, jobTitle, threadId, messageId, userId } = await req.json() as EmailRequest;
 
-    console.log("\n================================================");
-    console.log("EMAIL REQUEST DETAILS:");
-    console.log("================================================");
-    console.log(`CANDIDATE: ${candidateName}`);
-    console.log(`TO: ${to}`);
-    console.log(`THREAD ID: ${threadId || "NEW THREAD"}`);
-    console.log(`REFERENCE MESSAGE ID: ${messageId || "NONE"}`);
-    console.log(`SUBJECT: ${subject ? `"${subject}"` : "Using existing thread subject"}`);
-    console.log(`JOB TITLE: ${jobTitle || "NOT PROVIDED"}`);
-    console.log("================================================\n");
-
     if (!to || !body || !userId) {
       return new Response(
-        JSON.stringify({ error: 'Missing required fields (to, body, or userId)' }),
+        JSON.stringify({ error: 'Missing required fields' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`Email body length: ${body?.length || 0}`);
-    if (!body || body.trim() === '') {
-      return new Response(
-        JSON.stringify({ error: 'Email body is empty', details: 'The email content cannot be empty' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Only use subject for new threads, not for replies
-    let formattedSubject = subject;
-    
-    // If it's a reply (has threadId) but somehow subject is provided, log a warning
-    if (threadId && subject) {
-      console.log(`Warning: Subject provided for reply email "${subject}" but will be ignored as this is a reply`);
-      // For replies, don't set the subject - Gmail will use the thread's subject
-      formattedSubject = "";
-    }
-    
-    // For new threads, if no subject is provided, create a default one
-    if (!threadId && (!formattedSubject || formattedSubject.trim() === '')) {
-      formattedSubject = `ITBC ${jobTitle || ""} ${candidateName}`.trim();
-      console.log(`Created default subject for new thread: "${formattedSubject}"`);
-    }
-    
-    console.log(`Final email subject: ${formattedSubject || "Using thread subject (reply)"}`);
-
-    const emailCC = cc || "recruitment@theitbc.com";
-    console.log(`CC'ing: ${emailCC}`);
-
-    console.log(`Preparing to ${threadId ? 'reply to existing thread' : 'start new conversation'}`);
-    console.log(`Using thread ID: ${threadId || 'None (new conversation)'}`);
-    console.log(`Using message ID for reference: ${messageId || 'None'}`);
-    
+    // Get the user's Gmail token
     const { data: tokenData, error: tokenError } = await supabase
       .from('gmail_tokens')
       .select('access_token, expires_at')
@@ -90,107 +48,64 @@ serve(async (req) => {
       .single();
     
     if (tokenError || !tokenData) {
-      console.error("Failed to get user's Gmail token:", tokenError);
       return new Response(
-        JSON.stringify({ 
-          error: 'Gmail not connected', 
-          message: 'Please connect your Gmail account before sending emails'
-        }),
+        JSON.stringify({ error: 'Gmail not connected' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
     
     if (new Date(tokenData.expires_at) <= new Date()) {
       return new Response(
-        JSON.stringify({ 
-          error: 'Gmail token expired', 
-          message: 'Your Gmail token has expired. Please reconnect your account.'
-        }),
+        JSON.stringify({ error: 'Gmail token expired' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
     
     const accessToken = tokenData.access_token;
-
+    const emailCC = cc || "recruitment@theitbc.com";
+    
     // Generate a unique Message-ID for this email
     const currentMessageId = `<itbc-${Date.now()}-${Math.random().toString(36).substring(2, 10)}@mail.gmail.com>`;
     
-    console.log("\n================================================");
-    console.log("EMAIL THREADING PARAMETERS:");
-    console.log("================================================");
-    console.log(`- Is reply: ${!!threadId}`);
-    console.log(`- Thread ID: ${threadId || 'None (new thread)'}`);
-    console.log(`- Original message ID: ${messageId || 'None (new thread)'}`);
-    console.log(`- New message ID: ${currentMessageId}`);
-    console.log("================================================\n");
-    
-    // Improved email headers with proper threading info
+    // Basic email structure
     let emailLines = [
       `To: ${to}`,
       `Cc: ${emailCC}`,
-    ];
-    
-    // Only add Subject header for new threads
-    if (!threadId) {
-      emailLines.push(`Subject: ${formattedSubject}`);
-    }
-    
-    emailLines = [
-      ...emailLines,
       'MIME-Version: 1.0',
       'Content-Type: text/html; charset=utf-8',
       `Message-ID: ${currentMessageId}`,
     ];
     
-    // Add proper threading headers for replies - this is critical for Gmail threading
+    // Only add Subject for new emails, not for replies
+    if (!threadId) {
+      emailLines.push(`Subject: ${subject}`);
+    }
+    
+    // Add threading headers for replies
     if (threadId && messageId) {
-      console.log("Adding proper threading headers for reply to existing conversation");
-      
-      // Ensure messageId has angle brackets for RFC 2822 compliance
       const formattedMessageId = messageId.startsWith('<') ? messageId : `<${messageId}>`;
-      
-      // The References header should contain the message ID we're replying to
       emailLines.push(`References: ${formattedMessageId}`);
-      
-      // The In-Reply-To header should also contain the message ID we're replying to
       emailLines.push(`In-Reply-To: ${formattedMessageId}`);
-      
-      console.log("Added threading headers:");
-      console.log(`References: ${formattedMessageId}`);
-      console.log(`In-Reply-To: ${formattedMessageId}`);
     }
     
     emailLines.push('', body);
     
     const emailContent = emailLines.join('\r\n');
-    console.log("Email content prepared with proper RFC-compliant threading headers");
-    console.log("Email headers:", emailLines.slice(0, emailLines.length - 2).join('\r\n'));
-
     const encodedEmail = btoa(emailContent)
       .replace(/\+/g, '-')
       .replace(/\//g, '_')
       .replace(/=+$/, '');
 
-    console.log("Sending email via Gmail API with OAuth token");
-    
-    // Enhanced threading with Gmail API
+    // Construct the request body - add threadId if it's a reply
     const requestBody: any = {
       raw: encodedEmail
     };
     
     if (threadId) {
-      console.log(`Adding threadId ${threadId} to API request to ensure proper threading`);
       requestBody.threadId = threadId;
     }
     
-    console.log("\n================================================");
-    console.log("GMAIL API REQUEST DETAILS:");
-    console.log("================================================");
-    console.log("Request URL: https://gmail.googleapis.com/gmail/v1/users/me/messages/send");
-    console.log("Request Method: POST");
-    console.log("Request Body:", JSON.stringify(requestBody, null, 2));
-    console.log("================================================\n");
-    
+    // Send the email via Gmail API
     const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
       method: 'POST',
       headers: {
@@ -202,81 +117,32 @@ serve(async (req) => {
     
     const responseData = await response.json();
     
-    console.log("\n================================================");
-    console.log("GMAIL API RESPONSE:");
-    console.log("================================================");
-    console.log("Status Code:", response.status);
-    console.log("Response Body:", JSON.stringify(responseData, null, 2));
-    console.log("================================================\n");
-    
     if (!response.ok) {
-      console.error('Gmail API error:', responseData);
-      
-      let errorMessage = 'Failed to send email through Gmail API';
-      let statusCode = response.status;
-      
-      if (responseData.error?.code === 401) {
-        errorMessage = 'Gmail authentication failed. Please reconnect your account.';
-      } else if (responseData.error?.code === 403) {
-        errorMessage = 'Gmail access denied. You may need additional permissions.';
-      } else if (responseData.error?.message) {
-        errorMessage = `Gmail error: ${responseData.error.message}`;
-      }
-      
       return new Response(
         JSON.stringify({ 
-          error: errorMessage, 
+          error: 'Failed to send email through Gmail API',
           details: responseData 
         }),
-        { status: statusCode, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const data = responseData;
-    console.log('Email sent successfully:', data);
-    
-    // Extract both thread ID and message ID from the response
-    const newThreadId = data.threadId || threadId;
-    const newMessageId = data.id; // This is the actual message ID needed for future threading
-    
-    console.log(`Successfully sent email with thread ID: ${newThreadId}`);
-    console.log(`Message ID (for future threading): ${newMessageId}`);
-    console.log(`Is reply: ${!!threadId}`);
+    // Extract thread ID and message ID from the response
+    const newThreadId = responseData.threadId || threadId;
+    const newMessageId = responseData.id;
 
     return new Response(
       JSON.stringify({ 
-        success: true, 
-        message: `Email sent to ${candidateName} at ${to} with CC to ${emailCC}`,
+        success: true,
         threadId: newThreadId,
         messageId: newMessageId,
-        subject: formattedSubject || "Reply to existing thread"
       }),
-      { 
-        status: 200, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('Error sending email:', error);
-    
-    const errorDetails = {
-      message: error.message,
-      stack: error.stack,
-      name: error.name,
-    };
-    
-    console.error('Error details:', JSON.stringify(errorDetails));
-    
     return new Response(
-      JSON.stringify({ 
-        error: 'Failed to send email', 
-        details: error.message,
-        errorInfo: errorDetails
-      }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+      JSON.stringify({ error: 'Failed to send email', details: error.message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
