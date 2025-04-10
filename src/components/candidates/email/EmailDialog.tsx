@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useEmailDialog } from "./dialog/useEmailDialog";
 import { EmailDialogHeader } from "./dialog/EmailDialogHeader";
@@ -36,22 +36,25 @@ export function EmailDialog({
   const job = jobId ? getJob(jobId) : undefined;
   
   // Always use the job title from the job object for consistency
-  // If job title isn't available from context, fallback to the prop
-  const actualJobTitle = job?.candidateFacingTitle || jobTitle || "";
+  // Ensure we have a value even if the job can't be found
+  const actualJobTitle = job?.candidateFacingTitle || jobTitle || "General Position";
 
-  console.group('EmailDialog Initialization');
-  console.log('Props received in EmailDialog:', {
-    candidateName,
-    candidateEmail,
-    jobId,
-    jobTitle, 
-    jobFromContext: job ? 'Found job in context' : 'No job found in context',
-    actualCandidateFacingTitle: actualJobTitle,
-    candidateId,
-    threadId,
-    threadTitle
-  });
-  console.groupEnd();
+  // Debug initialization with better clarity
+  useEffect(() => {
+    console.group('EmailDialog Initialization');
+    console.log('Props received in EmailDialog:', {
+      candidateName,
+      candidateEmail,
+      jobId,
+      jobTitle, 
+      jobFromContext: job ? 'Found job in context' : 'No job found in context',
+      actualCandidateFacingTitle: actualJobTitle,
+      candidateId,
+      threadId,
+      threadTitle
+    });
+    console.groupEnd();
+  }, [candidateName, candidateEmail, jobId, jobTitle, job, actualJobTitle, candidateId, threadId, threadTitle]);
 
   const {
     subject,
@@ -72,7 +75,7 @@ export function EmailDialog({
     candidateName,
     candidateEmail,
     jobId,
-    candidateFacingTitle: actualJobTitle, // Use the reliable job title with fallback
+    candidateFacingTitle: actualJobTitle, // Always pass a valid job title
     candidateId,
     threadId,
     threadTitle,

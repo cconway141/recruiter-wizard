@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { useEmailSender } from "@/hooks/email/useEmailSender";
 import { useCandidateThreads } from "@/hooks/email/useCandidateThreads";
 import { useToast } from "@/hooks/use-toast";
@@ -62,49 +63,75 @@ export const useEmailSending = ({
       return;
     }
 
+    if (!candidateId) {
+      toast({
+        title: "Missing candidate information",
+        description: "Cannot send email without candidate identification.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setIsSending(true);
       setErrorMessage(null);
 
-      console.log("\n==================================================");
-      console.log("🚀 INITIATING EMAIL SEND:");
-      console.log("==================================================");
-      console.log("Recipient:", candidateEmail);
+      console.group("EMAIL SENDING PROCESS");
+      console.log("Sending email to:", candidateEmail);
       console.log("Subject:", subject);
       console.log("Candidate:", candidateName);
       console.log("Job Title:", candidateFacingTitle || "NOT PROVIDED");
       console.log("Thread ID:", threadId || "NEW THREAD");
       console.log("Message ID:", messageId || "NEW MESSAGE");
-      console.log("==================================================\n");
+      
+      // Ensure we never pass undefined for job title
+      const safeJobTitle = candidateFacingTitle || "General Position";
 
       const result = await sendEmailViaGmail(
         candidateEmail,
         subject,
         body,
         candidateName,
-        candidateFacingTitle || "", // Ensure we pass empty string instead of undefined
+        safeJobTitle,
         threadId,
         messageId
       );
 
-      console.log("\n==================================================");
-      console.log("📨 EMAIL SENT - SAVING THREAD DATA:");
-      console.log("==================================================");
-      console.log("Result:", result);
-      console.log("Candidate ID:", candidateId);
-      console.log("Job ID:", jobId);
-      console.log("==================================================\n");
+      console.log("Email send result:", result);
 
       if (result?.threadId && candidateId && jobId) {
-        console.log("Saving new thread and message IDs:", result);
+        console.log("Saving thread and message IDs:", {
+          threadId: result.threadId,
+          messageId: result.messageId
+        });
+        
+        // Get existing thread IDs
+        const { data } = await supabase
+          .from('candidates')
+          .select('thread_ids')
+          .eq('id', candidateId)
+          .single();
+          
+        const threadIds = data?.thread_ids || {};
+        
         await saveThreadId({
           candidateId,
-          threadIds: {},
+          threadIds,
           jobId,
           newThreadId: result.threadId,
           newMessageId: result.messageId
         });
+        
+        console.log("Thread info saved successfully");
+      } else {
+        console.warn("Unable to save thread info - missing required data:", {
+          hasThreadId: !!result?.threadId,
+          hasCandidateId: !!candidateId,
+          hasJobId: !!jobId
+        });
       }
+      
+      console.groupEnd();
     } catch (error) {
       console.error("Error sending email:", error);
       setErrorMessage(error instanceof Error ? error.message : "Failed to send email");
@@ -114,6 +141,7 @@ export const useEmailSending = ({
         description: error instanceof Error ? error.message : "An error occurred",
         variant: "destructive",
       });
+      console.groupEnd();
     } finally {
       setIsSending(false);
     }
@@ -129,12 +157,15 @@ export const useEmailSending = ({
       return;
     }
 
+    // Ensure we never pass undefined for job title
+    const safeJobTitle = candidateFacingTitle || "General Position";
+
     composeEmailInGmail(
       candidateEmail,
       subject,
       body,
       candidateName,
-      candidateFacingTitle || "", // Ensure we pass empty string instead of undefined
+      safeJobTitle,
       threadId
     );
 

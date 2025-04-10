@@ -27,17 +27,15 @@ export const useCandidateThreads = () => {
     newMessageId
   }: CandidateThreadData) => {
     if (!jobId || !newThreadId || !candidateId) {
-      console.log("Missing data for thread saving:", { jobId, newThreadId, candidateId });
+      console.error("Missing required data for thread saving:", { jobId, newThreadId, candidateId });
       return false;
     }
     
     try {
-      console.log("\n====== SAVING THREAD INFO ======");
-      console.log(`Candidate ID: ${candidateId}`);
-      console.log(`Job ID: ${jobId}`);
-      console.log(`New Thread ID: ${newThreadId}`);
-      console.log(`New Message ID: ${newMessageId || "Not provided"}`);
-      console.log(`Existing Thread IDs: ${JSON.stringify(threadIds || {})}`);
+      console.group("THREAD STORAGE");
+      console.log(`Saving thread info for candidate ${candidateId}, job ${jobId}`);
+      console.log(`Thread ID: ${newThreadId}`);
+      console.log(`Message ID: ${newMessageId || newThreadId}`);
       
       // Convert legacy format if needed
       const convertedThreadIds: Record<string, ThreadInfo> = {};
@@ -61,23 +59,12 @@ export const useCandidateThreads = () => {
       };
       
       console.log(`Updated thread info for job ${jobId}:`, convertedThreadIds[jobId]);
-      
-      // Convert the Record to a plain object that satisfies the Json type
-      const threadIdsObject: Record<string, { threadId: string; messageId: string }> = {};
-      
-      Object.entries(convertedThreadIds).forEach(([key, value]) => {
-        threadIdsObject[key] = {
-          threadId: value.threadId,
-          messageId: value.messageId
-        };
-      });
-      
-      console.log("Final thread_ids object to be saved:", threadIdsObject);
+      console.log("Full thread_ids object:", convertedThreadIds);
       
       const { error: updateError } = await supabase
         .from('candidates')
         .update({
-          thread_ids: threadIdsObject as Json
+          thread_ids: convertedThreadIds as Json
         })
         .eq('id', candidateId);
         
@@ -88,25 +75,28 @@ export const useCandidateThreads = () => {
           description: "Email sent, but failed to save thread ID for future emails.",
           variant: "destructive"
         });
+        console.groupEnd();
         return false;
       } 
       
       console.log(`Thread info successfully saved for job: ${jobId}`);
-      console.log("==============================\n");
+      console.groupEnd();
       return true;
     } catch (err) {
       console.error("Error saving thread ID:", err);
+      console.groupEnd();
       return false;
     }
   };
   
   const getThreadInfo = async (candidateId: string, jobId: string): Promise<ThreadInfo | null> => {
     if (!candidateId || !jobId) {
-      console.log("Missing candidateId or jobId for getThreadInfo:", { candidateId, jobId });
+      console.error("Missing candidateId or jobId for getThreadInfo:", { candidateId, jobId });
       return null;
     }
     
     try {
+      console.group("THREAD RETRIEVAL");
       console.log(`Retrieving thread info for candidate ${candidateId} and job ${jobId}`);
       
       const { data, error } = await supabase
@@ -115,48 +105,49 @@ export const useCandidateThreads = () => {
         .eq('id', candidateId)
         .single();
         
-      if (error || !data) {
-        console.error("Error getting thread IDs:", error);
+      if (error || !data || !data.thread_ids) {
+        console.error("Error getting thread IDs or data not found:", error);
+        console.groupEnd();
         return null;
       }
       
       console.log(`Thread IDs data retrieved:`, data.thread_ids);
       
       // Handle both legacy format and new format
-      const threadInfo = data.thread_ids?.[jobId];
+      const threadInfo = data.thread_ids[jobId];
       
       if (!threadInfo) {
         console.log(`No thread info found for job ${jobId}`);
+        console.groupEnd();
         return null;
       }
       
       if (typeof threadInfo === 'string') {
         // Legacy format - convert on the fly
         console.log(`Found legacy thread format for job ${jobId}: ${threadInfo}`);
+        console.groupEnd();
         return { threadId: threadInfo, messageId: threadInfo };
       }
       
       // New format
       console.log(`Found thread info for job ${jobId}:`, threadInfo);
+      console.groupEnd();
       return threadInfo as ThreadInfo;
     } catch (err) {
       console.error("Error retrieving thread info:", err);
+      console.groupEnd();
       return null;
     }
   };
   
   const getThreadId = async (candidateId: string, jobId: string): Promise<string | null> => {
     const threadInfo = await getThreadInfo(candidateId, jobId);
-    const threadId = threadInfo?.threadId || null;
-    console.log(`Retrieved thread ID for candidate ${candidateId}, job ${jobId}: ${threadId || "None found"}`);
-    return threadId;
+    return threadInfo?.threadId || null;
   };
   
   const getMessageId = async (candidateId: string, jobId: string): Promise<string | null> => {
     const threadInfo = await getThreadInfo(candidateId, jobId);
-    const messageId = threadInfo?.messageId || null;
-    console.log(`Retrieved message ID for candidate ${candidateId}, job ${jobId}: ${messageId || "None found"}`);
-    return messageId;
+    return threadInfo?.messageId || null;
   };
 
   return {

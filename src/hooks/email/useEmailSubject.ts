@@ -31,13 +31,16 @@ export const useEmailSubject = ({
       return;
     }
     
-    // For new threads, ensure we have proper formatting
-    // Make sure we have a string, even if empty
-    const jobTitle = candidateFacingTitle || "";
+    // For new threads, create a standardized format with fallbacks
+    // Always use a clean candidate name
+    const cleanCandidateName = candidateName.trim();
+    
+    // Ensure job title has a fallback, never undefined
+    const jobTitle = candidateFacingTitle?.trim() || "General Position";
     
     // Create standard subject format: "ITBC [Job Title] [Candidate Name]"
-    // Avoid having "ITBC undefined" by using empty string if job title is missing
-    const standardizedSubject = `ITBC ${jobTitle} ${candidateName}`.trim();
+    const standardizedSubject = `ITBC ${jobTitle} ${cleanCandidateName}`.trim();
+    
     console.log("Created standardized subject:", standardizedSubject);
     
     setSubject(standardizedSubject);
