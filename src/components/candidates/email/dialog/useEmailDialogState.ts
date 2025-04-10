@@ -1,10 +1,10 @@
 
-import { useState, useEffect, useCallback } from "react";
-import { useEmailContent } from "@/hooks/useEmailContent";
+import { useEffect } from "react";
 import { useGmailConnection } from "@/hooks/gmail";
-import { useEmailSender } from "@/hooks/email/useEmailSender";
-import { useCandidateThreads } from "@/hooks/email/useCandidateThreads";
-import { useToast } from "@/hooks/use-toast";
+import { useEmailSubject } from "@/hooks/email/useEmailSubject";
+import { useEmailTemplate } from "@/hooks/email/useEmailTemplate";
+import { useEmailSending } from "@/hooks/email/useEmailSending";
+import { useGmailThread } from "@/hooks/email/useGmailThread";
 
 interface UseEmailDialogStateProps {
   candidateName: string;
@@ -27,14 +27,6 @@ export const useEmailDialogState = ({
   threadTitle,
   onClose,
 }: UseEmailDialogStateProps) => {
-  const { toast } = useToast();
-  const [selectedTemplate, setSelectedTemplate] = useState("default");
-  const [body, setBody] = useState("");
-  const [subject, setSubject] = useState("");
-  const [isSending, setIsSending] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [messageId, setMessageId] = useState<string | null>(null);
-
   const {
     isConnected: isGmailConnected,
     connectGmail,
@@ -43,26 +35,7 @@ export const useEmailDialogState = ({
     showLoadingUI: false,
   });
 
-  const { saveThreadId, getMessageId } = useCandidateThreads();
-
-  const { emailTemplates, getEmailContent } = useEmailContent({
-    candidateName,
-    jobTitle: candidateFacingTitle,
-    selectedTemplate,
-  });
-
-  const { sendEmailViaGmail, composeEmailInGmail } = useEmailSender({
-    onSuccess: () => {
-      setTimeout(() => {
-        onClose();
-        toast({
-          title: "Email sent",
-          description: "Your email has been sent successfully.",
-        });
-      }, 500);
-    },
-  });
-
+  // Logging initialization
   useEffect(() => {
     console.group('Email Dialog State Initialization');
     console.log('Props received:', {
@@ -76,167 +49,42 @@ export const useEmailDialogState = ({
     });
     console.groupEnd();
 
-    console.group('Subject Line Generation');
-    console.log('Input Variables:', {
-      candidateFacingTitle: candidateFacingTitle || 'UNDEFINED',
-      candidateName: candidateName || 'UNDEFINED',
-      threadTitle: threadTitle || 'UNDEFINED'
-    });
-
-    if (!candidateFacingTitle) {
-      console.error("ERROR: Job title (candidateFacingTitle) is missing! This should never happen.");
-    }
-    
-    const standardizedSubject = `ITBC ${candidateFacingTitle} ${candidateName}`.trim();
-    console.log("Created standardized subject:", standardizedSubject);
-    
-    const finalSubject = threadTitle || standardizedSubject;
-    
-    console.log('Final Subject:', finalSubject);
-    console.log('Thread Title Used:', !!threadTitle);
-    console.groupEnd();
-    
-    setSubject(finalSubject);
-
-    const content = getEmailContent();
-    if (content) {
-      setBody(content.body || "");
-    }
-
-    const fetchMessageId = async () => {
-      if (threadId && candidateId && jobId) {
-        console.log("🔍 Retrieving message ID for threading...");
-        console.log({
-          candidateId,
-          jobId,
-          threadId,
-        });
-        
-        const storedMessageId = await getMessageId(candidateId, jobId);
-        console.log("Retrieved message ID for threading:", storedMessageId);
-        setMessageId(storedMessageId);
-      }
-    };
-    
-    fetchMessageId();
-
+    // Background check for Gmail connection
     setTimeout(() => {
       checkGmailConnection().catch((err) => {
         console.error("Background Gmail check failed:", err);
       });
     }, 100);
-  }, [checkGmailConnection, candidateName, candidateFacingTitle, threadTitle, getEmailContent, threadId, candidateId, jobId, getMessageId]);
+  }, [checkGmailConnection, candidateName, candidateEmail, jobId, candidateFacingTitle, candidateId, threadId, threadTitle]);
 
-  const handleTemplateChange = (template: string) => {
-    setSelectedTemplate(template);
-    const content = getEmailContent(template);
-    if (content) {
-      setBody(content.body || "");
-    }
-  };
+  // Use our new hooks
+  const { subject, setSubject } = useEmailSubject({
+    candidateName,
+    candidateFacingTitle,
+    threadTitle
+  });
 
-  const handleSendEmail = async () => {
-    if (!candidateEmail) {
-      toast({
-        title: "Missing email address",
-        description: "No email address provided for this candidate.",
-        variant: "destructive",
-      });
-      return;
-    }
+  const { body, setBody, selectedTemplate, emailTemplates, handleTemplateChange } = useEmailTemplate({
+    candidateName,
+    jobTitle: candidateFacingTitle
+  });
 
-    if (!body.trim()) {
-      toast({
-        title: "Email is empty",
-        description: "Please enter some content before sending.",
-        variant: "destructive",
-      });
-      return;
-    }
+  const { messageId, handleOpenThreadInGmail } = useGmailThread({
+    candidateId,
+    jobId,
+    threadId
+  });
 
-    try {
-      setIsSending(true);
-      setErrorMessage(null);
-
-      console.log("\n==================================================");
-      console.log("🚀 INITIATING EMAIL SEND:");
-      console.log("==================================================");
-      console.log("Recipient:", candidateEmail);
-      console.log("Subject:", subject);
-      console.log("Candidate:", candidateName);
-      console.log("Job Title:", candidateFacingTitle);
-      console.log("Thread ID:", threadId || "NEW THREAD");
-      console.log("Message ID:", messageId || "NEW MESSAGE");
-      console.log("==================================================\n");
-
-      const result = await sendEmailViaGmail(
-        candidateEmail,
-        subject,
-        body,
-        candidateName,
-        candidateFacingTitle,
-        threadId,
-        messageId
-      );
-
-      console.log("\n==================================================");
-      console.log("📨 EMAIL SENT - SAVING THREAD DATA:");
-      console.log("==================================================");
-      console.log("Result:", result);
-      console.log("Candidate ID:", candidateId);
-      console.log("Job ID:", jobId);
-      console.log("==================================================\n");
-
-      if (result?.threadId && candidateId && jobId) {
-        console.log("Saving new thread and message IDs:", result);
-        await saveThreadId({
-          candidateId,
-          threadIds: {},
-          jobId,
-          newThreadId: result.threadId,
-          newMessageId: result.messageId
-        });
-      }
-    } catch (error) {
-      console.error("Error sending email:", error);
-      setErrorMessage(error instanceof Error ? error.message : "Failed to send email");
-
-      toast({
-        title: "Failed to send email",
-        description: error instanceof Error ? error.message : "An error occurred",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSending(false);
-    }
-  };
-
-  const handleComposeInGmail = useCallback(() => {
-    if (!candidateEmail) {
-      toast({
-        title: "Missing email address",
-        description: "No email address provided for this candidate.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    composeEmailInGmail(
-      candidateEmail,
-      subject,
-      body,
-      candidateName,
-      candidateFacingTitle,
-      threadId
-    );
-
-    onClose();
-  }, [candidateEmail, subject, body, candidateName, candidateFacingTitle, threadId, composeEmailInGmail, onClose, toast]);
-
-  const handleOpenThreadInGmail = useCallback(() => {
-    const searchQuery = encodeURIComponent(`subject:(${subject})`);
-    window.open(`https://mail.google.com/mail/u/0/#search/${searchQuery}`, "_blank");
-  }, [subject]);
+  const { isSending, errorMessage, handleSendEmail, handleComposeInGmail } = useEmailSending({
+    candidateId,
+    candidateName,
+    candidateEmail,
+    jobId,
+    candidateFacingTitle,
+    threadId,
+    messageId,
+    onClose
+  });
 
   return {
     subject,
@@ -249,9 +97,9 @@ export const useEmailDialogState = ({
     setSubject,
     setBody,
     handleTemplateChange,
-    handleSendEmail,
-    handleComposeInGmail,
-    handleOpenThreadInGmail,
+    handleSendEmail: () => handleSendEmail(subject, body),
+    handleComposeInGmail: () => handleComposeInGmail(subject, body),
+    handleOpenThreadInGmail: () => handleOpenThreadInGmail(subject),
     connectGmail,
   };
 };
