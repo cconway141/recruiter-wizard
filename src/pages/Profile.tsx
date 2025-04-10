@@ -42,6 +42,7 @@ import * as z from "zod";
 import { User, Mail, Lock, ShieldAlert, MailCheck, FileSignature } from "lucide-react";
 import { GmailConnectButton } from "@/components/candidates/email/GmailConnectButton";
 import { useQuery } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 
 const profileFormSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -119,6 +120,17 @@ const Profile = () => {
       confirmPassword: '',
     },
   });
+
+  const queryClient = useQueryClient();
+  const forceRefreshGmailStatus = () => {
+    queryClient.invalidateQueries({ queryKey: ['gmail-connection', user?.id] });
+  };
+
+  useEffect(() => {
+    if (user?.id) {
+      forceRefreshGmailStatus();
+    }
+  }, [user?.id]);
 
   const handleUpdateProfile = async (values: z.infer<typeof profileFormSchema>) => {
     if (!user) return;
@@ -345,6 +357,13 @@ const Profile = () => {
                   Connect your Gmail account to send emails directly from the platform.
                 </p>
                 <GmailConnectButton />
+                <Button 
+                  variant="ghost" 
+                  onClick={forceRefreshGmailStatus}
+                  className="text-xs"
+                >
+                  Refresh Connection Status
+                </Button>
               </CardContent>
             </Card>
             

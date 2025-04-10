@@ -5,7 +5,7 @@ import { Mail, AlertCircle, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface GmailConnectButtonProps {
   onConnectionChange?: (connected: boolean) => void;
@@ -19,6 +19,7 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
   const { toast } = useToast();
   const { user } = useAuth();
   const [configError, setConfigError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
   
   // Use React Query to manage the connection state and provide automatic refetching
   const { 
@@ -32,6 +33,7 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
       if (!user) return { connected: false, expired: false, needsRefresh: false };
       
       try {
+        console.log("Checking Gmail connection for user:", user.id);
         setConfigError(null);
         const { data, error } = await supabase.functions.invoke('google-auth/check-connection', {
           body: { userId: user.id }
@@ -42,6 +44,8 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
           throw error;
         }
         
+        console.log("Connection status:", data.connected ? "Connected" : "Not connected");
+        
         if (data?.error === 'Configuration error') {
           setConfigError(data.message || 'Google OAuth is not properly configured');
           return { connected: false, expired: false, needsRefresh: false };
@@ -49,11 +53,13 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
         
         // If token needs refresh, attempt to refresh it
         if (data.needsRefresh) {
+          console.log("Token needs refresh, attempting refresh...");
           await refreshToken();
           // Re-fetch after refresh attempt
           const refreshResult = await supabase.functions.invoke('google-auth/check-connection', {
             body: { userId: user.id }
           });
+          console.log("Refresh result:", refreshResult.data);
           return refreshResult.data;
         }
         
@@ -70,16 +76,24 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
     },
     enabled: !!user?.id,
     refetchOnWindowFocus: true,
-    refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes to check token validity
-    staleTime: 60 * 1000 // Consider data stale after 1 minute
+    refetchInterval: 2 * 60 * 1000, // Refetch every 2 minutes to check token validity
+    staleTime: 30 * 1000 // Consider data stale after 30 seconds
   });
   
   const isConnected = connectionStatus?.connected && !connectionStatus?.expired;
+  
+  // Effect to notify parent of connection changes
+  useEffect(() => {
+    if (onConnectionChange && connectionStatus) {
+      onConnectionChange(connectionStatus.connected && !connectionStatus.expired);
+    }
+  }, [connectionStatus, onConnectionChange]);
   
   const refreshToken = async () => {
     if (!user) return false;
     
     try {
+      console.log("Refreshing token...");
       const { data, error } = await supabase.functions.invoke('google-auth/refresh-token', {
         body: { userId: user.id }
       });
@@ -94,6 +108,7 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
         return false;
       }
       
+      console.log("Token refreshed successfully");
       await refetch(); // Refetch connection status after refreshing token
       return true;
     } catch (error) {
@@ -115,6 +130,7 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
     try {
       setConfigError(null);
       
+      console.log("Getting auth URL for user:", user.id);
       const { data, error } = await supabase.functions.invoke('google-auth/get-auth-url', {
         body: { userId: user.id }
       });
@@ -139,6 +155,8 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
         return;
       }
       
+      console.log("Generated auth URL:", data.url);
+      
       // Redirect to Google's OAuth flow
       window.location.href = data.url;
     } catch (error) {
@@ -155,6 +173,8 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
     if (!user) return;
     
     try {
+      console.log("Disconnecting Gmail for user:", user.id);
+      
       // First revoke the token via the edge function
       const { error: revokeError } = await supabase.functions.invoke('google-auth/revoke-token', {
         body: { userId: user.id }
@@ -188,6 +208,9 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
         title: "Success",
         description: "Gmail disconnected successfully.",
       });
+      
+      // Invalidate all gmail-related queries
+      queryClient.invalidateQueries({ queryKey: ['gmail-connection'] });
       
       await refetch(); // Refetch to update the connection status
     } catch (error) {

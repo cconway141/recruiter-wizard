@@ -57,8 +57,8 @@ export const GmailCallback: React.FC = () => {
           return;
         }
 
-        // Invalidate the gmail connection query to force a refresh
-        queryClient.invalidateQueries({ queryKey: ['gmail-connection', user.id] });
+        // Invalidate all gmail-related queries to force a refresh across the app
+        queryClient.invalidateQueries({ queryKey: ['gmail-connection'] });
         
         setStatus('success');
         

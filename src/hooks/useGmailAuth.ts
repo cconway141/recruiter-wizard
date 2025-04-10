@@ -38,15 +38,22 @@ export const useGmailAuth = () => {
         throw new Error(data.message || 'Google OAuth is not properly configured');
       }
       
+      // Log connection status for debugging
+      console.log("Gmail connection status:", data);
+      
       if (!data.connected || data.expired) {
+        console.log("Gmail not connected or expired");
         toast({
           title: "Gmail Not Connected",
           description: "Please connect your Gmail account to send emails.",
           variant: "destructive"
         });
+      } else {
+        console.log("Gmail is connected and valid");
       }
       
       if (data.needsRefresh) {
+        console.log("Gmail token needs refresh, refreshing...");
         await refreshGmailToken();
         // Re-fetch after refresh
         const { data: refreshedData } = await supabase.functions.invoke('google-auth/check-connection', {
@@ -59,7 +66,8 @@ export const useGmailAuth = () => {
     },
     enabled: !!user,
     refetchOnWindowFocus: true,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 1 * 60 * 1000, // 1 minute - reduced to ensure more frequent checks
+    refetchInterval: 2 * 60 * 1000, // Refresh every 2 minutes
   });
 
   useEffect(() => {
@@ -81,6 +89,7 @@ export const useGmailAuth = () => {
     if (!user) return false;
     
     try {
+      console.log("Refreshing Gmail token...");
       const { data, error } = await supabase.functions.invoke('google-auth/refresh-token', {
         body: { userId: user.id }
       });
@@ -91,6 +100,7 @@ export const useGmailAuth = () => {
         return false;
       }
       
+      console.log("Gmail token refreshed successfully");
       return true;
     } catch (error) {
       console.error("Error refreshing Gmail token:", error);
@@ -101,6 +111,7 @@ export const useGmailAuth = () => {
 
   const checkGmailConnection = async (): Promise<boolean> => {
     try {
+      console.log("Explicitly checking Gmail connection...");
       const result = await refetch();
       return result.data?.connected && !result.data?.expired;
     } catch (error) {
