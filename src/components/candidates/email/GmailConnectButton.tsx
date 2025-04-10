@@ -7,10 +7,25 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { ConfigErrorButton } from "./ConfigErrorButton";
 
-export const GmailConnectButton: React.FC = () => {
+interface GmailConnectButtonProps {
+  className?: string;
+  onConnectionChange?: (connected: boolean) => void;
+}
+
+export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({ 
+  className,
+  onConnectionChange 
+}) => {
   const { user } = useAuth();
   const { isGmailConnected, isCheckingGmail, disconnectGmail } = useGmailAuth();
   const { toast } = useToast();
+
+  // Notify parent component when connection status changes
+  useEffect(() => {
+    if (onConnectionChange) {
+      onConnectionChange(isGmailConnected);
+    }
+  }, [isGmailConnected, onConnectionChange]);
 
   // Function to initiate the Gmail connection flow
   const connectGmail = useCallback(async () => {
@@ -83,6 +98,11 @@ export const GmailConnectButton: React.FC = () => {
         title: "Gmail Connected",
         description: "Your Gmail account has been connected successfully!",
       });
+      
+      // Notify parent about successful connection
+      if (onConnectionChange) {
+        onConnectionChange(true);
+      }
     } else if (gmailConnected === 'false') {
       // Clean URL without reloading the page
       window.history.replaceState({}, document.title, window.location.pathname);
@@ -96,14 +116,20 @@ export const GmailConnectButton: React.FC = () => {
         description: "Failed to connect to Gmail. Please try again.",
         variant: "destructive",
       });
+      
+      // Notify parent about failed connection
+      if (onConnectionChange) {
+        onConnectionChange(false);
+      }
     }
-  }, [toast]);
+  }, [toast, onConnectionChange]);
 
   return (
     <ConfigErrorButton
       isConnected={isGmailConnected}
       onClick={connectGmail}
       onDisconnect={disconnectGmail}
+      className={className}
     />
   );
 };
