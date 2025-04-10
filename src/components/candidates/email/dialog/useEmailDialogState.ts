@@ -66,29 +66,40 @@ export const useEmailDialogState = ({
     console.debug('Email Dialog State Props:', {
       jobId,
       candidateFacingTitle,
-      threadId
+      threadId,
+      candidateName,
+      threadTitle
     });
 
-    // Always construct a proper subject with proper handling of job title
+    console.group('Subject Line Generation');
+    console.log('Input Variables:', {
+      candidateFacingTitle: candidateFacingTitle || 'UNDEFINED',
+      candidateName: candidateName || 'UNDEFINED',
+      threadTitle: threadTitle || 'UNDEFINED'
+    });
+
     let standardizedSubject;
     if (candidateFacingTitle && candidateFacingTitle.trim() !== '') {
       standardizedSubject = `ITBC ${candidateFacingTitle} ${candidateName}`.trim();
       console.log("Created subject with job title:", standardizedSubject);
     } else {
-      // This fallback should ideally never happen since job title is required
       console.warn("Missing candidateFacingTitle (job title) when constructing email subject");
       standardizedSubject = `ITBC ${candidateName}`.trim();
     }
     
-    // Use thread title if it exists (for replies), otherwise use our constructed subject
-    setSubject(threadTitle || standardizedSubject);
+    const finalSubject = threadTitle || standardizedSubject;
+    
+    console.log('Final Subject:', finalSubject);
+    console.log('Thread Title Used:', !!threadTitle);
+    console.groupEnd();
+    
+    setSubject(finalSubject);
 
     const content = getEmailContent();
     if (content) {
       setBody(content.body || "");
     }
 
-    // Fetch the message ID if we have a thread ID
     const fetchMessageId = async () => {
       if (threadId && candidateId && jobId) {
         const storedMessageId = await getMessageId(candidateId, jobId);
@@ -137,7 +148,6 @@ export const useEmailDialogState = ({
       setIsSending(true);
       setErrorMessage(null);
 
-      // Log the values being sent to trace data flow
       console.debug("Sending email with:", {
         candidateEmail,
         subject,
