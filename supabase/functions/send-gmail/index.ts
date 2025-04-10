@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
@@ -19,7 +20,7 @@ interface EmailRequest {
   candidateName: string;
   jobTitle?: string;
   threadId?: string;
-  messageId?: string; // Add messageId for better threading
+  messageId?: string;
   userId: string;
 }
 
@@ -109,6 +110,12 @@ serve(async (req) => {
     // Generate a unique Message-ID for this email
     const currentMessageId = `<itbc-${Date.now()}-${Math.random().toString(36).substring(2, 10)}@mail.gmail.com>`;
     
+    console.log("Generating email with following parameters:");
+    console.log(`- Is reply: ${!!threadId}`);
+    console.log(`- Thread ID: ${threadId || 'None (new thread)'}`);
+    console.log(`- Original message ID: ${messageId || 'None (new thread)'}`);
+    console.log(`- New message ID: ${currentMessageId}`);
+    
     // Improved email headers with proper threading info
     let emailLines = [
       `To: ${to}`,
@@ -119,19 +126,25 @@ serve(async (req) => {
       `Message-ID: ${currentMessageId}`,
     ];
     
-    // Add proper threading headers for replies
+    // Add proper threading headers for replies - this is critical for Gmail threading
     if (threadId && messageId) {
-      console.log("Adding proper threading headers for existing conversation");
-      emailLines.push(`References: <${messageId}>`);
-      emailLines.push(`In-Reply-To: <${messageId}>`);
+      console.log("Adding proper threading headers for reply to existing conversation");
+      // The References header should contain the message ID we're replying to
+      emailLines.push(`References: ${messageId}`);
+      // The In-Reply-To header should also contain the message ID we're replying to
+      emailLines.push(`In-Reply-To: ${messageId}`);
       emailLines.push(`Thread-Topic: ${formattedSubject}`);
+      
+      console.log("Added threading headers:");
+      console.log(`References: ${messageId}`);
+      console.log(`In-Reply-To: ${messageId}`);
     }
     
     emailLines.push('', body);
     
     const emailContent = emailLines.join('\r\n');
     console.log("Email content prepared with proper RFC-compliant threading headers");
-    console.log("Email headers:", emailLines.slice(0, 7).join('\r\n'));
+    console.log("Email headers:", emailLines.slice(0, emailLines.length - 2).join('\r\n'));
 
     const encodedEmail = btoa(emailContent)
       .replace(/\+/g, '-')
@@ -146,7 +159,7 @@ serve(async (req) => {
     };
     
     if (threadId) {
-      console.log(`Adding threadId ${threadId} to API request`);
+      console.log(`Adding threadId ${threadId} to API request to ensure proper threading`);
       requestBody.threadId = threadId;
     }
     
@@ -188,10 +201,12 @@ serve(async (req) => {
     
     // Extract both thread ID and message ID from the response
     const newThreadId = data.threadId || threadId;
-    const newMessageId = data.id; // This is the actual message ID needed for threading
+    const newMessageId = data.id; // This is the actual message ID needed for future threading
     
     console.log(`Successfully sent email with thread ID: ${newThreadId}`);
     console.log(`Message ID (for future threading): ${newMessageId}`);
+    console.log(`Subject: "${formattedSubject}"`);
+    console.log(`Is reply: ${!!threadId}`);
 
     return new Response(
       JSON.stringify({ 
