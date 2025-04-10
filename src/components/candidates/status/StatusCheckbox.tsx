@@ -54,4 +54,3 @@ export const StatusCheckbox: React.FC<StatusCheckboxProps> = ({
     </div>
   );
 };
-
