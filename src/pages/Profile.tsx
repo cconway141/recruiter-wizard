@@ -1,64 +1,16 @@
-import { useState, useEffect } from "react";
+
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/components/ui/use-toast";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Navbar } from "@/components/layout/Navbar";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { useForm } from "react-hook-form";
-import { 
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { User, Mail, Lock, ShieldAlert, MailCheck, FileSignature } from "lucide-react";
-import { GmailConnectButton } from "@/components/candidates/email/GmailConnectButton";
-import { useQuery } from "@tanstack/react-query";
-import { useQueryClient } from "@tanstack/react-query";
-
-const profileFormSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  email: z.string().email("Invalid email address"),
-  emailSignature: z.string().optional(),
-});
-
-const passwordFormSchema = z.object({
-  currentPassword: z.string().min(1, "Current password is required"),
-  newPassword: z.string().min(6, "Password must be at least 6 characters"),
-  confirmPassword: z.string().min(6, "Password must be at least 6 characters"),
-}).refine(data => data.newPassword === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-});
+import { ProfileForm } from "@/components/profile/ProfileForm";
+import { GmailCard } from "@/components/profile/GmailCard";
+import { PasswordCard } from "@/components/profile/PasswordCard";
+import { GoogleAccountCard } from "@/components/profile/GoogleAccountCard";
+import { SecurityCard } from "@/components/profile/SecurityCard";
 
 interface Profile {
   id: string;
@@ -74,10 +26,9 @@ interface Profile {
 }
 
 const Profile = () => {
-  const { user } = useAuth();
+  const { user, isGoogleLinked } = useAuth();
   const navigate = useNavigate();
-  const [isChangingPassword, setIsChangingPassword] = useState(false);
-  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const queryClient = useQueryClient();
 
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['profile', user?.id],
@@ -96,157 +47,18 @@ const Profile = () => {
     enabled: !!user?.id
   });
 
-  const profileForm = useForm<z.infer<typeof profileFormSchema>>({
-    resolver: zodResolver(profileFormSchema),
-    defaultValues: {
-      firstName: user?.user_metadata?.first_name || '',
-      lastName: user?.user_metadata?.last_name || '',
-      email: user?.email || '',
-      emailSignature: '',
-    },
-    values: {
-      firstName: profile?.first_name || user?.user_metadata?.first_name || '',
-      lastName: profile?.last_name || user?.user_metadata?.last_name || '',
-      email: user?.email || '',
-      emailSignature: profile?.email_signature || '',
-    }
-  });
-
-  const passwordForm = useForm<z.infer<typeof passwordFormSchema>>({
-    resolver: zodResolver(passwordFormSchema),
-    defaultValues: {
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: '',
-    },
-  });
-
-  const queryClient = useQueryClient();
-  const forceRefreshGmailStatus = () => {
-    queryClient.invalidateQueries({ queryKey: ['gmail-connection', user?.id] });
-  };
-
+  // Force refresh Gmail status on component mount
   useEffect(() => {
     if (user?.id) {
-      forceRefreshGmailStatus();
+      queryClient.invalidateQueries({ queryKey: ['gmail-connection', user.id] });
     }
-  }, [user?.id]);
+  }, [user?.id, queryClient]);
 
-  const handleUpdateProfile = async (values: z.infer<typeof profileFormSchema>) => {
-    if (!user) return;
-    
-    const emailChanged = values.email !== user.email;
-    
-    try {
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ 
-          first_name: values.firstName, 
-          last_name: values.lastName,
-          display_name: `${values.firstName} ${values.lastName}`.trim(),
-          email_signature: values.emailSignature || ''
-        })
-        .eq('id', user.id);
-
-      if (profileError) {
-        throw profileError;
-      }
-
-      const { error: metadataError } = await supabase.auth.updateUser({
-        data: { first_name: values.firstName, last_name: values.lastName }
-      });
-
-      if (metadataError) {
-        throw metadataError;
-      }
-
-      if (emailChanged) {
-        const { error: emailError } = await supabase.auth.updateUser({
-          email: values.email,
-        });
-
-        if (emailError) {
-          throw emailError;
-        }
-
-        toast({
-          title: "Email Update Initiated",
-          description: "Please check your new email address for a confirmation link.",
-        });
-      } else {
-        toast({
-          title: "Profile Updated",
-          description: "Your profile has been successfully updated.",
-        });
-      }
-
-      navigate('/');
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update profile. Please try again.",
-        variant: "destructive"
-      });
-    }
+  const handleProfileSuccess = () => {
+    navigate('/');
   };
 
-  const handleChangePassword = async (values: z.infer<typeof passwordFormSchema>) => {
-    try {
-      const { error } = await supabase.auth.updateUser({
-        password: values.newPassword
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      toast({
-        title: "Password Updated",
-        description: "Your password has been successfully updated.",
-      });
-
-      passwordForm.reset();
-      setIsChangingPassword(false);
-    } catch (error) {
-      console.error('Error updating password:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update password. Please try again.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleResetPassword = async () => {
-    if (!user?.email) return;
-    
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
-        redirectTo: `${window.location.origin}/profile`,
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      toast({
-        title: "Password Reset Email Sent",
-        description: "Please check your email for a password reset link.",
-      });
-      
-      setIsResettingPassword(false);
-    } catch (error) {
-      console.error('Error resetting password:', error);
-      toast({
-        title: "Error",
-        description: "Failed to send password reset email. Please try again.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const isGoogleLinked = profile?.google_linked || user?.app_metadata?.provider === 'google';
+  const isProfileGoogleLinked = profile?.google_linked || isGoogleLinked;
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -258,223 +70,24 @@ const Profile = () => {
         />
         
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <Card className="col-span-full md:col-span-1 lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" /> Personal Information
-              </CardTitle>
-              <CardDescription>Update your personal details</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Form {...profileForm}>
-                <form onSubmit={profileForm.handleSubmit(handleUpdateProfile)} className="space-y-4">
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <FormField
-                      control={profileForm.control}
-                      name="firstName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>First Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Enter first name" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={profileForm.control}
-                      name="lastName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Last Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Enter last name" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  
-                  <FormField
-                    control={profileForm.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email Address</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter email address" {...field} />
-                        </FormControl>
-                        <FormDescription>
-                          Changing your email will require confirmation via a new email.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={profileForm.control}
-                    name="emailSignature"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email Signature</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder="Your email signature" 
-                            className="min-h-[100px]" 
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          This signature will be added to all emails you send through the platform.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <Button type="submit" className="w-full md:w-auto">
-                    Update Profile
-                  </Button>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
+          <ProfileForm 
+            user={user} 
+            profile={profile} 
+            onSuccess={handleProfileSuccess} 
+          />
           
           <div className="col-span-full md:col-span-1 space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MailCheck className="h-5 w-5" /> Gmail Integration
-                </CardTitle>
-                <CardDescription>Connect your Gmail account to send emails</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Connect your Gmail account to send emails directly from the platform.
-                </p>
-                <GmailConnectButton />
-                <Button 
-                  variant="ghost" 
-                  onClick={forceRefreshGmailStatus}
-                  className="text-xs"
-                >
-                  Refresh Connection Status
-                </Button>
-              </CardContent>
-            </Card>
+            <GmailCard />
             
-            {!isGoogleLinked && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Lock className="h-5 w-5" /> Password
-                  </CardTitle>
-                  <CardDescription>Manage your password</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {isChangingPassword ? (
-                    <Form {...passwordForm}>
-                      <form onSubmit={passwordForm.handleSubmit(handleChangePassword)} className="space-y-4">
-                        <FormField
-                          control={passwordForm.control}
-                          name="newPassword"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>New Password</FormLabel>
-                              <FormControl>
-                                <Input type="password" placeholder="Enter new password" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={passwordForm.control}
-                          name="confirmPassword"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Confirm Password</FormLabel>
-                              <FormControl>
-                                <Input type="password" placeholder="Confirm new password" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <div className="flex space-x-2">
-                          <Button type="submit">Update Password</Button>
-                          <Button variant="outline" onClick={() => setIsChangingPassword(false)}>
-                            Cancel
-                          </Button>
-                        </div>
-                      </form>
-                    </Form>
-                  ) : (
-                    <div className="space-y-2">
-                      <p className="text-sm text-muted-foreground">Change your password to a secure combination of letters, numbers, and symbols.</p>
-                      <Button onClick={() => setIsChangingPassword(true)}>
-                        Change Password
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+            {!isProfileGoogleLinked && (
+              <PasswordCard />
             )}
             
-            {isGoogleLinked && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Mail className="h-5 w-5" /> Google Account
-                  </CardTitle>
-                  <CardDescription>Your account is linked with Google</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    Your account is currently linked with Google. You can use your Google account to sign in.
-                  </p>
-                </CardContent>
-              </Card>
+            {isProfileGoogleLinked && (
+              <GoogleAccountCard />
             )}
             
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <ShieldAlert className="h-5 w-5" /> Account Security
-                </CardTitle>
-                <CardDescription>Advanced security options</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">Forgot your password? Request a password reset email.</p>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="outline">Reset Password</Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Password Reset</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Are you sure you want to reset your password? A password reset link will be sent to your email address.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleResetPassword}>
-                          Send Reset Email
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </CardContent>
-            </Card>
+            <SecurityCard />
           </div>
         </div>
       </main>
