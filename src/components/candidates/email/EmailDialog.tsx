@@ -30,6 +30,19 @@ export function EmailDialog({
   threadId,
   threadTitle,
 }: EmailDialogProps) {
+  // Debug the incoming props
+  console.group('EmailDialog Initialization');
+  console.log('Props received in EmailDialog:', {
+    candidateName,
+    candidateEmail,
+    jobId,
+    jobTitle, // Log the job title specifically
+    candidateId,
+    threadId,
+    threadTitle
+  });
+  console.groupEnd();
+
   const {
     subject,
     body,

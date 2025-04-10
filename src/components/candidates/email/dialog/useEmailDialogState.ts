@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { useEmailContent } from "@/hooks/useEmailContent";
 import { useGmailConnection } from "@/hooks/gmail";
@@ -63,13 +64,16 @@ export const useEmailDialogState = ({
   });
 
   useEffect(() => {
-    console.debug('Email Dialog State Props:', {
-      jobId,
-      candidateFacingTitle,
-      threadId,
-      candidateName,
-      threadTitle
+    console.group('Email Dialog State Initialization');
+    console.log('Props received:', {
+      candidateName: candidateName || 'MISSING',
+      candidateEmail: candidateEmail || 'MISSING',
+      jobId: jobId || 'MISSING',
+      candidateFacingTitle: candidateFacingTitle || 'MISSING',
+      threadId: threadId || 'MISSING',
+      threadTitle: threadTitle || 'MISSING',
     });
+    console.groupEnd();
 
     console.group('Subject Line Generation');
     console.log('Input Variables:', {
@@ -78,15 +82,22 @@ export const useEmailDialogState = ({
       threadTitle: threadTitle || 'UNDEFINED'
     });
 
-    let standardizedSubject;
+    // Make sure we have a job title
+    let jobTitleToUse = '';
     if (candidateFacingTitle && candidateFacingTitle.trim() !== '') {
-      standardizedSubject = `ITBC ${candidateFacingTitle} ${candidateName}`.trim();
-      console.log("Created subject with job title:", standardizedSubject);
+      jobTitleToUse = candidateFacingTitle.trim();
+      console.log("Using job title from props:", jobTitleToUse);
     } else {
-      console.warn("Missing candidateFacingTitle (job title) when constructing email subject");
-      standardizedSubject = `ITBC ${candidateName}`.trim();
+      console.warn("⚠️ Missing job title (candidateFacingTitle) in props");
+      jobTitleToUse = "Role"; // Fallback value
+      console.log("Using fallback job title:", jobTitleToUse);
     }
     
+    // Create standardized subject with validated job title
+    const standardizedSubject = `ITBC ${jobTitleToUse} ${candidateName}`.trim();
+    console.log("Created standardized subject:", standardizedSubject);
+    
+    // Use thread title if it exists (for replies), otherwise use our constructed subject
     const finalSubject = threadTitle || standardizedSubject;
     
     console.log('Final Subject:', finalSubject);

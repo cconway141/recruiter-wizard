@@ -26,6 +26,19 @@ export const useEmailDialog = ({
 }: UseEmailDialogProps) => {
   const { toast } = useToast();
   
+  // Log all props to help debug
+  console.group('useEmailDialog Hook');
+  console.log('Props received in useEmailDialog:', {
+    candidateName,
+    candidateEmail,
+    jobId,
+    candidateFacingTitle, // Log to verify it's passed correctly
+    candidateId,
+    threadId,
+    threadTitle
+  });
+  console.groupEnd();
+  
   const {
     subject,
     body,
