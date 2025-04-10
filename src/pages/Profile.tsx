@@ -1,16 +1,41 @@
 
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Navbar } from "@/components/layout/Navbar";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
-import { ProfileForm } from "@/components/profile/ProfileForm";
 import { GmailCard } from "@/components/profile/GmailCard";
-import { PasswordCard } from "@/components/profile/PasswordCard";
 import { GoogleAccountCard } from "@/components/profile/GoogleAccountCard";
-import { SecurityCard } from "@/components/profile/SecurityCard";
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardHeader, 
+  CardTitle 
+} from "@/components/ui/card";
+import { 
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { User } from "lucide-react";
+import { toast } from "@/components/ui/use-toast";
+
+const emailSignatureSchema = z.object({
+  emailSignature: z.string().optional(),
+});
+
+type EmailSignatureFormValues = z.infer<typeof emailSignatureSchema>;
 
 interface Profile {
   id: string;
@@ -27,7 +52,6 @@ interface Profile {
 
 const Profile = () => {
   const { user, isGoogleLinked } = useAuth();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const { data: profile, isLoading: profileLoading } = useQuery({
@@ -54,8 +78,43 @@ const Profile = () => {
     }
   }, [user?.id, queryClient]);
 
-  const handleProfileSuccess = () => {
-    navigate('/');
+  const form = useForm<EmailSignatureFormValues>({
+    resolver: zodResolver(emailSignatureSchema),
+    defaultValues: {
+      emailSignature: '',
+    },
+    values: {
+      emailSignature: profile?.email_signature || '',
+    }
+  });
+
+  const handleUpdateSignature = async (values: EmailSignatureFormValues) => {
+    if (!user) return;
+    
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ 
+          email_signature: values.emailSignature || ''
+        })
+        .eq('id', user.id);
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Email Signature Updated",
+        description: "Your email signature has been successfully updated.",
+      });
+    } catch (error) {
+      console.error('Error updating signature:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update email signature. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   const isProfileGoogleLinked = profile?.google_linked || isGoogleLinked;
@@ -65,29 +124,57 @@ const Profile = () => {
       <Navbar />
       <main className="flex-1 container py-10">
         <PageHeader 
-          title="Edit Profile" 
-          description="Update your personal information and account settings"
+          title="User Profile" 
+          description="Manage your application settings"
         />
         
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <ProfileForm 
-            user={user} 
-            profile={profile} 
-            onSuccess={handleProfileSuccess} 
-          />
+          {/* Email Signature Card */}
+          <Card className="col-span-full md:col-span-1 lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="h-5 w-5" /> Email Signature
+              </CardTitle>
+              <CardDescription>Customize your email signature</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(handleUpdateSignature)} className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="emailSignature"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email Signature</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Your email signature" 
+                            className="min-h-[100px]" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          This signature will be added to all emails you send through the platform.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <Button type="submit" className="w-full md:w-auto">
+                    Update Signature
+                  </Button>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
           
           <div className="col-span-full md:col-span-1 space-y-6">
             <GmailCard />
             
-            {!isProfileGoogleLinked && (
-              <PasswordCard />
-            )}
-            
             {isProfileGoogleLinked && (
               <GoogleAccountCard />
             )}
-            
-            <SecurityCard />
           </div>
         </div>
       </main>

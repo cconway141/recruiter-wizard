@@ -43,7 +43,7 @@ export const GmailCallback: React.FC = () => {
           return;
         }
 
-        console.log("Exchanging code for tokens...");
+        console.log("Exchanging code for Gmail API access tokens...");
         
         // Exchange the code for tokens
         const { data, error } = await supabase.functions.invoke('google-auth/exchange-code', {
@@ -57,14 +57,15 @@ export const GmailCallback: React.FC = () => {
           return;
         }
 
-        // Invalidate all gmail-related queries to force a refresh across the app
+        // Force immediate refresh of all Gmail connection queries
         queryClient.invalidateQueries({ queryKey: ['gmail-connection'] });
+        queryClient.invalidateQueries({ queryKey: ['gmail-connection', user.id] });
         
         setStatus('success');
         
         toast({
-          title: "Success",
-          description: "Gmail connected successfully.",
+          title: "Gmail Connected",
+          description: "Your Gmail account has been successfully connected for sending emails.",
         });
 
         // Redirect back to the profile page after a short delay
@@ -89,7 +90,7 @@ export const GmailCallback: React.FC = () => {
         {status === 'processing' && (
           <>
             <Loader2 className="w-8 h-8 mx-auto animate-spin text-blue-500" />
-            <h2 className="text-xl font-semibold">Connecting Gmail...</h2>
+            <h2 className="text-xl font-semibold">Connecting Gmail API...</h2>
             <p className="text-gray-500">Please wait while we complete the connection process.</p>
           </>
         )}
@@ -97,7 +98,7 @@ export const GmailCallback: React.FC = () => {
         {status === 'success' && (
           <>
             <CheckCircle className="w-8 h-8 mx-auto text-green-500" />
-            <h2 className="text-xl font-semibold text-green-600">Gmail Connected!</h2>
+            <h2 className="text-xl font-semibold text-green-600">Gmail API Connected!</h2>
             <p className="text-gray-500">You will be redirected to your profile in a moment.</p>
           </>
         )}

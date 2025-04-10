@@ -70,8 +70,8 @@ export const useGmailConnection = ({ onConnectionChange }: UseGmailConnectionPro
     },
     enabled: !!user?.id,
     refetchOnWindowFocus: true,
-    refetchInterval: 2 * 60 * 1000, // Refetch every 2 minutes
-    staleTime: 30 * 1000 // Consider data stale after 30 seconds
+    refetchInterval: 10 * 1000, // Refetch every 10 seconds (more aggressive)
+    staleTime: 5 * 1000 // Consider data stale after 5 seconds (more aggressive)
   });
   
   const isConnected = connectionStatus?.connected && !connectionStatus?.expired;

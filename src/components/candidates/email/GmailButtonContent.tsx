@@ -35,7 +35,7 @@ export const GmailButtonContent: React.FC<GmailButtonContentProps> = ({
     return (
       <>
         <CheckCircle className="h-4 w-4" />
-        <span>Gmail Connected</span>
+        <span>Gmail API Connected</span>
       </>
     );
   }
@@ -43,7 +43,7 @@ export const GmailButtonContent: React.FC<GmailButtonContentProps> = ({
   return (
     <>
       <Mail className="h-4 w-4" />
-      <span>Connect Gmail</span>
+      <span>Connect Gmail API</span>
     </>
   );
 };

@@ -19,7 +19,9 @@ export const GmailCard: React.FC = () => {
   
   const forceRefreshGmailStatus = () => {
     if (user?.id) {
+      // Force immediate invalidation of all Gmail connection queries
       queryClient.invalidateQueries({ queryKey: ['gmail-connection', user.id] });
+      queryClient.invalidateQueries({ queryKey: ['gmail-connection'] });
     }
   };
 
@@ -27,13 +29,13 @@ export const GmailCard: React.FC = () => {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <MailCheck className="h-5 w-5" /> Gmail Integration
+          <MailCheck className="h-5 w-5" /> Gmail API Access
         </CardTitle>
-        <CardDescription>Connect your Gmail account to send emails</CardDescription>
+        <CardDescription>Connect Gmail to send emails from the platform</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          Connect your Gmail account to send emails directly from the platform.
+          Allow this application to send emails on your behalf through your Gmail account.
         </p>
         <GmailConnectButton />
         <Button 
