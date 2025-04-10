@@ -23,12 +23,14 @@ interface CandidateListItemProps {
   candidate: Candidate;
   onRemove: (candidateId: string) => void;
   onStatusChange: (candidateId: string, statusKey: keyof Candidate['status']) => void;
+  jobId: string; // Now we explicitly require the job ID
 }
 
 export const CandidateListItem: React.FC<CandidateListItemProps> = ({ 
   candidate, 
   onRemove, 
-  onStatusChange 
+  onStatusChange,
+  jobId 
 }) => {
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
 
@@ -37,23 +39,20 @@ export const CandidateListItem: React.FC<CandidateListItemProps> = ({
     setEmailDialogOpen(true);
   };
 
-  // Get first thread ID if available
-  const getFirstThreadId = (): string | null => {
-    if (!candidate.threadIds) return null;
+  // Replace getFirstThreadId with getThreadIdForJob
+  const getThreadIdForJob = (): string | null => {
+    if (!candidate.threadIds || !jobId) return null;
     
-    // Check if threadIds exists and has at least one entry
-    const threadEntries = Object.entries(candidate.threadIds);
-    if (threadEntries.length === 0) return null;
-    
-    // Get the first entry
-    const [, firstThread] = threadEntries[0];
+    // Check if we have a thread ID for this job
+    const threadEntry = candidate.threadIds[jobId];
+    if (!threadEntry) return null;
     
     // Handle both legacy (string) and new format (object with threadId property)
-    if (typeof firstThread === 'string') {
-      return firstThread;
-    } else if (typeof firstThread === 'object' && firstThread !== null) {
+    if (typeof threadEntry === 'string') {
+      return threadEntry;
+    } else if (typeof threadEntry === 'object' && threadEntry !== null) {
       // Type assertion to prevent 'never' type error
-      const threadObject = firstThread as { threadId?: string };
+      const threadObject = threadEntry as { threadId?: string };
       return threadObject.threadId || null;
     }
     
@@ -128,7 +127,9 @@ export const CandidateListItem: React.FC<CandidateListItemProps> = ({
         onClose={() => setEmailDialogOpen(false)}
         candidateName={candidate.name}
         candidateEmail={candidate.email}
-        threadId={getFirstThreadId()}
+        jobId={jobId} // Pass the job ID to the EmailDialog
+        candidateId={candidate.id}
+        threadId={getThreadIdForJob()} // Use the job-specific thread ID
       />
     </>
   );

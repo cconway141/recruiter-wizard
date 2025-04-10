@@ -75,6 +75,7 @@ export const CandidateEntry: React.FC<CandidateEntryProps> = ({ jobId }) => {
         isLoading={candidatesLoading && (isInitialLoad || candidates.length === 0)}
         onRemoveCandidate={handleRemoveCandidate}
         onStatusChange={handleStatusChange}
+        jobId={jobId} // Pass the jobId to CandidateList
       />
     </div>
   );

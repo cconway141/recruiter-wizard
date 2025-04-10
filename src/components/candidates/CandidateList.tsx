@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Loader2 } from "lucide-react";
 import { CandidateListHeader } from "./CandidateListHeader";
@@ -10,13 +9,15 @@ interface CandidateListProps {
   isLoading: boolean;
   onRemoveCandidate: (candidateId: string) => void;
   onStatusChange: (candidateId: string, statusKey: keyof Candidate['status']) => void;
+  jobId: string;
 }
 
 export const CandidateList: React.FC<CandidateListProps> = ({
   candidates,
   isLoading,
   onRemoveCandidate,
-  onStatusChange
+  onStatusChange,
+  jobId
 }) => {
   if (isLoading) {
     return (
@@ -27,26 +28,27 @@ export const CandidateList: React.FC<CandidateListProps> = ({
     );
   }
 
-  if (candidates.length === 0) {
-    return (
-      <div className="text-center p-4 text-gray-500 bg-gray-50 rounded">
-        No candidates added yet. Add your first candidate above.
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-2">
+    <div className="mt-6 border rounded-md">
       <CandidateListHeader />
       
-      {candidates.map((candidate) => (
-        <CandidateListItem
-          key={candidate.id}
-          candidate={candidate}
-          onRemove={onRemoveCandidate}
-          onStatusChange={onStatusChange}
-        />
-      ))}
+      <div className="divide-y">
+        {candidates.length === 0 ? (
+          <div className="py-6 text-center text-gray-500">
+            No candidates yet. Add your first candidate above.
+          </div>
+        ) : (
+          candidates.map((candidate) => (
+            <CandidateListItem
+              key={candidate.id}
+              candidate={candidate}
+              onRemove={onRemoveCandidate}
+              onStatusChange={onStatusChange}
+              jobId={jobId}
+            />
+          ))
+        )}
+      </div>
     </div>
   );
 };

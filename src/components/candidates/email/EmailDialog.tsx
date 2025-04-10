@@ -14,7 +14,7 @@ interface EmailDialogProps {
   candidateName: string;
   candidateEmail?: string;
   jobId?: string;
-  jobTitle?: string; // This still uses the old name
+  jobTitle?: string; 
   candidateId?: string;
   threadId?: string | null;
   threadTitle?: string;
