@@ -22,7 +22,7 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
   const { 
     isConnected: isGmailConnected, 
     isLoading: isCheckingGmail,
-    connectGmail,
+    connectGmail, // This function initiates the OAuth flow
     disconnectGmail
   } = useGmailConnection({ 
     onConnectionChange,
@@ -86,19 +86,9 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
     }
   }, [toast, onConnectionChange]);
 
-  // Critical fix: Create a proper handleClick function with direct invocation of connectGmail
-  const handleConnectClick = async () => {
+  // Critical fix: Create a proper click handler function
+  const handleConnectClick = () => {
     console.debug("Connect Gmail button clicked in GmailConnectButton");
-    
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "Please log in to connect your Gmail account.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     if (!connectGmail) {
       console.error("connectGmail function is undefined");
       toast({
@@ -111,13 +101,9 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
     
     try {
       console.debug("Executing connectGmail function");
-      await connectGmail();
+      connectGmail();
     } catch (error) {
       console.error("Error executing connectGmail:", error);
-      // Clear connection flags in case of error
-      sessionStorage.removeItem('gmailConnectionInProgress');
-      sessionStorage.removeItem('gmailConnectionAttemptTime');
-      
       toast({
         title: "Connection Error",
         description: "Failed to initiate Gmail connection",
@@ -130,7 +116,7 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
   return (
     <ConfigErrorButton
       isConnected={isGmailConnected}
-      onClick={handleConnectClick}
+      onClick={handleConnectClick} // Using our wrapped handler function
       onDisconnect={disconnectGmail}
       className={className}
     />

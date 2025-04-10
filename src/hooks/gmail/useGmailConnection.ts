@@ -28,8 +28,8 @@ export const useGmailConnection = ({
     clearError,
     checkConnection,
     silentCheckConnection,
-    connectGmail: apiConnectGmail, 
-    disconnectGmail: apiDisconnectGmail, 
+    connectGmail: apiConnectGmail, // Renamed for clarity
+    disconnectGmail: apiDisconnectGmail, // Renamed for clarity
     refreshToken: refreshGmailToken
   } = useGmailApi({
     showLoadingUI,
@@ -39,7 +39,7 @@ export const useGmailConnection = ({
     }
   });
   
-  // Critical fix: Ensuring the connectGmail function properly passes through
+  // Critical fix: simplifying the connectGmail function to ensure it works
   const connectGmail = useCallback(async () => {
     console.debug("useGmailConnection: connectGmail called");
     if (!user) {
@@ -48,37 +48,21 @@ export const useGmailConnection = ({
     }
     
     console.debug("Directly calling apiConnectGmail from useGmailConnection");
-    try {
-      const result = await apiConnectGmail();
-      return result;
-    } catch (error) {
-      console.error("Error in connectGmail:", error);
-      throw error; // Re-throw to allow proper error handling upstream
-    }
+    return await apiConnectGmail();
   }, [user, apiConnectGmail]);
   
   // Create wrapper function for disconnectGmail
   const disconnectGmail = useCallback(async () => {
     console.debug("useGmailConnection: disconnectGmail called");
-    try {
-      return await apiDisconnectGmail();
-    } catch (error) {
-      console.error("Error in disconnectGmail:", error);
-      throw error;
-    }
+    return await apiDisconnectGmail();
   }, [apiDisconnectGmail]);
   
   // Use React Query for connection state caching
   const { data: connectionInfo } = useQuery({
     queryKey: ['gmail-connection', user?.id],
     queryFn: async () => {
-      try {
-        const isConnected = await silentCheckConnection();
-        return { connected: isConnected };
-      } catch (error) {
-        console.error("Error in connection query:", error);
-        return { connected: false, error };
-      }
+      const isConnected = await silentCheckConnection();
+      return { connected: isConnected };
     },
     enabled: !!user,
     staleTime: 10 * 60 * 1000, // 10 minutes
