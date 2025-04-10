@@ -38,8 +38,20 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
 
   // Notify parent component when connection status changes
   useEffect(() => {
-    if (onConnectionChange) {
+    // Only notify if we have a definite connection state and a callback
+    if (isGmailConnected !== undefined && onConnectionChange) {
+      console.log("Gmail connection status changed to:", isGmailConnected);
       onConnectionChange(isGmailConnected);
+      
+      // Cache connection status
+      try {
+        if (isGmailConnected) {
+          localStorage.setItem('gmail_connected', 'true');
+          sessionStorage.setItem('gmail_connection_status', 'true');
+        }
+      } catch (err) {
+        console.warn("Error caching connection status:", err);
+      }
     }
   }, [isGmailConnected, onConnectionChange]);
 
@@ -55,6 +67,8 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
       // Clear connection attempt flags
       sessionStorage.removeItem('gmailConnectionInProgress');
       sessionStorage.removeItem('gmailConnectionAttemptTime');
+      sessionStorage.setItem('gmail_connection_status', 'true');
+      localStorage.setItem('gmail_connected', 'true');
       
       toast({
         title: "Gmail Connected",

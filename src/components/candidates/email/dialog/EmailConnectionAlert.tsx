@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { ConfigErrorButton } from "../ConfigErrorButton";
 
 interface EmailConnectionAlertProps {
@@ -13,13 +13,31 @@ export const EmailConnectionAlert: React.FC<EmailConnectionAlertProps> = ({
   errorMessage,
   onConnect,
 }) => {
+  const [isConnected, setIsConnected] = useState<boolean>(isGmailConnected);
+  
+  // Check for cached connection status from session/local storage
+  useEffect(() => {
+    // Try to get connection status from storage
+    const sessionStatus = sessionStorage.getItem('gmail_connection_status');
+    const localStatus = localStorage.getItem('gmail_connected');
+    
+    if (sessionStatus === 'true' || localStatus === 'true') {
+      console.log("Using cached Gmail connection status: connected");
+      setIsConnected(true);
+    } else {
+      setIsConnected(isGmailConnected);
+    }
+  }, [isGmailConnected]);
+
   console.debug("EmailConnectionAlert rendered:", { 
     isGmailConnected, 
+    isConnected,
     hasErrorMessage: !!errorMessage, 
     hasOnConnect: !!onConnect 
   });
 
-  if (isGmailConnected && !errorMessage) return null;
+  // If connected or cached state says connected, don't show the alert
+  if ((isConnected || isGmailConnected) && !errorMessage) return null;
   
   // Add a wrapper function with debugging
   const handleConnect = () => {
@@ -40,7 +58,7 @@ export const EmailConnectionAlert: React.FC<EmailConnectionAlertProps> = ({
         </div>
       )}
       
-      {!isGmailConnected && (
+      {!isConnected && !isGmailConnected && (
         <>
           <p className="text-amber-800 font-medium mb-2">Gmail connection required</p>
           <p className="text-amber-700 text-sm mb-3">

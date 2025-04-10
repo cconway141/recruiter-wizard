@@ -1,5 +1,5 @@
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useGmailConnection } from "@/hooks/gmail";
 import { useEmailSubject } from "@/hooks/email/useEmailSubject";
 import { useEmailTemplate } from "@/hooks/email/useEmailTemplate";
@@ -29,6 +29,7 @@ export const useEmailDialogState = ({
 }: UseEmailDialogStateProps) => {
   const hasLoggedRef = useRef(false);
   const hasCheckedConnectionRef = useRef(false);
+  const [connectionChecked, setConnectionChecked] = useState(false);
   
   const {
     isConnected: isGmailConnected,
@@ -56,20 +57,42 @@ export const useEmailDialogState = ({
     console.groupEnd();
   }, [candidateName, candidateEmail, jobId, candidateFacingTitle, candidateId, threadId, threadTitle]);
 
-  // Background check for Gmail connection - only once
+  // Background check for Gmail connection - only once with improved checking logic
   useEffect(() => {
-    if (hasCheckedConnectionRef.current) return;
-    hasCheckedConnectionRef.current = true;
+    if (hasCheckedConnectionRef.current || connectionChecked) return;
+    
+    // Check if we already have a stored connection state
+    const cachedStatus = sessionStorage.getItem('gmail_connection_status');
+    if (cachedStatus === 'true') {
+      console.log("Using cached Gmail connection status: connected");
+      setConnectionChecked(true);
+      return;
+    }
     
     // Only check after a delay and only once
     const timer = setTimeout(() => {
-      checkGmailConnection().catch((err) => {
-        console.error("Background Gmail check failed:", err);
-      });
+      hasCheckedConnectionRef.current = true;
+      
+      checkGmailConnection()
+        .then(isConnected => {
+          console.log("Background Gmail connection check result:", isConnected);
+          // Cache the result to prevent redundant checks
+          try {
+            sessionStorage.setItem('gmail_connection_status', isConnected.toString());
+            sessionStorage.setItem('gmail_connection_check_time', Date.now().toString());
+          } catch (e) {
+            console.warn("Failed to cache Gmail connection status:", e);
+          }
+          setConnectionChecked(true);
+        })
+        .catch((err) => {
+          console.error("Background Gmail check failed:", err);
+          setConnectionChecked(true);
+        });
     }, 1000);
     
     return () => clearTimeout(timer);
-  }, [checkGmailConnection]);
+  }, [checkGmailConnection, connectionChecked]);
 
   // Use our hooks with proper logging
   const { subject, setSubject } = useEmailSubject({
