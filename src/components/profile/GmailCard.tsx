@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { MailCheck } from "lucide-react";
 import { 
   Card, 
@@ -12,14 +12,38 @@ import {
 import { GmailConnectButton } from "@/components/candidates/email/GmailConnectButton";
 import { GmailDisconnectButton } from "./gmail/GmailDisconnectButton";
 import { useGmailCardState } from "./gmail/useGmailCardState";
+import { useGmailConnection } from "@/hooks/gmail";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const GmailCard: React.FC = () => {
-  // Using the refactored hook that prevents loading states from blocking UI
-  const {
-    isGmailConnected,
-    handleDisconnectGmail,
-  } = useGmailCardState();
-
+  const { user } = useAuth();
+  // Using the hook with only state management, no automatic checks
+  const { isGmailConnected, handleDisconnectGmail } = useGmailCardState();
+  
+  // Get checkGmailConnection function for the one-time background check
+  const { checkGmailConnection } = useGmailConnection({ skipLoading: true });
+  
+  // Run a single background connection check on mount
+  // This will not affect the UI rendering since we use skipLoading
+  useEffect(() => {
+    if (user?.id) {
+      // Use setTimeout to ensure this happens after initial render
+      // and doesn't block the UI in any way
+      const timer = setTimeout(() => {
+        checkGmailConnection().catch(() => {
+          // Silently handle errors - we'll just show "Connect" button by default
+          console.log("Background Gmail check failed - continuing silently");
+        });
+        
+        // Clear any stale connection flags
+        sessionStorage.removeItem('gmailConnectionInProgress');
+        sessionStorage.removeItem('gmailConnectionAttemptTime');
+      }, 100); // Small delay ensures UI renders first
+      
+      return () => clearTimeout(timer);
+    }
+  }, [user?.id, checkGmailConnection]);
+  
   return (
     <Card>
       <CardHeader>
@@ -43,7 +67,7 @@ export const GmailCard: React.FC = () => {
           </div>
         )}
         
-        {/* Show either connect or disconnect button based solely on connection status */}
+        {/* Show either connect or disconnect button based on connection status */}
         {isGmailConnected ? (
           <GmailDisconnectButton 
             onDisconnect={handleDisconnectGmail}

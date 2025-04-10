@@ -8,7 +8,7 @@ import { useGmailStatusCheck } from "./useGmailStatusCheck";
 
 interface UseGmailConnectionStatusProps {
   onConnectionChange?: (connected: boolean) => void;
-  skipLoading?: boolean; // New prop to skip loading states
+  skipLoading?: boolean; // Prop to skip loading states
 }
 
 export const useGmailConnectionStatus = ({ 
@@ -21,7 +21,7 @@ export const useGmailConnectionStatus = ({
   const { refreshGmailToken, setRefreshError } = useGmailTokenRefresh();
   const { checkGmailConnection, connectionError, setConnectionError } = useGmailStatusCheck();
 
-  // Use React Query for state management and caching with improved settings
+  // Use React Query for state management and caching with significantly improved settings
   const { 
     data: connectionInfo,
     isLoading,

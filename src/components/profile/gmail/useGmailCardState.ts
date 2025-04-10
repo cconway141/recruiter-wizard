@@ -10,52 +10,41 @@ export const useGmailCardState = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   
-  // Use the combined hook that provides all Gmail functionality
-  // Pass skipLoading: true to prevent loading states from being exposed
+  // Use the combined hook with skipLoading to prevent UI blocking
+  // This ensures the hook never reports a "loading" state to the UI
   const { 
     isConnected: isGmailConnected, 
     disconnectGmail,
     checkGmailConnection,
-  } = useGmailConnection({ skipLoading: true });
+  } = useGmailConnection({ 
+    skipLoading: true // Critical: This prevents loading states from affecting UI
+  });
   
-  // Clear connection flags and trigger a background refresh
-  useEffect(() => {
-    if (user?.id) {
-      // Run a single background connection check without blocking UI
-      // We're using setTimeout to ensure this runs after initial render
-      setTimeout(() => {
-        checkGmailConnection().catch(() => {
-          // Silently handle errors - we'll just show connect button
-          console.log("Background Gmail check failed - silently continuing");
-        });
-        
-        // Clear any stale connection flags that might be in session storage
-        sessionStorage.removeItem('gmailConnectionInProgress');
-        sessionStorage.removeItem('gmailConnectionAttemptTime');
-      }, 0);
-    }
-  }, [user?.id, checkGmailConnection]);
-  
+  // Handle disconnection with better error resilience
   const handleDisconnectGmail = async () => {
     try {
       // Call the disconnect function from our hook
       await disconnectGmail();
       
-      // Clear connection flags
+      // Clear connection flags - these could cause UI issues if stale
       sessionStorage.removeItem('gmailConnectionInProgress');
       sessionStorage.removeItem('gmailConnectionAttemptTime');
       
-      // Force refresh connection status - silently and with a delay to prevent UI blocking
+      // Force refresh connection status - use setTimeout to prevent UI blocking
       if (user?.id) {
         setTimeout(() => {
+          // This now only runs after disconnect is complete and outside the main render cycle
           queryClient.invalidateQueries({ queryKey: ['gmail-connection', user.id] });
         }, 100);
       }
     } catch (error) {
       console.error("Error disconnecting Gmail:", error);
-      // No UI error shown - we'll silently fail and let the UI revert to "Connect" state
+      // No UI error shown - silently fail and let the UI stay in current state
     }
   };
+  
+  // We deliberately don't run any connection checks on mount
+  // The parent component should control when checks happen
   
   return {
     isGmailConnected,

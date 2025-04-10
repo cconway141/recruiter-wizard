@@ -43,11 +43,13 @@ export function EmailDialog({
   const [isSending, setIsSending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
+  // Critical change: Use skipLoading to prevent UI blocking
   const { 
     isConnected: isGmailConnected,
     checkGmailConnection,
     connectGmail
   } = useGmailConnection({ 
+    skipLoading: true, // Never block UI with loading state
     onConnectionChange: (connected) => {
       console.log("Gmail connection status changed:", connected);
     }
@@ -71,20 +73,27 @@ export function EmailDialog({
     }
   });
 
-  // Check Gmail connection when dialog opens
+  // When dialog opens, run a background connection check 
+  // but don't block UI rendering on it
   useEffect(() => {
     if (isOpen && user) {
-      checkGmailConnection();
-      
-      // Set default subject based on job title
+      // Set default subject based on job title immediately 
       const defaultSubject = `${jobTitle ? `ITBC ${jobTitle} - ` : ''}${candidateName}`;
       setSubject(threadTitle || defaultSubject);
       
-      // Set default content
+      // Set default content immediately
       const content = getEmailContent();
       if (content) {
         setBody(content.body || '');
       }
+      
+      // Run connection check in the background
+      setTimeout(() => {
+        checkGmailConnection().catch((err) => {
+          console.error("Background Gmail check failed:", err);
+          // Continue silently - UI will show "Connect" button by default
+        });
+      }, 100);
     }
   }, [isOpen, checkGmailConnection, user, candidateName, jobTitle, threadTitle, getEmailContent]);
 
