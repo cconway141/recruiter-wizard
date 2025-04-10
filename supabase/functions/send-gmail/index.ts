@@ -32,6 +32,17 @@ serve(async (req) => {
   try {
     const { to, cc, subject, body, candidateName, jobTitle, threadId, messageId, userId } = await req.json() as EmailRequest;
 
+    console.log("\n================================================");
+    console.log("EMAIL REQUEST DETAILS:");
+    console.log("================================================");
+    console.log(`CANDIDATE: ${candidateName}`);
+    console.log(`TO: ${to}`);
+    console.log(`SUBJECT: "${subject}"`);
+    console.log(`JOB TITLE: ${jobTitle || "NOT PROVIDED"}`);
+    console.log(`THREAD ID: ${threadId || "NEW THREAD"}`);
+    console.log(`REFERENCE MESSAGE ID: ${messageId || "NONE"}`);
+    console.log("================================================\n");
+
     if (!to || !body || !userId) {
       return new Response(
         JSON.stringify({ error: 'Missing required fields (to, body, or userId)' }),
@@ -110,11 +121,14 @@ serve(async (req) => {
     // Generate a unique Message-ID for this email
     const currentMessageId = `<itbc-${Date.now()}-${Math.random().toString(36).substring(2, 10)}@mail.gmail.com>`;
     
-    console.log("Generating email with following parameters:");
+    console.log("\n================================================");
+    console.log("EMAIL THREADING PARAMETERS:");
+    console.log("================================================");
     console.log(`- Is reply: ${!!threadId}`);
     console.log(`- Thread ID: ${threadId || 'None (new thread)'}`);
     console.log(`- Original message ID: ${messageId || 'None (new thread)'}`);
     console.log(`- New message ID: ${currentMessageId}`);
+    console.log("================================================\n");
     
     // Improved email headers with proper threading info
     let emailLines = [
@@ -171,6 +185,14 @@ serve(async (req) => {
       requestBody.threadId = threadId;
     }
     
+    console.log("\n================================================");
+    console.log("GMAIL API REQUEST DETAILS:");
+    console.log("================================================");
+    console.log("Request URL: https://gmail.googleapis.com/gmail/v1/users/me/messages/send");
+    console.log("Request Method: POST");
+    console.log("Request Body:", JSON.stringify(requestBody, null, 2));
+    console.log("================================================\n");
+    
     const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
       method: 'POST',
       headers: {
@@ -180,31 +202,39 @@ serve(async (req) => {
       body: JSON.stringify(requestBody)
     });
     
+    const responseData = await response.json();
+    
+    console.log("\n================================================");
+    console.log("GMAIL API RESPONSE:");
+    console.log("================================================");
+    console.log("Status Code:", response.status);
+    console.log("Response Body:", JSON.stringify(responseData, null, 2));
+    console.log("================================================\n");
+    
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error('Gmail API error:', errorData);
+      console.error('Gmail API error:', responseData);
       
       let errorMessage = 'Failed to send email through Gmail API';
       let statusCode = response.status;
       
-      if (errorData.error?.code === 401) {
+      if (responseData.error?.code === 401) {
         errorMessage = 'Gmail authentication failed. Please reconnect your account.';
-      } else if (errorData.error?.code === 403) {
+      } else if (responseData.error?.code === 403) {
         errorMessage = 'Gmail access denied. You may need additional permissions.';
-      } else if (errorData.error?.message) {
-        errorMessage = `Gmail error: ${errorData.error.message}`;
+      } else if (responseData.error?.message) {
+        errorMessage = `Gmail error: ${responseData.error.message}`;
       }
       
       return new Response(
         JSON.stringify({ 
           error: errorMessage, 
-          details: errorData 
+          details: responseData 
         }),
         { status: statusCode, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const data = await response.json();
+    const data = responseData;
     console.log('Email sent successfully:', data);
     
     // Extract both thread ID and message ID from the response

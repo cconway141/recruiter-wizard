@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { useEmailContent } from "@/hooks/useEmailContent";
 import { useGmailConnection } from "@/hooks/gmail";
@@ -69,6 +70,7 @@ export const useEmailDialogState = ({
       candidateEmail: candidateEmail || 'MISSING',
       jobId: jobId || 'MISSING',
       candidateFacingTitle: candidateFacingTitle || 'MISSING',
+      candidateId: candidateId || 'MISSING',
       threadId: threadId || 'MISSING',
       threadTitle: threadTitle || 'MISSING',
     });
@@ -103,6 +105,13 @@ export const useEmailDialogState = ({
 
     const fetchMessageId = async () => {
       if (threadId && candidateId && jobId) {
+        console.log("🔍 Retrieving message ID for threading...");
+        console.log({
+          candidateId,
+          jobId,
+          threadId,
+        });
+        
         const storedMessageId = await getMessageId(candidateId, jobId);
         console.log("Retrieved message ID for threading:", storedMessageId);
         setMessageId(storedMessageId);
@@ -149,14 +158,16 @@ export const useEmailDialogState = ({
       setIsSending(true);
       setErrorMessage(null);
 
-      console.debug("Sending email with:", {
-        candidateEmail,
-        subject,
-        candidateName,
-        candidateFacingTitle,
-        threadId,
-        messageId
-      });
+      console.log("\n==================================================");
+      console.log("🚀 INITIATING EMAIL SEND:");
+      console.log("==================================================");
+      console.log("Recipient:", candidateEmail);
+      console.log("Subject:", subject);
+      console.log("Candidate:", candidateName);
+      console.log("Job Title:", candidateFacingTitle);
+      console.log("Thread ID:", threadId || "NEW THREAD");
+      console.log("Message ID:", messageId || "NEW MESSAGE");
+      console.log("==================================================\n");
 
       const result = await sendEmailViaGmail(
         candidateEmail,
@@ -167,6 +178,14 @@ export const useEmailDialogState = ({
         threadId,
         messageId
       );
+
+      console.log("\n==================================================");
+      console.log("📨 EMAIL SENT - SAVING THREAD DATA:");
+      console.log("==================================================");
+      console.log("Result:", result);
+      console.log("Candidate ID:", candidateId);
+      console.log("Job ID:", jobId);
+      console.log("==================================================\n");
 
       if (result?.threadId && candidateId && jobId) {
         console.log("Saving new thread and message IDs:", result);

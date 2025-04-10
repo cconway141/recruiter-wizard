@@ -32,9 +32,12 @@ export const useCandidateThreads = () => {
     }
     
     try {
-      console.log("New thread ID created:", newThreadId);
-      console.log("New message ID created:", newMessageId);
-      console.log("Saving thread info for job:", jobId);
+      console.log("\n====== SAVING THREAD INFO ======");
+      console.log(`Candidate ID: ${candidateId}`);
+      console.log(`Job ID: ${jobId}`);
+      console.log(`New Thread ID: ${newThreadId}`);
+      console.log(`New Message ID: ${newMessageId || "Not provided"}`);
+      console.log(`Existing Thread IDs: ${JSON.stringify(threadIds || {})}`);
       
       // Convert legacy format if needed
       const convertedThreadIds: Record<string, ThreadInfo> = {};
@@ -44,6 +47,7 @@ export const useCandidateThreads = () => {
         if (typeof value === 'string') {
           // Legacy format, just threadId as string
           convertedThreadIds[key] = { threadId: value, messageId: value };
+          console.log(`Converting legacy thread format for job ${key}: ${value}`);
         } else {
           // Already in new format
           convertedThreadIds[key] = value as ThreadInfo;
@@ -56,6 +60,8 @@ export const useCandidateThreads = () => {
         messageId: newMessageId || newThreadId // Fallback to threadId if messageId not provided
       };
       
+      console.log(`Updated thread info for job ${jobId}:`, convertedThreadIds[jobId]);
+      
       // Convert the Record to a plain object that satisfies the Json type
       const threadIdsObject: Record<string, { threadId: string; messageId: string }> = {};
       
@@ -65,6 +71,8 @@ export const useCandidateThreads = () => {
           messageId: value.messageId
         };
       });
+      
+      console.log("Final thread_ids object to be saved:", threadIdsObject);
       
       const { error: updateError } = await supabase
         .from('candidates')
@@ -83,7 +91,8 @@ export const useCandidateThreads = () => {
         return false;
       } 
       
-      console.log("Thread info saved for job:", jobId, "Thread ID:", newThreadId, "Message ID:", newMessageId);
+      console.log(`Thread info successfully saved for job: ${jobId}`);
+      console.log("==============================\n");
       return true;
     } catch (err) {
       console.error("Error saving thread ID:", err);
@@ -93,10 +102,13 @@ export const useCandidateThreads = () => {
   
   const getThreadInfo = async (candidateId: string, jobId: string): Promise<ThreadInfo | null> => {
     if (!candidateId || !jobId) {
+      console.log("Missing candidateId or jobId for getThreadInfo:", { candidateId, jobId });
       return null;
     }
     
     try {
+      console.log(`Retrieving thread info for candidate ${candidateId} and job ${jobId}`);
+      
       const { data, error } = await supabase
         .from('candidates')
         .select('thread_ids')
@@ -108,19 +120,24 @@ export const useCandidateThreads = () => {
         return null;
       }
       
+      console.log(`Thread IDs data retrieved:`, data.thread_ids);
+      
       // Handle both legacy format and new format
       const threadInfo = data.thread_ids?.[jobId];
       
       if (!threadInfo) {
+        console.log(`No thread info found for job ${jobId}`);
         return null;
       }
       
       if (typeof threadInfo === 'string') {
         // Legacy format - convert on the fly
+        console.log(`Found legacy thread format for job ${jobId}: ${threadInfo}`);
         return { threadId: threadInfo, messageId: threadInfo };
       }
       
       // New format
+      console.log(`Found thread info for job ${jobId}:`, threadInfo);
       return threadInfo as ThreadInfo;
     } catch (err) {
       console.error("Error retrieving thread info:", err);
@@ -130,12 +147,16 @@ export const useCandidateThreads = () => {
   
   const getThreadId = async (candidateId: string, jobId: string): Promise<string | null> => {
     const threadInfo = await getThreadInfo(candidateId, jobId);
-    return threadInfo?.threadId || null;
+    const threadId = threadInfo?.threadId || null;
+    console.log(`Retrieved thread ID for candidate ${candidateId}, job ${jobId}: ${threadId || "None found"}`);
+    return threadId;
   };
   
   const getMessageId = async (candidateId: string, jobId: string): Promise<string | null> => {
     const threadInfo = await getThreadInfo(candidateId, jobId);
-    return threadInfo?.messageId || null;
+    const messageId = threadInfo?.messageId || null;
+    console.log(`Retrieved message ID for candidate ${candidateId}, job ${jobId}: ${messageId || "None found"}`);
+    return messageId;
   };
 
   return {
