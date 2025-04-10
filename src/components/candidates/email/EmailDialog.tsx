@@ -13,7 +13,7 @@ interface EmailDialogProps {
   candidateName: string;
   candidateEmail?: string;
   jobId?: string;
-  jobTitle?: string;
+  jobTitle?: string; // This still uses the old name
   candidateId?: string;
   threadId?: string | null;
   threadTitle?: string;
@@ -49,7 +49,7 @@ export function EmailDialog({
     candidateName,
     candidateEmail,
     jobId,
-    jobTitle,
+    candidateFacingTitle: jobTitle, // Fix: Pass jobTitle as candidateFacingTitle
     candidateId,
     threadId,
     threadTitle,

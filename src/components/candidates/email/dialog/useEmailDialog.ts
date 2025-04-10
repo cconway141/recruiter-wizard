@@ -45,7 +45,7 @@ export const useEmailDialog = ({
     candidateName,
     candidateEmail,
     jobId,
-    jobTitle: candidateFacingTitle, // Keep this for backwards compatibility
+    candidateFacingTitle, // Pass the correct prop directly
     candidateId,
     threadId,
     threadTitle,
