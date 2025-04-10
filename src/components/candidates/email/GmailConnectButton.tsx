@@ -67,12 +67,10 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
       if (result?.redirectUri) {
         sessionStorage.setItem('gmailRedirectUri', result.redirectUri);
         console.log("Using redirect URI:", result.redirectUri);
-        console.log("Client ID:", result.clientId || "Not provided");
       }
       
-      if (result?.url) {
-        console.log("Redirecting to:", result.url.substring(0, 100) + "...");
-      }
+      // Note: We don't access clientId or url properties directly anymore
+      // as they might not be returned in the result
     } catch (error) {
       console.error("Error initiating Gmail connection:", error);
       toast({

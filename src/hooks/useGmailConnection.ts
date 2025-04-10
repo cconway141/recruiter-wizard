@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -6,6 +7,12 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface UseGmailConnectionProps {
   onConnectionChange?: (connected: boolean) => void;
+}
+
+interface GmailConnectionResult {
+  redirectUri?: string;
+  url?: string;
+  clientId?: string;
 }
 
 export const useGmailConnection = ({ onConnectionChange }: UseGmailConnectionProps = {}) => {
@@ -169,7 +176,7 @@ export const useGmailConnection = ({ onConnectionChange }: UseGmailConnectionPro
   };
   
   // Connect Gmail function with better error handling
-  const connectGmail = async () => {
+  const connectGmail = async (): Promise<GmailConnectionResult | null> => {
     if (!user) {
       toast({
         title: "Authentication Required",
@@ -214,11 +221,26 @@ export const useGmailConnection = ({ onConnectionChange }: UseGmailConnectionPro
       sessionStorage.setItem('gmailConnectionInProgress', 'true');
       sessionStorage.setItem('gmailConnectionAttemptTime', Date.now().toString());
       
-      // Redirect to Google's OAuth flow
-      window.location.href = data.url;
+      // Only redirect if we have a valid URL
+      if (data.url) {
+        // Redirect to Google's OAuth flow
+        window.location.href = data.url;
+      } else {
+        console.error("No auth URL returned from the function");
+        toast({
+          title: "Error",
+          description: "Failed to generate authentication URL.",
+          variant: "destructive",
+        });
+        return null;
+      }
       
       // Return the redirect URI for debugging
-      return { redirectUri: data.redirectUri };
+      return { 
+        redirectUri: data.redirectUri,
+        url: data.url,
+        clientId: data.clientId
+      };
     } catch (error) {
       console.error("Error connecting Gmail:", error);
       toast({
