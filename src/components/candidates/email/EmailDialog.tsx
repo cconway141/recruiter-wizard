@@ -6,6 +6,7 @@ import { EmailDialogHeader } from "./dialog/EmailDialogHeader";
 import { EmailConnectionAlert } from "./dialog/EmailConnectionAlert";
 import { EmailDialogContent } from "./dialog/EmailDialogContent";
 import { EmailDialogActions } from "./dialog/EmailDialogActions";
+import { useJobs } from "@/contexts/JobContext";
 
 interface EmailDialogProps {
   isOpen: boolean;
@@ -30,13 +31,21 @@ export function EmailDialog({
   threadId,
   threadTitle,
 }: EmailDialogProps) {
-  // Debug the incoming props
+  // Get the job from context instead of relying on passed props
+  const { getJob } = useJobs();
+  const job = jobId ? getJob(jobId) : undefined;
+  
+  // Always use the job title from the job object for consistency
+  const actualJobTitle = job?.candidateFacingTitle || jobTitle;
+
   console.group('EmailDialog Initialization');
   console.log('Props received in EmailDialog:', {
     candidateName,
     candidateEmail,
     jobId,
-    jobTitle, // Log the job title specifically
+    jobTitle, 
+    jobFromContext: job ? 'Found job in context' : 'No job found in context',
+    actualCandidateFacingTitle: actualJobTitle,
     candidateId,
     threadId,
     threadTitle
@@ -62,25 +71,23 @@ export function EmailDialog({
     candidateName,
     candidateEmail,
     jobId,
-    candidateFacingTitle: jobTitle, // Ensure jobTitle is correctly passed
+    candidateFacingTitle: actualJobTitle, // Use the reliable job title
     candidateId,
     threadId,
     threadTitle,
     onClose,
   });
 
-  // Add improved logging to debug
   console.debug("EmailDialog rendered:", {
     isOpen,
     candidateName,
     candidateEmail,
-    jobTitle, // Log the job title to verify it's present
+    actualJobTitle,
     isGmailConnected,
     hasConnectGmail: !!connectGmail,
     connectGmailType: typeof connectGmail
   });
   
-  // Add a wrapper function for connect with debugging
   const handleConnectGmail = async () => {
     console.debug("handleConnectGmail called in EmailDialog");
     if (!connectGmail) {
@@ -107,7 +114,7 @@ export function EmailDialog({
         <EmailConnectionAlert 
           isGmailConnected={isGmailConnected}
           errorMessage={errorMessage}
-          onConnect={handleConnectGmail} // Using our wrapper function
+          onConnect={handleConnectGmail}
         />
 
         <EmailDialogContent 

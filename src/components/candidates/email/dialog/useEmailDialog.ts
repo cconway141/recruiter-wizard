@@ -26,17 +26,22 @@ export const useEmailDialog = ({
 }: UseEmailDialogProps) => {
   const { toast } = useToast();
   
-  // Log all props to help debug
   console.group('useEmailDialog Hook');
   console.log('Props received in useEmailDialog:', {
     candidateName,
     candidateEmail,
     jobId,
-    candidateFacingTitle, // Log to verify it's passed correctly
+    candidateFacingTitle,
     candidateId,
     threadId,
     threadTitle
   });
+  
+  // Validate that we have a job title
+  if (!candidateFacingTitle) {
+    console.error("ERROR: No job title provided to useEmailDialog. This should never happen.");
+  }
+  
   console.groupEnd();
   
   const {
@@ -58,7 +63,7 @@ export const useEmailDialog = ({
     candidateName,
     candidateEmail,
     jobId,
-    candidateFacingTitle, // Pass the correct prop directly
+    candidateFacingTitle, // Pass the job title directly
     candidateId,
     threadId,
     threadTitle,

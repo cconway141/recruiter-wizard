@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { useEmailContent } from "@/hooks/useEmailContent";
 import { useGmailConnection } from "@/hooks/gmail";
@@ -82,22 +81,13 @@ export const useEmailDialogState = ({
       threadTitle: threadTitle || 'UNDEFINED'
     });
 
-    // Make sure we have a job title
-    let jobTitleToUse = '';
-    if (candidateFacingTitle && candidateFacingTitle.trim() !== '') {
-      jobTitleToUse = candidateFacingTitle.trim();
-      console.log("Using job title from props:", jobTitleToUse);
-    } else {
-      console.warn("⚠️ Missing job title (candidateFacingTitle) in props");
-      jobTitleToUse = "Role"; // Fallback value
-      console.log("Using fallback job title:", jobTitleToUse);
+    if (!candidateFacingTitle) {
+      console.error("ERROR: Job title (candidateFacingTitle) is missing! This should never happen.");
     }
     
-    // Create standardized subject with validated job title
-    const standardizedSubject = `ITBC ${jobTitleToUse} ${candidateName}`.trim();
+    const standardizedSubject = `ITBC ${candidateFacingTitle} ${candidateName}`.trim();
     console.log("Created standardized subject:", standardizedSubject);
     
-    // Use thread title if it exists (for replies), otherwise use our constructed subject
     const finalSubject = threadTitle || standardizedSubject;
     
     console.log('Final Subject:', finalSubject);
