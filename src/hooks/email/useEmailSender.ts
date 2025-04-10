@@ -25,25 +25,15 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
     threadId?: string | null,
     messageId?: string | null
   ) => {
-    console.log("\n==================================================");
-    console.log(`🔵 SENDING EMAIL TO: ${candidateName} <${to}>`);
-    console.log(`🔵 SUBJECT: "${subject}"`);
-    console.log(`🔵 JOB TITLE: ${jobTitle || ""}`);
-    console.log(`🔵 THREAD ID: ${threadId || "NEW THREAD"}`);
-    console.log(`🔵 MESSAGE ID: ${messageId || "NEW MESSAGE"}`);
-    console.log("==================================================\n");
-    
     if (!to || !user) {
       const error = "Missing recipient email or user not logged in";
       setErrorMessage(error);
-      console.error("❌ EMAIL ERROR:", error);
       throw new Error(error);
     }
     
     if (!body.trim()) {
       const error = "Email body cannot be empty";
       setErrorMessage(error);
-      console.error("❌ EMAIL ERROR:", error);
       throw new Error(error);
     }
     
@@ -54,51 +44,32 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
       // Always CC the recruitment team
       const cc = "recruitment@theitbc.com";
       
-      // Format and clean the thread ID and message ID - ensure they're valid strings
-      const cleanThreadId = threadId && typeof threadId === 'string' && threadId.trim() !== "" ? 
-        threadId.trim() : undefined;
-        
-      const cleanMessageId = messageId && typeof messageId === 'string' && messageId.trim() !== "" ? 
-        messageId.trim() : undefined;
-        
-      console.log("📧 Email Request Parameters:");
-      console.log(`- To: ${to}`);
-      console.log(`- CC: ${cc}`);
-      console.log(`- Subject: "${subject}"`);
-      console.log(`- Thread ID: ${cleanThreadId || "New thread"}`);
-      console.log(`- Message ID: ${cleanMessageId || "New message"}`);
-      console.log(`- Job Title: ${jobTitle}`);
-      console.log(`- Body length: ${body.length} characters`);
+      // When replying (threadId exists), don't send a subject
+      // Gmail will use the existing thread subject
+      const finalSubject = threadId ? "" : subject;
       
       const { data, error } = await supabase.functions.invoke('send-gmail', {
         body: {
           to,
           cc,
-          subject,
+          subject: finalSubject,
           body,
           candidateName,
           jobTitle,
-          threadId: cleanThreadId,
-          messageId: cleanMessageId,
+          threadId: threadId?.trim() || undefined,
+          messageId: messageId?.trim() || undefined,
           userId: user.id
         }
       });
       
-      console.log("📨 Email Edge Function Response:", data);
-      
       if (error) {
-        console.error("❌ Function error:", error);
         throw new Error(error.message || "Failed to send email");
       }
       
       if (data?.error) {
-        console.error("❌ Email sending error:", data.error);
-        
-        // Handle token expiration
         if (data.error.includes("token expired") || data.error.includes("not connected")) {
           const refreshed = await refreshGmailToken();
           if (refreshed) {
-            console.log("🔄 Gmail token refreshed successfully, retrying send...");
             // Try again with refreshed token
             return sendEmailViaGmail(to, subject, body, candidateName, jobTitle, threadId, messageId);
           }
@@ -106,10 +77,6 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
         
         throw new Error(data.error);
       }
-      
-      console.log("✅ Email sent successfully!");
-      console.log(`- New Thread ID: ${data?.threadId}`);
-      console.log(`- New Message ID: ${data?.messageId}`);
       
       if (onSuccess) {
         onSuccess();
@@ -121,7 +88,6 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
         messageId: data?.messageId
       };
     } catch (error) {
-      console.error("❌ Error sending email:", error);
       const message = error instanceof Error ? error.message : "Failed to send email";
       setErrorMessage(message);
       throw new Error(message);
@@ -144,14 +110,6 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
       const subjectEncoded = encodeURIComponent(subject);
       const toEncoded = encodeURIComponent(to);
       const ccEncoded = encodeURIComponent(cc);
-      
-      console.log("🔗 Opening Gmail compose with:", {
-        to,
-        subject,
-        jobTitle,
-        candidateName,
-        threadId: threadId || "New thread"
-      });
       
       const gmailComposeUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${toEncoded}&cc=${ccEncoded}&su=${subjectEncoded}&body=${bodyEncoded}`;
       
