@@ -21,31 +21,34 @@ export const useGmailConnectionStatus = ({
   const { refreshGmailToken, setRefreshError } = useGmailTokenRefresh();
   const { checkGmailConnection, connectionError, setConnectionError } = useGmailStatusCheck();
   
-  // Add rate limiting reference
+  // Enhanced rate limiting with a significant timeout
   const lastCheckRef = useRef<number>(0);
-  const checkThrottleMs = 10000; // 10 seconds minimum between checks
-  const maxErrorsBeforeBackoff = 3;
+  const checkThrottleMs = 30000; // 30 seconds minimum between checks (increased from 10s)
+  const maxErrorsBeforeBackoff = 2; // Reduced threshold to activate backoff sooner
   const errorCountRef = useRef<number>(0);
   const backoffActiveRef = useRef<boolean>(false);
+  const backoffTimeMs = 120000; // 2 minutes of backoff time (increased from implicit 30s)
 
-  // Rate limiting function to prevent excessive edge function calls
+  // Rate limiting function with enhanced protection
   const throttledCheck = async () => {
     const now = Date.now();
     
-    // Check if we're in backoff mode due to repeated errors
+    // First, check if we already have cached data we can use
+    const cachedData = queryClient.getQueryData(['gmail-connection', user?.id]);
+    
+    // If we're in backoff mode due to repeated errors, use cached data
     if (backoffActiveRef.current) {
       console.log("Gmail connection check in backoff mode, using cached data");
-      return queryClient.getQueryData(['gmail-connection', user?.id]) || 
-        { connected: false, expired: false, hasRefreshToken: false };
+      return cachedData || { connected: false, expired: false, hasRefreshToken: false };
     }
     
-    // Standard throttling check
+    // Enhanced throttling with longer timeout
     if (now - lastCheckRef.current < checkThrottleMs) {
-      console.log("Gmail connection check throttled, using cached data");
-      return queryClient.getQueryData(['gmail-connection', user?.id]) || 
-        { connected: false, expired: false, hasRefreshToken: false };
+      console.log(`Gmail connection check throttled (${Math.round((now - lastCheckRef.current)/1000)}s < ${checkThrottleMs/1000}s), using cached data`);
+      return cachedData || { connected: false, expired: false, hasRefreshToken: false };
     }
     
+    // Only update the timestamp if we're actually making a request
     lastCheckRef.current = now;
     
     // Clear previous errors
@@ -76,10 +79,8 @@ export const useGmailConnectionStatus = ({
         return { connected: false, expired: false, hasRefreshToken: false, configError: data.message };
       }
       
-      // Log connection status for debugging
-      console.log("Gmail connection status from API:", data);
-      
-      if (data?.needsRefresh) {
+      // Simplified refresh flow - only refresh if absolutely needed
+      if (data?.needsRefresh && data?.hasRefreshToken) {
         console.log("Gmail token needs refresh, refreshing...");
         const refreshSuccess = await refreshGmailToken();
         
@@ -87,38 +88,27 @@ export const useGmailConnectionStatus = ({
           return { connected: false, expired: true, hasRefreshToken: true };
         }
         
-        // Re-fetch after refresh
-        const { data: refreshData, error: refreshError } = await supabase.functions.invoke('google-auth', {
-          body: {
-            action: 'check-connection',
-            userId: user?.id || ''
-          }
-        });
-        
-        if (refreshError) {
-          throw new Error("Failed to check connection after refresh");
-        }
-        
-        return refreshData || { connected: false, expired: false };
+        // Use simplified response after refresh
+        return { connected: true, expired: false, hasRefreshToken: true };
       }
       
       return data || { connected: false, expired: false };
     } catch (error: any) {
       console.error("Error in throttledCheck:", error);
       
-      // Increase error count and potentially trigger backoff
+      // Increase error count and activate backoff with longer timeout
       errorCountRef.current += 1;
       
       if (errorCountRef.current >= maxErrorsBeforeBackoff) {
-        console.log(`Activating backoff after ${errorCountRef.current} consecutive errors`);
+        console.log(`Activating backoff after ${errorCountRef.current} consecutive errors for ${backoffTimeMs/1000}s`);
         backoffActiveRef.current = true;
         
-        // Reset backoff after 30 seconds
+        // Reset backoff after the specified backoff time
         setTimeout(() => {
           console.log("Resetting connection check backoff");
           backoffActiveRef.current = false;
           errorCountRef.current = 0;
-        }, 30000);
+        }, backoffTimeMs);
       }
       
       setErrorMessage(error.message || "Failed to check Gmail connection");
@@ -126,7 +116,7 @@ export const useGmailConnectionStatus = ({
     }
   };
 
-  // Use React Query with improved cache strategy
+  // Use React Query with significantly improved cache strategy
   const { 
     data: connectionInfo,
     isLoading,
@@ -136,13 +126,12 @@ export const useGmailConnectionStatus = ({
     queryKey: ['gmail-connection', user?.id],
     queryFn: throttledCheck,
     enabled: !!user,
-    // Performance optimizations - significantly increased to reduce API calls
-    staleTime: 2 * 60 * 1000, // 2 minutes - keeps data fresh longer
-    refetchInterval: 5 * 60 * 1000, // 5 minutes - reduces background checks
+    // Significantly increased caching parameters to reduce API calls
+    staleTime: 5 * 60 * 1000, // 5 minutes - keeps data fresh much longer
+    refetchInterval: 10 * 60 * 1000, // 10 minutes - very infrequent background checks
     refetchOnWindowFocus: false, // Prevents checks when tab regains focus
-    retry: 1, // Only retry once to avoid excessive requests
-    gcTime: 10 * 60 * 1000, // 10 minutes to keep in cache
-    // Critical: Set a timeout to prevent indefinite loading
+    retry: 0, // No retries to avoid cascading failures
+    gcTime: 30 * 60 * 1000, // 30 minutes to keep in cache
     refetchOnMount: "always",
   });
 
@@ -173,9 +162,10 @@ export const useGmailConnectionStatus = ({
       // Use a throttled invalidation to prevent UI flickering
       setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ['gmail-connection', user.id] });
-      }, 100);
+        refetch();
+      }, 0);
       
-      return await checkGmailConnection();
+      return true;
     } catch (error) {
       console.error("Error in forceRefresh:", error);
       return false;
@@ -183,12 +173,11 @@ export const useGmailConnectionStatus = ({
   };
 
   return {
-    // If skipLoading is true, default to not connected when loading
-    isConnected: isLoading && skipLoading ? false : !!connectionInfo?.connected && !connectionInfo?.expired,
-    isLoading: skipLoading ? false : isLoading, // Never report loading if skipLoading is true
-    configError: errorMessage,
-    checkGmailConnection,
-    refreshGmailToken,
+    isConnected: !!connectionInfo?.connected && !connectionInfo?.expired,
+    isLoading: skipLoading ? false : isLoading,
+    isExpired: !!connectionInfo?.expired,
+    errorMessage,
+    hasRefreshToken: !!connectionInfo?.hasRefreshToken,
     forceRefresh
   };
 };
