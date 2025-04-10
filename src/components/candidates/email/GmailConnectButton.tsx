@@ -68,14 +68,30 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
         sessionStorage.setItem('gmailRedirectUri', result.redirectUri);
         console.log("Using redirect URI:", result.redirectUri);
       }
-      
-      // Note: We don't access clientId or url properties directly anymore
-      // as they might not be returned in the result
     } catch (error) {
       console.error("Error initiating Gmail connection:", error);
       toast({
         title: "Connection Error",
         description: "Failed to initiate Gmail connection. See console for details.",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  const handleDisconnectGmail = async () => {
+    try {
+      toast({
+        title: "Disconnecting Gmail",
+        description: "Removing Gmail API connection...",
+      });
+      
+      await disconnectGmail();
+      
+    } catch (error) {
+      console.error("Error disconnecting Gmail:", error);
+      toast({
+        title: "Disconnection Error",
+        description: "Failed to disconnect Gmail. See console for details.",
         variant: "destructive",
       });
     }
@@ -104,6 +120,18 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
     );
   }
   
+  // For config error case, return the ConfigErrorButton with connection status and handlers
+  if (configError) {
+    return (
+      <ConfigErrorButton 
+        className={className} 
+        isConnected={isConnected}
+        onClick={handleConnectGmail}
+        onDisconnect={handleDisconnectGmail}
+      />
+    );
+  }
+  
   const redirectUri = sessionStorage.getItem('gmailRedirectUri');
   const storageItems = [];
   
@@ -120,19 +148,27 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
   
   return (
     <div className="space-y-2">
-      <Button
-        type="button"
-        variant={isConnected ? "default" : "outline"}
-        className={`flex items-center gap-2 ${className}`}
-        onClick={isConnected ? disconnectGmail : handleConnectGmail}
-        disabled={isLoading}
-      >
-        <GmailButtonContent
-          isConnected={isConnected}
-          isLoading={isLoading}
-          variant={isConnected ? "connected" : "connect"}
+      {isConnected ? (
+        <ConfigErrorButton 
+          className={className} 
+          isConnected={true}
+          onDisconnect={handleDisconnectGmail}
         />
-      </Button>
+      ) : (
+        <Button
+          type="button"
+          variant="outline"
+          className={`flex items-center gap-2 ${className}`}
+          onClick={handleConnectGmail}
+          disabled={isLoading}
+        >
+          <GmailButtonContent
+            isConnected={isConnected}
+            isLoading={isLoading}
+            variant="connect"
+          />
+        </Button>
+      )}
       
       {!isConnected && (
         <Button 

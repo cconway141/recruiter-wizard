@@ -15,12 +15,14 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { useGmailAuth } from "@/hooks/useGmailAuth";
 
 export const GmailCard: React.FC = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [connectionAttemptTime, setConnectionAttemptTime] = useState<number | null>(null);
+  const { isGmailConnected, checkGmailConnection } = useGmailAuth();
   
   // Check for Gmail connection in progress when component mounts
   useEffect(() => {
@@ -49,7 +51,12 @@ export const GmailCard: React.FC = () => {
         }
       }
     }
-  }, [user, queryClient, toast]);
+    
+    // Force a check on mount
+    if (user?.id) {
+      checkGmailConnection();
+    }
+  }, [user, queryClient, toast, checkGmailConnection]);
   
   const forceRefreshGmailStatus = () => {
     if (user?.id) {

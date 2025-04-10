@@ -4,6 +4,7 @@ import { ExternalLink, Loader2, Mail, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DialogClose } from "@/components/ui/dialog";
 import { GmailConnectButton } from "./GmailConnectButton";
+import { ConfigErrorButton } from "./ConfigErrorButton";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface EmailDialogFooterProps {
@@ -91,12 +92,12 @@ export const EmailDialogFooter: React.FC<EmailDialogFooterProps> = ({
             </Button>
           )}
           
-          {!gmailStatus && (
+          {!gmailStatus ? (
             <GmailConnectButton 
               onConnectionChange={handleConnectionChange}
               className="mb-2 sm:mb-0"
             />
-          )}
+          ) : null}
           
           <Button 
             onClick={onSendEmail}
