@@ -1,159 +1,340 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
+// Environment variables
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 
+// Create a Supabase client with the service role key
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+// CORS headers
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface EmailRequest {
-  to: string;
-  cc?: string[];
-  subject: string;
-  body: string;
-  candidateName: string;
-  jobTitle?: string;
-  threadId?: string;
-  messageId?: string;
-  userId: string;
+// ------- Rate Limiting Logic -------
+
+// Rate limiting configuration
+const RATE_LIMIT_WINDOW = 60000; // 1 minute
+const RATE_LIMIT_MAX_REQUESTS = 10; // Max 10 requests per minute per IP
+const ipRequestCounts = new Map<string, {count: number, timestamp: number}>();
+
+// Clean up rate limit entries older than the window
+function cleanupRateLimits() {
+  const now = Date.now();
+  for (const [ip, data] of ipRequestCounts.entries()) {
+    if (now - data.timestamp > RATE_LIMIT_WINDOW) {
+      ipRequestCounts.delete(ip);
+    }
+  }
 }
 
+// Check if IP is rate limited
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  cleanupRateLimits();
+  
+  const data = ipRequestCounts.get(ip);
+  if (!data) {
+    ipRequestCounts.set(ip, { count: 1, timestamp: now });
+    return false;
+  }
+  
+  if (now - data.timestamp > RATE_LIMIT_WINDOW) {
+    // Reset counter for new window
+    ipRequestCounts.set(ip, { count: 1, timestamp: now });
+    return false;
+  }
+  
+  // Increment counter
+  data.count++;
+  ipRequestCounts.set(ip, data);
+  
+  return data.count > RATE_LIMIT_MAX_REQUESTS;
+}
+
+// ------- Request Deduplication Logic -------
+
+// Deduplication to prevent duplicate requests
+const recentRequests = new Map<string, {timestamp: number, result: any}>();
+const DEDUPLICATION_WINDOW = 10000; // 10 seconds
+
+// Clean up recent requests older than the deduplication window
+function cleanupRecentRequests() {
+  const now = Date.now();
+  for (const [key, data] of recentRequests.entries()) {
+    if (now - data.timestamp > DEDUPLICATION_WINDOW) {
+      recentRequests.delete(key);
+    }
+  }
+}
+
+// Generate a request hash for deduplication
+function generateRequestHash(body: any): string {
+  const str = JSON.stringify(body);
+  // Simple hash function
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return hash.toString();
+}
+
+// Check if request is a duplicate
+function isDuplicateRequest(body: any): { isDuplicate: boolean, cachedResult?: any } {
+  cleanupRecentRequests();
+  const hash = generateRequestHash(body);
+  const cachedRequest = recentRequests.get(hash);
+  
+  if (cachedRequest) {
+    return { isDuplicate: true, cachedResult: cachedRequest.result };
+  }
+  
+  return { isDuplicate: false };
+}
+
+// Store a request result for deduplication
+function storeRequestResult(body: any, result: any) {
+  const hash = generateRequestHash(body);
+  recentRequests.set(hash, { timestamp: Date.now(), result });
+}
+
+// ------- Gmail API Integration -------
+
+// Function to build and send a Gmail message
+async function sendGmailMessage(
+  to: string,
+  cc: string, 
+  subject: string,
+  body: string,
+  threadId?: string,
+  messageId?: string,
+  accessToken?: string
+) {
+  if (!accessToken) {
+    return { error: "No access token available" };
+  }
+  
+  try {
+    // Log request parameters
+    console.log("Sending Gmail with params:", {
+      to,
+      cc: cc ? "Set" : "Not set",
+      subject: subject ? "Set" : "Not set",
+      bodyLength: body?.length || 0,
+      threadId: threadId || "Not set",
+      messageId: messageId || "Not set",
+    });
+    
+    // Build email headers
+    const headers = buildEmailHeaders(to, cc, subject, messageId);
+    
+    // Build email content
+    let email: any = {
+      raw: btoa(headers + body)
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '')
+    };
+    
+    // Add thread ID if provided (for replies)
+    if (threadId) {
+      email.threadId = threadId;
+    }
+    
+    // Build API URL
+    const url = 'https://gmail.googleapis.com/gmail/v1/users/me/messages/send';
+    
+    // Make the request to Gmail API
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(email)
+    });
+    
+    if (!response.ok) {
+      return handleGmailApiError(response);
+    }
+    
+    const data = await response.json();
+    console.log("Gmail API response:", {
+      messageId: data.id,
+      threadId: data.threadId
+    });
+    
+    return {
+      success: true,
+      messageId: data.id,
+      threadId: data.threadId
+    };
+  } catch (error) {
+    console.error('Error sending Gmail message:', error);
+    return { error: error.message || "Unknown error in Gmail sending" };
+  }
+}
+
+// Build email headers including threading headers if applicable
+function buildEmailHeaders(to: string, cc: string, subject: string, messageId?: string): string {
+  let headers = `To: ${to}\r\n`;
+  if (cc) headers += `Cc: ${cc}\r\n`;
+  if (subject) headers += `Subject: ${subject}\r\n`;
+  
+  // Add threading headers if this is a reply
+  if (messageId) {
+    console.log("Adding threading headers with messageId:", messageId);
+    headers += `In-Reply-To: <${messageId}>\r\n`;
+    headers += `References: <${messageId}>\r\n`;
+  }
+  
+  headers += 'Content-Type: text/html; charset=utf-8\r\n\r\n';
+  return headers;
+}
+
+// Handle Gmail API errors
+async function handleGmailApiError(response: Response) {
+  const errorText = await response.text();
+  console.error('Gmail API error:', errorText);
+  
+  if (response.status === 401) {
+    return { error: "Gmail token expired", details: errorText };
+  }
+  
+  if (response.status === 429) {
+    return { error: "Gmail rate limit exceeded", details: errorText };
+  }
+  
+  return { error: `Gmail API error: ${response.status}`, details: errorText };
+}
+
+// Get Gmail tokens for a user
+async function getGmailTokens(userId: string) {
+  const { data: tokenData, error: tokenError } = await supabase
+    .from('gmail_tokens')
+    .select('access_token, expires_at, refresh_token')
+    .eq('user_id', userId)
+    .single();
+  
+  if (tokenError || !tokenData) {
+    return { error: 'Gmail not connected' };
+  }
+  
+  // Check if token is expired
+  if (new Date(tokenData.expires_at) <= new Date()) {
+    console.log('Token expired, refresh needed');
+    
+    if (!tokenData.refresh_token) {
+      return { error: 'No refresh token available. Please reconnect Gmail.' };
+    }
+    
+    // Refresh logic is handled by the google-auth function
+    return { error: 'Gmail token expired' };
+  }
+  
+  return { tokenData };
+}
+
+// ------- Main Request Handler -------
+
+// Main request handler
 serve(async (req) => {
-  // Handle CORS preflight requests
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
-
+  
+  // Apply rate limiting
+  const clientIp = req.headers.get('x-forwarded-for') || 'unknown';
+  if (isRateLimited(clientIp)) {
+    console.log(`Rate limit exceeded for IP: ${clientIp}`);
+    return new Response(
+      JSON.stringify({ error: 'Too many requests', message: 'Rate limit exceeded. Please try again later.' }),
+      { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+  
   try {
-    const { 
-      to, 
-      cc = ['recruitment@theitbc.com'], 
-      subject, 
-      body, 
-      candidateName, 
-      jobTitle, 
-      threadId, 
-      messageId, 
-      userId 
-    } = await req.json() as EmailRequest;
-
-    if (!to || !body || !userId) {
+    // Parse request body
+    const body = await req.json();
+    const { userId, to, cc, subject, body: emailBody, candidateName, jobTitle, threadId, messageId } = body;
+    
+    // Validate required fields
+    if (!userId || !to || !emailBody) {
       return new Response(
         JSON.stringify({ error: 'Missing required fields' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    // Get the user's Gmail token
-    const { data: tokenData, error: tokenError } = await supabase
-      .from('gmail_tokens')
-      .select('access_token, expires_at')
-      .eq('user_id', userId)
-      .single();
     
-    if (tokenError || !tokenData) {
+    // Check for duplicate requests to avoid sending the same email twice
+    const { isDuplicate, cachedResult } = isDuplicateRequest(body);
+    if (isDuplicate && cachedResult) {
+      console.log('Duplicate request detected, returning cached result');
       return new Response(
-        JSON.stringify({ error: 'Gmail not connected' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify(cachedResult),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
     
-    if (new Date(tokenData.expires_at) <= new Date()) {
+    // Get the Gmail tokens for this user
+    const { tokenData, error: tokenError } = await getGmailTokens(userId);
+    
+    if (tokenError) {
+      const result = { error: tokenError };
+      storeRequestResult(body, result);
       return new Response(
-        JSON.stringify({ error: 'Gmail token expired' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify(result),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
     
-    const accessToken = tokenData.access_token;
-    const emailCC = cc || "recruitment@theitbc.com";
+    // Send the email
+    console.log(`Sending email to ${to} with subject "${subject || 'Reply'}"`);
+    console.log(`Thread ID: ${threadId || 'New thread'}, Message ID: ${messageId || 'None'}`);
     
-    // Generate a unique Message-ID for this email
-    const currentMessageId = `<itbc-${Date.now()}-${Math.random().toString(36).substring(2, 10)}@mail.gmail.com>`;
+    const sendResult = await sendGmailMessage(
+      to,
+      cc || '',
+      subject || '',
+      emailBody,
+      threadId,
+      messageId,
+      tokenData.access_token
+    );
     
-    // Basic email structure
-    let emailLines = [
-      `To: ${to}`,
-      `Cc: ${cc.join(', ')}`,
-      'MIME-Version: 1.0',
-      'Content-Type: text/html; charset=utf-8',
-      `Message-ID: ${currentMessageId}`,
-    ];
-    
-    // Only add Subject for new emails - format is "ITBC {JobTitle} {CandidateName}"
-    if (!threadId) {
-      // Format subject with fallback if jobTitle is empty
-      const formattedJobTitle = jobTitle?.trim() || "General Position";
-      const formattedSubject = `ITBC ${formattedJobTitle} ${candidateName}`;
-      emailLines.push(`Subject: ${formattedSubject}`);
+    if (sendResult.error) {
+      const result = { error: sendResult.error, details: sendResult.details };
+      storeRequestResult(body, result);
+      return new Response(
+        JSON.stringify(result),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
     
-    // Add threading headers for replies
-    if (threadId && messageId) {
-      // Format messageId properly (ensure angle brackets)
-      const formattedMessageId = messageId.startsWith('<') ? messageId : `<${messageId}>`;
-      emailLines.push(`References: ${formattedMessageId}`);
-      emailLines.push(`In-Reply-To: ${formattedMessageId}`);
-    }
-    
-    // Separate headers from body
-    emailLines.push('', body);
-    
-    const emailContent = emailLines.join('\r\n');
-    const encodedEmail = btoa(emailContent)
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/, '');
-
-    // Create request body, including threadId for replies
-    const requestBody = {
-      raw: encodedEmail
+    // Send successful response
+    const result = {
+      success: true,
+      message: 'Email sent successfully',
+      threadId: sendResult.threadId,
+      messageId: sendResult.messageId
     };
     
-    // Add threadId only for replies
-    if (threadId) {
-      requestBody.threadId = threadId;
-    }
-    
-    // Send the email via Gmail API
-    const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(requestBody)
-    });
-    
-    const responseData = await response.json();
-    
-    if (!response.ok) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'Failed to send email through Gmail API',
-          details: responseData 
-        }),
-        { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Return both thread ID and message ID from the response
+    storeRequestResult(body, result);
     return new Response(
-      JSON.stringify({ 
-        success: true,
-        threadId: responseData.threadId || threadId,
-        messageId: responseData.id
-      }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify(result),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
+    console.error('Error in send-gmail function:', error);
     return new Response(
-      JSON.stringify({ error: 'Failed to send email', details: error.message }),
+      JSON.stringify({ error: 'Internal server error', details: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

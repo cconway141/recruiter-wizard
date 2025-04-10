@@ -32,6 +32,13 @@ export const useCandidateThreads = () => {
     }
     
     try {
+      console.log("Saving thread ID and message ID:", {
+        candidateId,
+        jobId,
+        newThreadId,
+        newMessageId
+      });
+      
       // Convert legacy format if needed
       const convertedThreadIds: Record<string, ThreadInfo> = {};
       
@@ -69,6 +76,7 @@ export const useCandidateThreads = () => {
         return false;
       } 
       
+      console.log("Successfully saved thread and message IDs");
       return true;
     } catch (err) {
       console.error("Error saving thread ID:", err);
