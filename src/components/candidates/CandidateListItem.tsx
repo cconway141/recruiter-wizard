@@ -52,7 +52,9 @@ export const CandidateListItem: React.FC<CandidateListItemProps> = ({
     if (typeof firstThread === 'string') {
       return firstThread;
     } else if (typeof firstThread === 'object' && firstThread !== null) {
-      return firstThread.threadId || null;
+      // Type assertion to prevent 'never' type error
+      const threadObject = firstThread as { threadId?: string };
+      return threadObject.threadId || null;
     }
     
     return null;

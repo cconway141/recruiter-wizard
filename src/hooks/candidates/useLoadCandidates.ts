@@ -4,6 +4,7 @@ import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Candidate } from "@/components/candidates/types";
 import { CandidateState } from "./types";
+import { Json } from "@/integrations/supabase/types";
 
 export function useLoadCandidates(
   candidates: CandidateState,
@@ -83,9 +84,9 @@ export function useLoadCandidates(
           // Check if thread_ids is a string and needs parsing
           if (typeof candidate.thread_ids === 'string') {
             threadIds = JSON.parse(candidate.thread_ids || '{}');
-          } else {
-            // Already an object
-            threadIds = candidate.thread_ids || {};
+          } else if (candidate.thread_ids && typeof candidate.thread_ids === 'object') {
+            // Already an object, make a safe copy
+            threadIds = { ...candidate.thread_ids as Record<string, any> };
           }
         } catch (error) {
           console.error(`Error parsing thread_ids for candidate ${candidate.id}:`, error);

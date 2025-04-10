@@ -99,9 +99,9 @@ export const useCandidateThreads = () => {
         // Check if thread_ids is a string and needs parsing
         if (typeof data.thread_ids === 'string') {
           threadIds = JSON.parse(data.thread_ids || '{}');
-        } else {
-          // Already an object
-          threadIds = data.thread_ids || {};
+        } else if (data.thread_ids && typeof data.thread_ids === 'object') {
+          // Already an object, make a safe copy
+          threadIds = { ...data.thread_ids as Record<string, any> };
         }
       } catch (parseError) {
         console.error("Error parsing thread_ids:", parseError);

@@ -7,6 +7,12 @@ export type CandidateStatus = {
   offered: boolean;
 };
 
+// Define the thread info structure
+export interface ThreadInfo {
+  threadId: string;
+  messageId: string;
+}
+
 export type Candidate = {
   id: string;
   name: string;
@@ -14,5 +20,5 @@ export type Candidate = {
   linkedinUrl?: string;
   status: CandidateStatus;
   applicationId?: string;
-  threadIds?: Record<string, string>; // Store thread IDs for each job
+  threadIds?: Record<string, ThreadInfo | string>; // Support both new and legacy formats
 };
