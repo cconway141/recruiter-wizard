@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -81,7 +80,7 @@ export const useEmailContent = ({ candidateName, jobTitle, templates, selectedTe
     
     // Ensure there's a signature separator if a signature exists
     const signature = emailSignature 
-      ? `<br><br>--<br>${emailSignature.replace(/\n/g, '<br>')}` 
+      ? `<br><br>${emailSignature.replace(/\n/g, '<br>')}` 
       : '';
     
     const htmlContent = `<div>${formattedContent}${signature}</div>`;
