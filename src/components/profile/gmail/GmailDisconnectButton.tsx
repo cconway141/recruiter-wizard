@@ -1,6 +1,5 @@
 
 import React from "react";
-import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface GmailDisconnectButtonProps {
@@ -10,23 +9,15 @@ interface GmailDisconnectButtonProps {
 
 export const GmailDisconnectButton: React.FC<GmailDisconnectButtonProps> = ({
   onDisconnect,
-  isLoading,
+  isLoading, // We'll keep this prop for compatibility but won't use it
 }) => {
   return (
     <Button 
       variant="destructive" 
       onClick={onDisconnect}
       className="w-full mb-2"
-      disabled={isLoading}
     >
-      {isLoading ? (
-        <>
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
-          Checking...
-        </>
-      ) : (
-        "Disconnect Gmail"
-      )}
+      Disconnect Gmail
     </Button>
   );
 };

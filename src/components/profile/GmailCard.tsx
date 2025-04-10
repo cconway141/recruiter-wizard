@@ -10,23 +10,14 @@ import {
   CardFooter 
 } from "@/components/ui/card";
 import { GmailConnectButton } from "@/components/candidates/email/GmailConnectButton";
-import { GmailConnectionStatus } from "./gmail/GmailConnectionStatus";
 import { GmailDisconnectButton } from "./gmail/GmailDisconnectButton";
-import { GmailRefreshButton } from "./gmail/GmailRefreshButton";
 import { useGmailCardState } from "./gmail/useGmailCardState";
 
 export const GmailCard: React.FC = () => {
   const {
     isGmailConnected,
-    isCheckingGmail,
-    errorMessage,
-    errorOccurred,
-    showPendingAlert,
     handleDisconnectGmail,
-    forceRefreshGmailStatus
   } = useGmailCardState();
-
-  console.log("Current Gmail connection status in GmailCard:", isGmailConnected);
 
   return (
     <Card>
@@ -41,34 +32,27 @@ export const GmailCard: React.FC = () => {
           Allow this application to send emails on your behalf through your Gmail account.
         </p>
         
-        {/* Display connection status */}
-        <GmailConnectionStatus 
-          isConnected={isGmailConnected}
-          isCheckingGmail={isCheckingGmail}
-          errorMessage={errorMessage}
-          errorOccurred={errorOccurred}
-          showPendingAlert={showPendingAlert}
-        />
+        {/* Connection status indicator without any error states */}
+        {isGmailConnected && (
+          <div className="p-3 bg-green-50 border border-green-200 rounded-md mb-4">
+            <p className="text-green-700 font-medium flex items-center">
+              <MailCheck className="h-4 w-4 mr-2 text-green-600" />
+              Gmail Connected
+            </p>
+          </div>
+        )}
         
-        {/* Conditionally render connect or disconnect button based on connection status */}
+        {/* Show either connect or disconnect button based solely on connection status */}
         {isGmailConnected ? (
-          // Disconnect button when connected
           <GmailDisconnectButton 
             onDisconnect={handleDisconnectGmail}
-            isLoading={isCheckingGmail}
+            isLoading={false} // Never show loading state
           />
         ) : (
-          // Connect button when not connected
           <div className="mb-2">
             <GmailConnectButton />
           </div>
         )}
-        
-        {/* Always show refresh button */}
-        <GmailRefreshButton 
-          onRefresh={forceRefreshGmailStatus}
-          isLoading={isCheckingGmail}
-        />
       </CardContent>
       <CardFooter className="text-xs text-muted-foreground">
         <p>

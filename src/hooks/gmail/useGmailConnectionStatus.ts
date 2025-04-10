@@ -17,11 +17,6 @@ export const useGmailConnectionStatus = ({ onConnectionChange }: UseGmailConnect
   const { refreshGmailToken, setRefreshError } = useGmailTokenRefresh();
   const { checkGmailConnection, connectionError, setConnectionError } = useGmailStatusCheck();
 
-  // Combine error states
-  useEffect(() => {
-    setErrorMessage(connectionError || null);
-  }, [connectionError]);
-
   // Use React Query for state management and caching with improved settings
   const { 
     data: connectionInfo,
@@ -35,6 +30,7 @@ export const useGmailConnectionStatus = ({ onConnectionChange }: UseGmailConnect
         return { connected: false, expired: false, hasRefreshToken: false };
       }
       
+      // Clear previous errors
       setConnectionError(null);
       setRefreshError(null);
       setErrorMessage(null);
@@ -94,18 +90,19 @@ export const useGmailConnectionStatus = ({ onConnectionChange }: UseGmailConnect
       }
     },
     enabled: !!user,
-    // Performance optimizations
-    staleTime: 3 * 60 * 1000, // 3 minutes (increased from 30 seconds)
-    refetchInterval: 5 * 60 * 1000, // 5 minutes (increased from 1 minute)
+    // Performance optimizations - significantly increased to reduce API calls
+    staleTime: 10 * 60 * 1000, // 10 minutes (increased from 3 minutes)
+    refetchInterval: 30 * 60 * 1000, // 30 minutes (increased from 5 minutes)
     refetchOnWindowFocus: false, // Only refresh when explicitly requested
     retry: 1,
-    gcTime: 10 * 60 * 1000, // 10 minutes to keep in cache
+    gcTime: 60 * 60 * 1000, // 1 hour to keep in cache (increased from 10 minutes)
   });
 
+  // Silently handle errors - no UI updates
   useEffect(() => {
     if (error) {
-      const errorMsg = error instanceof Error ? error.message : "Unknown error checking Gmail connection";
-      setErrorMessage(errorMsg);
+      console.error("Connection check error:", error);
+      // Don't set UI error states
     }
   }, [error]);
 
@@ -126,7 +123,11 @@ export const useGmailConnectionStatus = ({ onConnectionChange }: UseGmailConnect
     
     try {
       // Clear local connection cache and fetch fresh data
-      queryClient.invalidateQueries({ queryKey: ['gmail-connection', user.id] });
+      // Use a throttled invalidation to prevent UI flickering
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['gmail-connection', user.id] });
+      }, 100);
+      
       return await checkGmailConnection();
     } catch (error) {
       console.error("Error in forceRefresh:", error);
