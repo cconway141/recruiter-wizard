@@ -8,8 +8,8 @@ const GOOGLE_CLIENT_ID = Deno.env.get("GOOGLE_CLIENT_ID") || "";
 const GOOGLE_CLIENT_SECRET = Deno.env.get("GOOGLE_CLIENT_SECRET") || "";
 
 // IMPORTANT: This needs to exactly match what's registered in Google Cloud Console
-// Changed from a hardcoded value to environment variable if available
-const REDIRECT_URI = Deno.env.get("GMAIL_REDIRECT_URI") || "https://recruit.theitbootcamp.com/auth/gmail-callback";
+// Using hardcoded value since environment variable might be causing mismatch
+const REDIRECT_URI = "https://recruit.theitbootcamp.com/auth/gmail-callback";
 
 // Basic validation of required environment variables
 if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {

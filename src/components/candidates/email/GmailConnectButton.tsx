@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ConfigErrorButton } from "./ConfigErrorButton";
 import { GmailButtonContent } from "./GmailButtonContent";
 import { useGmailConnection } from "@/hooks/useGmailConnection";
+import { useToast } from "@/hooks/use-toast";
 
 interface GmailConnectButtonProps {
   onConnectionChange?: (connected: boolean) => void;
@@ -16,6 +17,7 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
   className = "",
   variant = "default"
 }) => {
+  const { toast } = useToast();
   const {
     isConnected,
     isLoading,
@@ -28,6 +30,21 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
   if (configError) {
     return <ConfigErrorButton className={className} />;
   }
+  
+  const handleConnectGmail = async () => {
+    // Clear any previous connection attempt flags
+    sessionStorage.removeItem('gmailConnectionInProgress');
+    sessionStorage.removeItem('gmailConnectionAttemptTime');
+    sessionStorage.removeItem('gmailConnectionError');
+    
+    toast({
+      title: "Connecting Gmail",
+      description: "You will be redirected to Google for authentication...",
+    });
+    
+    // Start the connection process
+    await connectGmail();
+  };
   
   // Handle refresh button variant
   if (variant === "refresh") {
@@ -54,7 +71,7 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
       type="button"
       variant={isConnected ? "default" : "outline"}
       className={`flex items-center gap-2 ${className}`}
-      onClick={isConnected ? disconnectGmail : connectGmail}
+      onClick={isConnected ? disconnectGmail : handleConnectGmail}
       disabled={isLoading}
     >
       <GmailButtonContent
