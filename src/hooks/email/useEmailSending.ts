@@ -63,15 +63,6 @@ export const useEmailSending = ({
       return;
     }
 
-    if (!candidateId) {
-      toast({
-        title: "Missing candidate information",
-        description: "Cannot send email without candidate identification.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     try {
       setIsSending(true);
       setErrorMessage(null);
@@ -86,7 +77,7 @@ export const useEmailSending = ({
       console.log("Message ID:", messageId || "NEW MESSAGE");
       
       // Ensure we never pass undefined for job title
-      const safeJobTitle = candidateFacingTitle || "General Position";
+      const safeJobTitle = candidateFacingTitle || "";
 
       const result = await sendEmailViaGmail(
         candidateEmail,
@@ -125,12 +116,9 @@ export const useEmailSending = ({
         });
         
         console.log("Thread info saved successfully");
-      } else {
-        console.warn("Unable to save thread info - missing required data:", {
-          hasThreadId: !!result?.threadId,
-          hasCandidateId: !!candidateId,
-          hasJobId: !!jobId
-        });
+      } else if (result?.threadId) {
+        // Still proceed even if candidate ID or job ID is missing
+        console.log("Thread info not saved - missing candidate ID or job ID, but email was sent");
       }
       
       console.groupEnd();
@@ -160,7 +148,7 @@ export const useEmailSending = ({
     }
 
     // Ensure we never pass undefined for job title
-    const safeJobTitle = candidateFacingTitle || "General Position";
+    const safeJobTitle = candidateFacingTitle || "";
 
     composeEmailInGmail(
       candidateEmail,

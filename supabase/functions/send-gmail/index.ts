@@ -64,8 +64,7 @@ serve(async (req) => {
     
     // Safety check - if somehow subject is undefined, create a proper one
     if (!formattedSubject && !threadId) {
-      const safeJobTitle = jobTitle || "General Position";
-      formattedSubject = `ITBC ${safeJobTitle} ${candidateName}`;
+      formattedSubject = `ITBC ${jobTitle || ""} ${candidateName}`.trim();
       console.log(`Created fallback subject: "${formattedSubject}"`);
     }
     

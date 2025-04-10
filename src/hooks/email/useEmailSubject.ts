@@ -35,8 +35,8 @@ export const useEmailSubject = ({
     // Always use a clean candidate name
     const cleanCandidateName = candidateName.trim();
     
-    // Ensure job title has a fallback, never undefined
-    const jobTitle = candidateFacingTitle?.trim() || "General Position";
+    // Use job title directly, don't add "General Position" fallback
+    const jobTitle = candidateFacingTitle?.trim() || "";
     
     // Create standard subject format: "ITBC [Job Title] [Candidate Name]"
     const standardizedSubject = `ITBC ${jobTitle} ${cleanCandidateName}`.trim();
