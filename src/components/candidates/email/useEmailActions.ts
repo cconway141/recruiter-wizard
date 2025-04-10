@@ -1,8 +1,10 @@
+
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-import { useGmailAuth } from "@/hooks/useGmailAuth";
 import { useEmailContent } from "@/hooks/useEmailContent";
+import { useGmailAuth } from "@/hooks/useGmailAuth";
+import { useEmailSender } from "@/hooks/email/useEmailSender";
+import { useGmailComposer } from "@/hooks/email/useGmailComposer";
+import { useCandidateThreads } from "@/hooks/email/useCandidateThreads";
 import { useToast } from "@/hooks/use-toast";
 
 interface UseEmailActionsProps {
@@ -28,9 +30,10 @@ export const useEmailActions = ({
   onSuccess
 }: UseEmailActionsProps) => {
   const threadId = jobId && candidate.threadIds ? candidate.threadIds[jobId] || null : null;
-  const { user } = useAuth();
   const { toast } = useToast();
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
+  // Extracted hook imports
   const { 
     isGmailConnected, 
     isCheckingGmail, 
@@ -45,10 +48,15 @@ export const useEmailActions = ({
     selectedTemplate
   });
   
-  const [isSending, setIsSending] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { sendEmailViaGmail, isSending } = useEmailSender({
+    onSuccessCallback: onSuccess
+  });
   
-  const sendEmailViaGmail = async () => {
+  const { composeEmailInGmail, openThreadInGmail } = useGmailComposer();
+  
+  const { saveThreadId } = useCandidateThreads();
+  
+  const sendEmail = async () => {
     if (!candidate.email) {
       toast({
         title: "Cannot Send Email",
@@ -68,94 +76,44 @@ export const useEmailActions = ({
       return;
     }
     
-    const { subject, body } = getEmailContent();
-    
-    console.log("Sending email to:", candidate.email);
-    console.log("Subject:", subject);
-    console.log("Thread ID:", threadId);
-    console.log("Body length:", body.length);
-    console.log("Selected template:", selectedTemplate);
-    console.log("Body preview:", body.substring(0, 100));
-    console.log("Template count:", templates.length);
-    
-    if (!body || body.trim() === '') {
-      toast({
-        title: "Cannot Send Email",
-        description: "The email body is empty. Please select a valid template.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
     try {
-      setIsSending(true);
       setErrorMessage(null);
-
-      const subject = `ITBC ${jobTitle || ''} ${candidate.name}`.trim();
-      console.log("Email subject:", subject);
-
-      const cc = "recruitment@theitbc.com";
-
-      const { data, error } = await supabase.functions.invoke('send-gmail', {
-        body: {
-          to: candidate.email,
-          cc: cc,
-          subject,
-          body,
-          candidateName: candidate.name,
-          jobTitle,
-          threadId,
-          userId: user?.id
-        }
-      });
+      const { subject, body } = getEmailContent();
       
-      if (error) {
-        throw error;
+      if (!body || body.trim() === '') {
+        toast({
+          title: "Cannot Send Email",
+          description: "The email body is empty. Please select a valid template.",
+          variant: "destructive"
+        });
+        return;
       }
       
-      toast({
-        title: "Email Sent",
-        description: `Your email to ${candidate.name} was sent successfully.`,
+      // Format the email subject consistently
+      const formattedSubject = `ITBC ${jobTitle || ''} ${candidate.name}`.trim();
+      
+      // Send the email
+      const newThreadId = await sendEmailViaGmail({
+        to: candidate.email,
+        subject: formattedSubject,
+        body,
+        candidateName: candidate.name,
+        jobTitle,
+        threadId
       });
       
-      if (jobId && data?.threadId && (!threadId || data.threadId !== threadId)) {
-        console.log("New thread ID created:", data.threadId);
-        console.log("Saving thread ID for job:", jobId);
-        
-        const threadIdsUpdate = { ...(candidate.threadIds || {}), [jobId]: data.threadId };
-        
-        const { error: updateError } = await supabase
-          .from('candidates')
-          .update({
-            thread_ids: threadIdsUpdate
-          })
-          .eq('id', candidate.id);
-          
-        if (updateError) {
-          console.error("Error updating candidate thread ID:", updateError);
-          toast({
-            title: "Warning",
-            description: "Email sent, but failed to save thread ID for future emails.",
-            variant: "destructive"
-          });
-        } else {
-          console.log("Thread ID saved for job:", jobId, "Thread ID:", data.threadId);
-        }
+      // If we got a new thread ID and it's different from the current one, save it
+      if (jobId && newThreadId && (!threadId || newThreadId !== threadId)) {
+        await saveThreadId({
+          candidateId: candidate.id,
+          threadIds: candidate.threadIds || {},
+          jobId,
+          newThreadId
+        });
       }
-      
-      onSuccess();
-      return data?.threadId;
     } catch (err: any) {
-      console.error("Error sending email:", err);
+      console.error("Error in sendEmail:", err);
       setErrorMessage(err.message || "Failed to send email");
-      toast({
-        title: "Failed to send email",
-        description: err.message || "An unexpected error occurred",
-        variant: "destructive"
-      });
-      return null;
-    } finally {
-      setIsSending(false);
     }
   };
 
@@ -182,32 +140,30 @@ export const useEmailActions = ({
     
     const formattedSubject = `ITBC ${jobTitle || ''} ${candidate.name}`.trim();
     
-    composeEmailInGmail(candidate.email, formattedSubject, body);
+    composeEmailInGmail({
+      to: candidate.email,
+      subject: formattedSubject,
+      body
+    });
+    
     onSuccess();
   };
   
-  const composeEmailInGmail = (email: string, subject: string, body: string) => {
-    const cc = "recruitment@theitbc.com";
-    const params = new URLSearchParams({
-      to: email,
-      cc: cc,
-      subject: subject || "",
-      body: body.replace(/<[^>]*>/g, '') // Strip HTML for mailto links
-    });
-    
-    const composeUrl = `https://mail.google.com/mail/?view=cm&fs=1&${params.toString()}`;
-    window.open(composeUrl, '_blank');
+  const openThreadInGmailSearch = () => {
+    const formattedSubject = `ITBC ${jobTitle || ''} ${candidate.name}`.trim();
+    openThreadInGmail(formattedSubject);
   };
 
   return {
     isSending,
-    errorMessage,
+    errorMessage: errorMessage || authErrorMessage,
     isCheckingGmail,
     isGmailConnected,
-    sendEmailViaGmail,
+    sendEmailViaGmail: sendEmail,
     composeEmail,
     checkGmailConnection,
     getEmailContent,
-    threadId
+    threadId,
+    openThreadInGmail: openThreadInGmailSearch
   };
 };
