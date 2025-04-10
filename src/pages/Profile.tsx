@@ -56,6 +56,7 @@ const Profile = () => {
   const { user, isGoogleLinked } = useAuth();
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Force refresh Gmail status on component mount and when URL has gmail_connected param
   useEffect(() => {
@@ -86,9 +87,11 @@ const Profile = () => {
       // Invalidate Gmail connection query to force refresh
       if (user?.id) {
         queryClient.invalidateQueries({ queryKey: ['gmail-connection', user.id] });
+        setIsInitialized(true);
       }
     } catch (error) {
       console.error("Error refreshing Gmail connection:", error);
+      setIsInitialized(true);
     }
   }, [user?.id, queryClient, toast]);
 
@@ -113,7 +116,7 @@ const Profile = () => {
         return null;
       }
     },
-    enabled: !!user?.id
+    enabled: !!user?.id && isInitialized
   });
 
   // Initialize form with profile data
@@ -161,7 +164,7 @@ const Profile = () => {
 
   const isProfileGoogleLinked = profile?.google_linked || isGoogleLinked;
 
-  if (profileLoading) {
+  if (profileLoading && !profile) {
     return (
       <div className="flex flex-col min-h-screen">
         <Navbar />

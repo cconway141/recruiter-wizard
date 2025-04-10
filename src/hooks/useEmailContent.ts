@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useMessageTemplates } from "./useMessageTemplates";
 import { useAuth } from "@/contexts/AuthContext";
+import { MessageTemplate } from "@/types/messageTemplate";
 
 interface EmailContentProps {
   candidateName?: string;
@@ -40,8 +41,9 @@ export const useEmailContent = ({
     const jobTitle_placeholder = '{job_title}';
     const userSignature_placeholder = '{user_signature}';
     
-    let subject = template.subject || '';
-    let body = template.content || '';
+    // Handle different property names in MessageTemplate type
+    let subject = template.subject || template.title || '';
+    let body = template.content || template.message || '';
     
     // Replace candidate name
     if (candidateName) {

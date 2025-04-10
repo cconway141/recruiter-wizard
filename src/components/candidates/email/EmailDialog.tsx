@@ -181,7 +181,7 @@ export function EmailDialog({
   };
 
   return (
-    <Dialog open={isOpen} onClose={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-4xl overflow-y-auto max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>Email to {candidateName}</DialogTitle>

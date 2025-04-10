@@ -1,6 +1,7 @@
 
 import React, { useEffect } from "react";
 import { CheckCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface CallbackSuccessProps {
   redirectDelay?: number;
@@ -9,15 +10,17 @@ interface CallbackSuccessProps {
 export const CallbackSuccess: React.FC<CallbackSuccessProps> = ({ 
   redirectDelay = 3000 
 }) => {
+  const navigate = useNavigate();
+  
   useEffect(() => {
     // Set up redirection after a delay
     const redirectTimer = setTimeout(() => {
-      // Use proper format for the redirect URL with success parameter
-      window.location.href = `${window.location.origin}/profile?gmail_connected=true`;
+      // Use navigation to avoid page refresh
+      navigate('/profile?gmail_connected=true');
     }, redirectDelay);
     
     return () => clearTimeout(redirectTimer);
-  }, [redirectDelay]);
+  }, [redirectDelay, navigate]);
 
   return (
     <div className="text-center">

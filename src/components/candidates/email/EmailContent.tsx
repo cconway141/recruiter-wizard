@@ -2,10 +2,10 @@
 import React from "react";
 import { useEmailContent } from "@/hooks/useEmailContent";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MessageTemplate } from "@/types/messageTemplate";
 
 interface EmailContentProps {
   selectedTemplate: string;
-  templates: any[];
   candidateName: string;
   job?: {
     candidateFacingTitle: string;
@@ -17,7 +17,6 @@ interface EmailContentProps {
 
 export const EmailContent: React.FC<EmailContentProps> = ({
   selectedTemplate,
-  templates,
   candidateName,
   job,
   candidateEmail,
@@ -32,21 +31,21 @@ export const EmailContent: React.FC<EmailContentProps> = ({
 
   // Generate the actual email content that will be sent
   const {
-    getEmailContent
+    getEmailContent,
+    emailTemplates
   } = useEmailContent({
     candidateName,
     jobTitle: job?.candidateFacingTitle,
-    templates,
     selectedTemplate
   });
   const emailContent = getEmailContent();
 
   // Get just the template content for preview
   const getTemplateContent = () => {
-    if (selectedTemplate && selectedTemplate !== "custom") {
-      const template = templates.find(t => t.id === selectedTemplate);
-      if (template && template.message) {
-        let content = template.message.replace(/\[First Name\]/g, candidateName.split(' ')[0]).replace(/\[Full Name\]/g, candidateName);
+    if (selectedTemplate && selectedTemplate !== "custom" && emailTemplates) {
+      const template = emailTemplates.find(t => t.id === selectedTemplate);
+      if (template && (template.message || template.content)) {
+        let content = (template.message || template.content || '').replace(/\[First Name\]/g, candidateName.split(' ')[0]).replace(/\[Full Name\]/g, candidateName);
         return content;
       }
     }
