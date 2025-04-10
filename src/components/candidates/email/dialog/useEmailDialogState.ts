@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useEmailContent } from "@/hooks/useEmailContent";
 import { useGmailConnection } from "@/hooks/gmail";
 import { useEmailSender } from "@/hooks/email/useEmailSender";
@@ -62,6 +62,12 @@ export const useEmailDialogState = ({
   });
 
   useEffect(() => {
+    console.debug('Email Dialog State Props:', {
+      jobId,
+      jobTitle,
+      candidateFacingTitle: jobTitle
+    });
+
     const standardizedSubject = `ITBC ${jobTitle ? jobTitle + ' - ' : ''}${candidateName}`.trim();
     setSubject(threadTitle || standardizedSubject);
 
