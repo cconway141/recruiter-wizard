@@ -1,7 +1,6 @@
-
 import { useState } from "react";
 import { useEmailContent } from "@/hooks/useEmailContent";
-import { useGmailAuth } from "@/hooks/useGmailAuth";
+import { useGmailConnection } from "@/hooks/gmail";
 import { useEmailSender } from "@/hooks/email/useEmailSender";
 import { useGmailComposer } from "@/hooks/email/useGmailComposer";
 import { useCandidateThreads } from "@/hooks/email/useCandidateThreads";
@@ -35,11 +34,11 @@ export const useEmailActions = ({
   
   // Extracted hook imports
   const { 
-    isGmailConnected, 
-    isCheckingGmail, 
-    errorMessage: authErrorMessage, 
+    isConnected: isGmailConnected, 
+    isLoading: isCheckingGmail, 
+    configError: authErrorMessage, 
     checkGmailConnection 
-  } = useGmailAuth();
+  } = useGmailConnection();
   
   const { getEmailContent } = useEmailContent({
     candidateName: candidate.name,

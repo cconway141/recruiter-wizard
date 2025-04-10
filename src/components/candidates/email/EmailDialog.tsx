@@ -8,7 +8,8 @@ import { EmailContent } from "./EmailContent";
 import { EmailErrorAlert } from "./EmailErrorAlert";
 import { useMessageTemplates } from "@/hooks/useMessageTemplates";
 import { useEmailActions } from "./useEmailActions";
-import { useGmailAuth } from "@/hooks/useGmailAuth";
+// Updated import path to use the gmail directory
+import { useGmailConnection } from "@/hooks/gmail";
 import { useNavigate } from "react-router-dom";
 import { GmailConnectButton } from "./GmailConnectButton";
 import { Mail, ExternalLink, Search } from "lucide-react";

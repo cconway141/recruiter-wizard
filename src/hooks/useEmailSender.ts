@@ -1,9 +1,8 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { useGmailAuth } from "./useGmailAuth";
+import { useGmailConnection } from "@/hooks/gmail";
 
 interface UseEmailSenderProps {
   onSuccess: () => void;
@@ -14,7 +13,7 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps) => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
-  const { checkGmailConnection, refreshGmailToken } = useGmailAuth();
+  const { checkGmailConnection, refreshGmailToken } = useGmailConnection();
 
   const sendEmailViaGmail = async (
     to: string,

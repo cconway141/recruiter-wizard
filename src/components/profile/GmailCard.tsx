@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { MailCheck, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,7 +14,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { useGmailAuth } from "@/hooks/useGmailAuth";
+import { useGmailConnection } from "@/hooks/gmail";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export const GmailCard: React.FC = () => {
@@ -23,9 +22,13 @@ export const GmailCard: React.FC = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [connectionAttemptTime, setConnectionAttemptTime] = useState<number | null>(null);
-  const { isGmailConnected, isCheckingGmail, checkGmailConnection, errorMessage } = useGmailAuth();
+  const { 
+    isConnected: isGmailConnected, 
+    isLoading: isCheckingGmail, 
+    configError: errorMessage, 
+    checkGmailConnection 
+  } = useGmailConnection();
   
-  // Check for Gmail connection in progress when component mounts
   useEffect(() => {
     try {
       const connectionInProgress = sessionStorage.getItem('gmailConnectionInProgress');
@@ -35,13 +38,11 @@ export const GmailCard: React.FC = () => {
         const attemptTime = parseInt(attemptTimeStr, 10);
         setConnectionAttemptTime(attemptTime);
         
-        // Only clear flags if they're older than 5 minutes
         if (Date.now() - attemptTime > 5 * 60 * 1000) {
           sessionStorage.removeItem('gmailConnectionInProgress');
           sessionStorage.removeItem('gmailConnectionAttemptTime');
           setConnectionAttemptTime(null);
         } else {
-          // Force refresh connection status
           if (user?.id) {
             console.log("Connection was in progress, forcing refresh...");
             queryClient.invalidateQueries({ queryKey: ['gmail-connection', user.id] });
@@ -54,11 +55,9 @@ export const GmailCard: React.FC = () => {
         }
       }
       
-      // Force a check on mount and after route change
       if (user?.id) {
         console.log("Forcing Gmail connection check on GmailCard mount");
         checkGmailConnection();
-        // Force invalidation of all Gmail connection queries
         queryClient.invalidateQueries({ queryKey: ['gmail-connection', user.id] });
         queryClient.invalidateQueries({ queryKey: ['gmail-connection'] });
       }
@@ -70,7 +69,6 @@ export const GmailCard: React.FC = () => {
   const forceRefreshGmailStatus = () => {
     try {
       if (user?.id) {
-        // Force immediate invalidation of all Gmail connection queries
         console.log("Manually refreshing Gmail connection status");
         toast({
           title: "Refreshing",
@@ -80,12 +78,10 @@ export const GmailCard: React.FC = () => {
         queryClient.invalidateQueries({ queryKey: ['gmail-connection', user.id] });
         queryClient.invalidateQueries({ queryKey: ['gmail-connection'] });
         
-        // Clear any pending connection flags
         sessionStorage.removeItem('gmailConnectionInProgress');
         sessionStorage.removeItem('gmailConnectionAttemptTime');
         setConnectionAttemptTime(null);
         
-        // Explicitly check connection
         checkGmailConnection();
       }
     } catch (error) {
@@ -98,7 +94,6 @@ export const GmailCard: React.FC = () => {
     }
   };
   
-  // Show alert if connection has been pending for more than 30 seconds
   const showPendingAlert = connectionAttemptTime && (Date.now() - connectionAttemptTime > 30 * 1000);
 
   console.log("Current Gmail connection status in GmailCard:", isGmailConnected);

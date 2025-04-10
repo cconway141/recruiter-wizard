@@ -1,9 +1,8 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, CheckCircle, MailX } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useGmailAuth } from "@/hooks/useGmailAuth";
+import { useGmailConnection } from "@/hooks/gmail";
 
 interface ConfigErrorButtonProps {
   className?: string;

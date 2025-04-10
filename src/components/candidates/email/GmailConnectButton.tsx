@@ -1,7 +1,8 @@
 
 import React, { useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { useGmailAuth } from "@/hooks/useGmailAuth";
+// Updated import with the correct hook from our new structure
+import { useGmailConnection } from "@/hooks/gmail";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,7 +18,13 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
   onConnectionChange 
 }) => {
   const { user } = useAuth();
-  const { isGmailConnected, isCheckingGmail, disconnectGmail } = useGmailAuth();
+  // Use the combined hook that provides all Gmail functionality
+  const { 
+    isConnected: isGmailConnected, 
+    isLoading: isCheckingGmail,
+    connectGmail,
+    disconnectGmail
+  } = useGmailConnection({ onConnectionChange });
   const { toast } = useToast();
 
   // Notify parent component when connection status changes
