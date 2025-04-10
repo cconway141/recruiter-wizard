@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Json } from "@/integrations/supabase/types";
 
 interface ThreadInfo {
   threadId: string;
@@ -55,10 +56,20 @@ export const useCandidateThreads = () => {
         messageId: newMessageId || newThreadId // Fallback to threadId if messageId not provided
       };
       
+      // Convert the Record to a plain object that satisfies the Json type
+      const threadIdsObject: Record<string, { threadId: string; messageId: string }> = {};
+      
+      Object.entries(convertedThreadIds).forEach(([key, value]) => {
+        threadIdsObject[key] = {
+          threadId: value.threadId,
+          messageId: value.messageId
+        };
+      });
+      
       const { error: updateError } = await supabase
         .from('candidates')
         .update({
-          thread_ids: convertedThreadIds
+          thread_ids: threadIdsObject as Json
         })
         .eq('id', candidateId);
         
