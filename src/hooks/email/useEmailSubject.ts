@@ -16,35 +16,25 @@ export const useEmailSubject = ({
 
   useEffect(() => {
     console.group('Subject Line Generation');
-    console.log('Input Variables:', {
-      candidateFacingTitle: candidateFacingTitle || 'UNDEFINED',
-      candidateName: candidateName || 'UNDEFINED',
-      threadTitle: threadTitle || 'UNDEFINED'
-    });
-
+    
     // Use threadTitle if available (for replies to existing threads)
     if (threadTitle) {
       console.log("Using existing threadTitle for reply:", threadTitle);
       setSubject(threadTitle);
-      console.log('Final Subject (from thread):', threadTitle);
       console.groupEnd();
       return;
     }
     
-    // For new threads, create a standardized format with fallbacks
-    // Always use a clean candidate name
+    // Simplified subject generation using clean candidate name and job title
     const cleanCandidateName = candidateName.trim();
+    const cleanJobTitle = candidateFacingTitle?.trim() || "";
     
-    // Use job title directly, don't add "General Position" fallback
-    const jobTitle = candidateFacingTitle?.trim() || "";
+    // Standard format: just use the candidate facing title
+    const standardizedSubject = `ITBC ${cleanJobTitle} ${cleanCandidateName}`.trim();
     
-    // Create standard subject format: "ITBC [Job Title] [Candidate Name]"
-    const standardizedSubject = `ITBC ${jobTitle} ${cleanCandidateName}`.trim();
-    
-    console.log("Created standardized subject:", standardizedSubject);
+    console.log("Created subject:", standardizedSubject);
     
     setSubject(standardizedSubject);
-    console.log('Final Subject (new):', standardizedSubject);
     console.groupEnd();
   }, [candidateName, candidateFacingTitle, threadTitle]);
 
@@ -53,3 +43,4 @@ export const useEmailSubject = ({
     setSubject
   };
 };
+
