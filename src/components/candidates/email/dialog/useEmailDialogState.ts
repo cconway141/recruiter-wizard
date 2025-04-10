@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useGmailConnection } from "@/hooks/gmail";
 import { useEmailSubject } from "@/hooks/email/useEmailSubject";
@@ -75,7 +74,7 @@ export const useEmailDialogState = ({
     }
   }, [checkGmailConnection, candidateName, candidateEmail, jobId, candidateFacingTitle, candidateId, threadId, threadTitle, savedConnectionStatus]);
 
-  // Use our hooks with proper logging
+  // Use our hooks with proper logging - pass threadId to useEmailTemplate
   const { subject, setSubject } = useEmailSubject({
     candidateName,
     candidateFacingTitle,
@@ -84,7 +83,8 @@ export const useEmailDialogState = ({
 
   const { body, setBody, selectedTemplate, emailTemplates, handleTemplateChange } = useEmailTemplate({
     candidateName,
-    jobTitle: candidateFacingTitle
+    jobTitle: candidateFacingTitle,
+    threadId
   });
 
   useEffect(() => {

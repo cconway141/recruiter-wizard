@@ -29,25 +29,29 @@ export const EmailDialogContent: React.FC<EmailDialogContentProps> = ({
       selectedTemplate,
       templateCount: emailTemplates?.length || 0,
       subject: subject?.substring(0, 20) + "...",
-      bodyLength: body?.length || 0
+      bodyLength: body?.length || 0,
+      threadId: threadId || 'new email'
     });
-  }, [selectedTemplate, emailTemplates, subject, body]);
+  }, [selectedTemplate, emailTemplates, subject, body, threadId]);
 
   return (
     <div className="space-y-4">
-      {!threadId && (
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Select a template</label>
-          <EmailTemplateSelector
-            templates={emailTemplates || []}
-            selectedTemplate={selectedTemplate}
-            onSelectTemplate={(newTemplate) => {
-              console.log(`Template selected in dialog: ${newTemplate}`);
-              onTemplateChange(newTemplate);
-            }}
-          />
-        </div>
-      )}
+      <div className="space-y-2">
+        <label className="text-sm font-medium">Select a template</label>
+        <EmailTemplateSelector
+          templates={emailTemplates || []}
+          selectedTemplate={selectedTemplate}
+          onSelectTemplate={(newTemplate) => {
+            console.log(`Template selected in dialog: ${newTemplate}`);
+            onTemplateChange(newTemplate);
+          }}
+        />
+        {threadId && (
+          <p className="text-xs text-gray-500 mt-1">
+            Note: Using a template for replies will only update the email body text
+          </p>
+        )}
+      </div>
 
       <div className="space-y-2">
         <label htmlFor="subject" className="text-sm font-medium">
@@ -58,7 +62,13 @@ export const EmailDialogContent: React.FC<EmailDialogContentProps> = ({
           className="w-full border border-input rounded-md p-2"
           value={subject}
           onChange={(e) => onSubjectChange(e.target.value)}
+          readOnly={!!threadId}
         />
+        {threadId && (
+          <p className="text-xs text-gray-500 mt-1">
+            Subject cannot be changed for replies
+          </p>
+        )}
       </div>
 
       <div className="space-y-2">

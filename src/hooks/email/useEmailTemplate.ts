@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useMessageTemplates } from "@/hooks/useMessageTemplates";
 
@@ -5,12 +6,14 @@ interface UseEmailTemplateProps {
   candidateName: string;
   jobTitle?: string;
   initialTemplate?: string;
+  threadId?: string | null;
 }
 
 export const useEmailTemplate = ({
   candidateName,
   jobTitle,
-  initialTemplate = "default"
+  initialTemplate = "custom",
+  threadId
 }: UseEmailTemplateProps) => {
   const [selectedTemplate, setSelectedTemplate] = useState(initialTemplate);
   const [body, setBody] = useState("");
@@ -36,7 +39,7 @@ export const useEmailTemplate = ({
         }
         
         setBody(content);
-        console.log(`Template selected: ${selectedTemplate}, content length: ${content.length}`);
+        console.log(`Template selected: ${selectedTemplate}, content length: ${content.length}, threadId: ${threadId || 'new'}`);
       } else if (selectedTemplate === "custom") {
         // Keep the current body for custom templates
         console.log("Custom template selected, keeping current body");
