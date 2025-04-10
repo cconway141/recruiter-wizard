@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { useEmailContent } from "@/hooks/useEmailContent";
 import { useGmailConnection } from "@/hooks/gmail";
@@ -67,7 +68,14 @@ export const useEmailDialogState = ({
       candidateFacingTitle,
     });
 
-    const standardizedSubject = `ITBC ${candidateFacingTitle} ${candidateName}`.trim();
+    // Fix: Construct the subject in a way that avoids "undefined" appearing
+    let standardizedSubject;
+    if (candidateFacingTitle) {
+      standardizedSubject = `ITBC ${candidateFacingTitle} - ${candidateName}`.trim();
+    } else {
+      standardizedSubject = `ITBC ${candidateName}`.trim();
+    }
+    
     setSubject(threadTitle || standardizedSubject);
 
     const content = getEmailContent();

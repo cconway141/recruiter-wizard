@@ -42,9 +42,16 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
       console.log("Sending email to:", to);
       console.log("Using subject:", subject);
       console.log("Thread ID:", threadId || "New thread");
+      console.log("Job Title:", jobTitle || "None provided");
       
       // Always CC the recruitment team
       const cc = "recruitment@theitbc.com";
+      
+      // Format and clean the thread ID - ensure it's a valid string
+      const cleanThreadId = threadId && typeof threadId === 'string' && threadId.trim() !== "" ? 
+        threadId.trim() : undefined;
+        
+      console.log("Using cleaned thread ID:", cleanThreadId || "New thread");
       
       const { data, error } = await supabase.functions.invoke('send-gmail', {
         body: {
@@ -54,7 +61,7 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
           body,
           candidateName,
           jobTitle: jobTitle || '',
-          threadId,
+          threadId: cleanThreadId,
           userId: user.id
         }
       });

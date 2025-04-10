@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
@@ -45,9 +46,19 @@ serve(async (req) => {
       );
     }
 
-    const formattedSubject = threadId 
-      ? subject
-      : `ITBC ${jobTitle ? jobTitle + ' - ' : ''}${candidateName}`.trim();
+    // Fix for undefined in subject - construct a formatted subject
+    let formattedSubject;
+    if (threadId) {
+      // For replies, use the original subject
+      formattedSubject = subject;
+    } else {
+      // For new emails, format correctly
+      if (jobTitle) {
+        formattedSubject = `ITBC ${jobTitle} - ${candidateName}`.trim();
+      } else {
+        formattedSubject = `ITBC ${candidateName}`.trim();
+      }
+    }
     
     console.log(`Email subject: "${formattedSubject}"`);
 
@@ -86,6 +97,7 @@ serve(async (req) => {
     
     const accessToken = tokenData.access_token;
 
+    // Improved email headers with proper threading info
     let emailLines = [
       `To: ${to}`,
       `Cc: ${emailCC}`,
@@ -94,12 +106,15 @@ serve(async (req) => {
       'Content-Type: text/html; charset=utf-8',
     ];
     
+    // Improved threading headers for replies
     if (threadId) {
+      console.log("Adding threading headers for thread ID:", threadId);
       emailLines.push(`References: <${threadId}@mail.gmail.com>`);
       emailLines.push(`In-Reply-To: <${threadId}@mail.gmail.com>`);
       emailLines.push(`Thread-Topic: ${formattedSubject}`);
-      
-      console.log("Adding threading headers with thread ID:", threadId);
+      // Add Message-ID header to help with threading
+      const messageId = `<reply-${Date.now()}-${threadId}@mail.gmail.com>`;
+      emailLines.push(`Message-ID: ${messageId}`);
     }
     
     emailLines.push('', body);
@@ -115,11 +130,13 @@ serve(async (req) => {
 
     console.log("Sending email via Gmail API with OAuth token");
     
+    // Enhanced threading with Gmail API
     const requestBody: any = {
       raw: encodedEmail
     };
     
     if (threadId) {
+      console.log(`Adding threadId ${threadId} to API request`);
       requestBody.threadId = threadId;
     }
     
