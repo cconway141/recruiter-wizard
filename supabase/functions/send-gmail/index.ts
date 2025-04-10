@@ -53,11 +53,14 @@ serve(async (req) => {
 
     // Always use the consistent subject format for threading
     // This ensures all emails to the same candidate about the same job are in one thread
-    const emailSubject = subject || `ITBC ${jobTitle || ''} - ${candidateName}`;
+    const emailSubject = `ITBC ${jobTitle || ''} - ${candidateName}`;
+
+    // Always CC the recruitment team
+    const emailCC = cc || "recruitment@theitbc.com";
 
     console.log(`Preparing to send email to ${to} with subject "${emailSubject}"`);
     console.log(`Using thread ID: ${threadId || 'New thread'}`);
-    console.log(`CC'ing: ${cc || 'None'}`);
+    console.log(`CC'ing: ${emailCC}`);
     
     // Get the user's Gmail access token
     const { data: tokenData, error: tokenError } = await supabase
@@ -93,7 +96,7 @@ serve(async (req) => {
     // Create the email content with proper MIME formatting for threading
     let emailLines = [
       `To: ${to}`,
-      cc ? `Cc: ${cc}` : '', // Add CC if provided
+      `Cc: ${emailCC}`, // Always include recruitment CC
       `Subject: ${emailSubject}`,
       'MIME-Version: 1.0',
       'Content-Type: text/html; charset=utf-8',
@@ -112,9 +115,6 @@ serve(async (req) => {
     
     // Add empty line to separate headers from body and then the body
     emailLines.push('', body);
-    
-    // Remove empty lines (in case cc is not provided)
-    emailLines = emailLines.filter(line => line !== '');
     
     const emailContent = emailLines.join('\r\n');
     console.log("Email content prepared with proper threading headers");
@@ -182,7 +182,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `Email sent to ${candidateName} at ${to} with CC to ${cc || 'none'}`,
+        message: `Email sent to ${candidateName} at ${to} with CC to ${emailCC}`,
         threadId: newThreadId
       }),
       { 

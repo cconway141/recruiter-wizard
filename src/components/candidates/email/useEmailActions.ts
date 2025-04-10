@@ -92,9 +92,13 @@ export const useEmailActions = ({
       setIsSending(true);
       setErrorMessage(null);
 
+      // Always include recruitment@theitbc.com as CC
+      const cc = "recruitment@theitbc.com";
+
       const { data, error } = await supabase.functions.invoke('send-gmail', {
         body: {
           to: candidate.email,
+          cc: cc,
           subject,
           body,
           candidateName: candidate.name,
@@ -182,8 +186,11 @@ export const useEmailActions = ({
   
   const composeEmailInGmail = (email: string, subject: string, body: string) => {
     // Create a Gmail compose URL
+    // Always include CC in the compose URL
+    const cc = "recruitment@theitbc.com";
     const params = new URLSearchParams({
       to: email,
+      cc: cc,
       subject: subject || "",
       body: body.replace(/<[^>]*>/g, '') // Strip HTML for mailto links
     });
