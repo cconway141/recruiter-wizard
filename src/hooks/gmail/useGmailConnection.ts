@@ -5,10 +5,11 @@ import { useGmailDisconnect } from "./useGmailDisconnect";
 
 interface UseGmailConnectionProps {
   onConnectionChange?: (connected: boolean) => void;
+  skipLoading?: boolean; // New prop to skip loading states
 }
 
 export const useGmailConnection = (props: UseGmailConnectionProps = {}) => {
-  const { onConnectionChange } = props;
+  const { onConnectionChange, skipLoading = false } = props;
   
   // Combine the functionality from the split hooks
   const { 
@@ -18,7 +19,7 @@ export const useGmailConnection = (props: UseGmailConnectionProps = {}) => {
     checkGmailConnection, 
     refreshGmailToken,
     forceRefresh
-  } = useGmailConnectionStatus({ onConnectionChange });
+  } = useGmailConnectionStatus({ onConnectionChange, skipLoading });
   
   const { connectGmail } = useGmailAuthFlow({ onConnectionChange });
   
@@ -26,7 +27,7 @@ export const useGmailConnection = (props: UseGmailConnectionProps = {}) => {
   
   return {
     isConnected,
-    isLoading,
+    isLoading: skipLoading ? false : isLoading, // Force isLoading to false if skipLoading is true
     configError,
     connectGmail,
     disconnectGmail,

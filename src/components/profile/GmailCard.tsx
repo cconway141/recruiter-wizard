@@ -14,6 +14,7 @@ import { GmailDisconnectButton } from "./gmail/GmailDisconnectButton";
 import { useGmailCardState } from "./gmail/useGmailCardState";
 
 export const GmailCard: React.FC = () => {
+  // Using the refactored hook that prevents loading states from blocking UI
   const {
     isGmailConnected,
     handleDisconnectGmail,
@@ -32,7 +33,7 @@ export const GmailCard: React.FC = () => {
           Allow this application to send emails on your behalf through your Gmail account.
         </p>
         
-        {/* Connection status indicator without any error states */}
+        {/* Connection status indicator - only shows when connected */}
         {isGmailConnected && (
           <div className="p-3 bg-green-50 border border-green-200 rounded-md mb-4">
             <p className="text-green-700 font-medium flex items-center">

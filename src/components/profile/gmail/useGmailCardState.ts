@@ -11,25 +11,28 @@ export const useGmailCardState = () => {
   const { toast } = useToast();
   
   // Use the combined hook that provides all Gmail functionality
+  // Pass skipLoading: true to prevent loading states from being exposed
   const { 
     isConnected: isGmailConnected, 
-    isLoading: isCheckingGmail, 
     disconnectGmail,
     checkGmailConnection,
-  } = useGmailConnection();
+  } = useGmailConnection({ skipLoading: true });
   
   // Clear connection flags and trigger a background refresh
   useEffect(() => {
     if (user?.id) {
       // Run a single background connection check without blocking UI
-      checkGmailConnection().catch(() => {
-        // Silently handle errors - we'll just show connect button
-        console.log("Background Gmail check failed - silently continuing");
-      });
-      
-      // Clear any stale connection flags that might be in session storage
-      sessionStorage.removeItem('gmailConnectionInProgress');
-      sessionStorage.removeItem('gmailConnectionAttemptTime');
+      // We're using setTimeout to ensure this runs after initial render
+      setTimeout(() => {
+        checkGmailConnection().catch(() => {
+          // Silently handle errors - we'll just show connect button
+          console.log("Background Gmail check failed - silently continuing");
+        });
+        
+        // Clear any stale connection flags that might be in session storage
+        sessionStorage.removeItem('gmailConnectionInProgress');
+        sessionStorage.removeItem('gmailConnectionAttemptTime');
+      }, 0);
     }
   }, [user?.id, checkGmailConnection]);
   
@@ -42,9 +45,11 @@ export const useGmailCardState = () => {
       sessionStorage.removeItem('gmailConnectionInProgress');
       sessionStorage.removeItem('gmailConnectionAttemptTime');
       
-      // Force refresh connection status - silently
+      // Force refresh connection status - silently and with a delay to prevent UI blocking
       if (user?.id) {
-        queryClient.invalidateQueries({ queryKey: ['gmail-connection', user.id] });
+        setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ['gmail-connection', user.id] });
+        }, 100);
       }
     } catch (error) {
       console.error("Error disconnecting Gmail:", error);
@@ -54,7 +59,6 @@ export const useGmailCardState = () => {
   
   return {
     isGmailConnected,
-    isCheckingGmail,
     handleDisconnectGmail,
   };
 };

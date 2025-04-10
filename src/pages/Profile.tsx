@@ -43,6 +43,7 @@ const Profile = () => {
         }
       }
       
+      // Immediately set initialized to true to prevent loading screen
       setIsInitialized(true);
     } catch (error) {
       console.error("Error processing URL parameters:", error);
@@ -50,11 +51,12 @@ const Profile = () => {
     }
   }, [toast]);
   
-  // Separate effect for Gmail query invalidation
+  // Separate effect for Gmail query invalidation - runs in background
   useEffect(() => {
     if (user?.id && !gmailRefreshAttempted) {
       try {
         // Use setTimeout to defer this operation after initial render
+        // to ensure it doesn't block UI rendering
         setTimeout(() => {
           queryClient.invalidateQueries({ queryKey: ['gmail-connection', user.id] });
           setGmailRefreshAttempted(true);
@@ -65,10 +67,7 @@ const Profile = () => {
     }
   }, [user?.id, queryClient, gmailRefreshAttempted]);
 
-  if (!isInitialized) {
-    return <ProfileLoading />;
-  }
-
+  // Always render content immediately - no loading state for Gmail connection
   if (error) {
     return <ProfileError error={error} />;
   }

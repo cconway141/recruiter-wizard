@@ -8,9 +8,13 @@ import { useGmailStatusCheck } from "./useGmailStatusCheck";
 
 interface UseGmailConnectionStatusProps {
   onConnectionChange?: (connected: boolean) => void;
+  skipLoading?: boolean; // New prop to skip loading states
 }
 
-export const useGmailConnectionStatus = ({ onConnectionChange }: UseGmailConnectionStatusProps = {}) => {
+export const useGmailConnectionStatus = ({ 
+  onConnectionChange, 
+  skipLoading = false 
+}: UseGmailConnectionStatusProps = {}) => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -136,7 +140,8 @@ export const useGmailConnectionStatus = ({ onConnectionChange }: UseGmailConnect
   };
 
   return {
-    isConnected: !!connectionInfo?.connected && !connectionInfo?.expired,
+    // If skipLoading is true, assume not connected when loading
+    isConnected: isLoading && skipLoading ? false : !!connectionInfo?.connected && !connectionInfo?.expired,
     isLoading,
     configError: errorMessage,
     checkGmailConnection,
