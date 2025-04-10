@@ -87,7 +87,7 @@ export const GmailCard: React.FC = () => {
         </p>
         
         {showPendingAlert && (
-          <Alert variant="warning" className="mb-4">
+          <Alert variant="destructive" className="mb-4">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Connection Pending</AlertTitle>
             <AlertDescription>
