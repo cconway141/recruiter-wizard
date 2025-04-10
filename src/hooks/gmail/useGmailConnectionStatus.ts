@@ -2,96 +2,105 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/hooks/use-toast";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface UseGmailConnectionStatusProps {
   onConnectionChange?: (connected: boolean) => void;
 }
 
 export const useGmailConnectionStatus = ({ onConnectionChange }: UseGmailConnectionStatusProps = {}) => {
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { user } = useAuth();
-  const { toast } = useToast();
   const queryClient = useQueryClient();
-  
-  const [isConnected, setIsConnected] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [configError, setConfigError] = useState<string | null>(null);
-  
-  const queryKey = user?.id ? ['gmail-connection', user.id] : ['gmail-connection'];
-  
-  // Check connection status on component mount
-  useEffect(() => {
-    if (user?.id) {
-      console.log("Checking Gmail connection on useGmailConnectionStatus mount");
-      checkGmailConnection();
-    } else {
-      setIsConnected(false);
-      setIsLoading(false);
-    }
-  }, [user]);
-  
-  const checkGmailConnection = async () => {
-    if (!user) {
-      setIsConnected(false);
-      setIsLoading(false);
-      setConfigError(null);
-      if (onConnectionChange) onConnectionChange(false);
-      return false;
-    }
-    
-    try {
-      setIsLoading(true);
-      setConfigError(null);
+
+  // Use React Query for state management and caching
+  const { 
+    data: connectionInfo,
+    isLoading,
+    refetch,
+    error
+  } = useQuery({
+    queryKey: ['gmail-connection', user?.id],
+    queryFn: async () => {
+      if (!user) {
+        throw new Error("You must be logged in to use Gmail integration");
+      }
+      
+      setErrorMessage(null);
       
       console.log("Checking Gmail connection status for user:", user.id);
       
-      const { data, error } = await supabase.functions.invoke('google-auth', {
-        body: {
-          action: 'check-connection',
-          userId: user.id
+      try {
+        const { data, error } = await supabase.functions.invoke('google-auth', {
+          body: {
+            action: 'check-connection',
+            userId: user.id
+          }
+        });
+        
+        if (error) {
+          console.error("Error checking Gmail connection:", error);
+          throw new Error("Failed to check Gmail connection");
         }
-      });
-      
-      if (error) {
-        console.error("Error checking Gmail connection:", error);
-        setConfigError("Failed to check connection status");
-        setIsConnected(false);
-        if (onConnectionChange) onConnectionChange(false);
-        return false;
+        
+        if (data?.error === 'Configuration error') {
+          throw new Error(data.message || 'Google OAuth is not properly configured');
+        }
+        
+        // Log connection status for debugging
+        console.log("Gmail connection status from API:", data);
+        
+        if (data.needsRefresh) {
+          console.log("Gmail token needs refresh, refreshing...");
+          await refreshGmailToken();
+          // Re-fetch after refresh
+          const refreshResult = await supabase.functions.invoke('google-auth', {
+            body: { action: 'check-connection', userId: user.id }
+          });
+          
+          if (refreshResult.error) {
+            console.error("Error after refreshing token:", refreshResult.error);
+            throw new Error("Failed to verify refreshed connection");
+          }
+          
+          return refreshResult.data;
+        }
+        
+        return data;
+      } catch (error: any) {
+        console.error("Error in queryFn:", error);
+        setErrorMessage(error.message || "Failed to check Gmail connection");
+        throw error;
       }
-      
-      console.log("Gmail connection check response:", data);
-      
-      // If token is expired but we have a refresh token, try refreshing
-      if (data.connected && data.expired && data.hasRefreshToken) {
-        console.log("Gmail token is expired, attempting to refresh...");
-        return await refreshGmailToken();
-      }
-      
-      // Update connection state
-      const isActuallyConnected = data.connected && !data.expired;
-      console.log("Setting isConnected to:", isActuallyConnected);
-      setIsConnected(isActuallyConnected);
-      if (onConnectionChange) onConnectionChange(isActuallyConnected);
-      return isActuallyConnected;
-    } catch (err) {
-      console.error("Error in checkGmailConnection:", err);
-      setConfigError("Failed to check connection status");
-      setIsConnected(false);
-      if (onConnectionChange) onConnectionChange(false);
-      return false;
-    } finally {
-      setIsLoading(false);
+    },
+    enabled: !!user,
+    refetchOnWindowFocus: true,
+    staleTime: 30 * 1000, // 30 seconds
+    refetchInterval: 60 * 1000, // Refresh every minute
+    retry: 1, // Limit retries to prevent flooding with requests
+  });
+
+  useEffect(() => {
+    if (error) {
+      const errorMsg = error instanceof Error ? error.message : "Unknown error checking Gmail connection";
+      setErrorMessage(errorMsg);
     }
-  };
-  
-  const refreshGmailToken = async () => {
+  }, [error]);
+
+  // Update connection status
+  useEffect(() => {
+    const isConnected = connectionInfo?.connected && !connectionInfo?.expired;
+    // Notify parent component of connection status changes
+    if (onConnectionChange) {
+      onConnectionChange(isConnected);
+    }
+  }, [connectionInfo, onConnectionChange]);
+
+  const refreshGmailToken = async (): Promise<boolean> => {
     if (!user) return false;
     
     try {
-      console.log("Refreshing Gmail token for user:", user.id);
-      
+      console.log("Refreshing Gmail token...");
       const { data, error } = await supabase.functions.invoke('google-auth', {
         body: {
           action: 'refresh-token',
@@ -101,65 +110,53 @@ export const useGmailConnectionStatus = ({ onConnectionChange }: UseGmailConnect
       
       if (error) {
         console.error("Error refreshing Gmail token:", error);
-        setIsConnected(false);
-        if (onConnectionChange) onConnectionChange(false);
+        setErrorMessage("Failed to refresh Gmail token. Please reconnect your account.");
         return false;
       }
       
-      console.log("Gmail token refresh result:", data);
-      
-      // Check connection again to update state
-      const isStillConnected = await checkGmailConnection();
-      return isStillConnected;
-    } catch (err) {
-      console.error("Error in refreshGmailToken:", err);
-      setIsConnected(false);
-      if (onConnectionChange) onConnectionChange(false);
+      console.log("Gmail token refreshed successfully");
+      return true;
+    } catch (error) {
+      console.error("Error refreshing Gmail token:", error);
+      setErrorMessage("Failed to refresh Gmail token. Please reconnect your account.");
       return false;
     }
   };
-  
+
+  const checkGmailConnection = async (): Promise<boolean> => {
+    try {
+      console.log("Explicitly checking Gmail connection...");
+      // Invalidate the query to ensure we get fresh data
+      queryClient.invalidateQueries({ queryKey: ['gmail-connection', user?.id] });
+      
+      const result = await refetch();
+      const isConnected = result.data?.connected && !result.data?.expired;
+      
+      console.log("Gmail connection check result:", isConnected);
+      return isConnected;
+    } catch (error) {
+      console.error("Error checking Gmail connection:", error);
+      return false;
+    }
+  };
+
   const forceRefresh = async () => {
-    if (!user) return;
+    if (!user) return false;
     
     try {
-      setIsLoading(true);
-      
-      // Clear local connection cache
-      queryClient.invalidateQueries({ queryKey });
-      
-      // Check connection status directly
-      const connected = await checkGmailConnection();
-      
-      console.log("Force refresh result:", connected);
-      
-      toast({
-        title: connected ? "Gmail Connected" : "Gmail Not Connected",
-        description: connected 
-          ? "Your Gmail account is properly connected." 
-          : "Your Gmail account is not connected. Please connect it to send emails.",
-      });
-      
-      return connected;
-    } catch (err) {
-      console.error("Error in forceRefresh:", err);
-      toast({
-        title: "Error",
-        description: "Failed to refresh Gmail connection status.",
-        variant: "destructive",
-      });
+      // Clear local connection cache and fetch fresh data
+      queryClient.invalidateQueries({ queryKey: ['gmail-connection', user?.id] });
+      return await checkGmailConnection();
+    } catch (error) {
+      console.error("Error in forceRefresh:", error);
       return false;
-    } finally {
-      setIsLoading(false);
     }
   };
-  
-  console.log("Current connection status in useGmailConnectionStatus:", isConnected);
-  
+
   return {
-    isConnected,
+    isConnected: connectionInfo?.connected && !connectionInfo?.expired,
     isLoading,
-    configError,
+    configError: errorMessage,
     checkGmailConnection,
     refreshGmailToken,
     forceRefresh
