@@ -23,11 +23,14 @@ export const useGmailConnectionStatus = ({
   
   // Enhanced rate limiting with a significant timeout
   const lastCheckRef = useRef<number>(0);
-  const checkThrottleMs = 30000; // 30 seconds minimum between checks (increased from 10s)
-  const maxErrorsBeforeBackoff = 2; // Reduced threshold to activate backoff sooner
+  const checkThrottleMs = 60000; // 60 seconds minimum between checks (increased from 30s)
+  const maxErrorsBeforeBackoff = 2; // Threshold to activate backoff
   const errorCountRef = useRef<number>(0);
   const backoffActiveRef = useRef<boolean>(false);
-  const backoffTimeMs = 120000; // 2 minutes of backoff time (increased from implicit 30s)
+  const backoffTimeMs = 300000; // 5 minutes of backoff time (increased from 2 minutes)
+  
+  // Add a check-in-progress flag to prevent simultaneous checks
+  const checkInProgressRef = useRef<boolean>(false);
 
   // Rate limiting function with enhanced protection
   const throttledCheck = async () => {
@@ -35,6 +38,12 @@ export const useGmailConnectionStatus = ({
     
     // First, check if we already have cached data we can use
     const cachedData = queryClient.getQueryData(['gmail-connection', user?.id]);
+    
+    // If a check is already in progress, use cached data
+    if (checkInProgressRef.current) {
+      console.log("Gmail connection check already in progress, using cached data");
+      return cachedData || { connected: false, expired: false, hasRefreshToken: false };
+    }
     
     // If we're in backoff mode due to repeated errors, use cached data
     if (backoffActiveRef.current) {
@@ -50,6 +59,9 @@ export const useGmailConnectionStatus = ({
     
     // Only update the timestamp if we're actually making a request
     lastCheckRef.current = now;
+    
+    // Set check in progress flag
+    checkInProgressRef.current = true;
     
     // Clear previous errors
     setConnectionError(null);
@@ -113,6 +125,9 @@ export const useGmailConnectionStatus = ({
       
       setErrorMessage(error.message || "Failed to check Gmail connection");
       return { connected: false, expired: false, hasRefreshToken: false };
+    } finally {
+      // Always clear the check in progress flag
+      checkInProgressRef.current = false;
     }
   };
 
@@ -127,12 +142,12 @@ export const useGmailConnectionStatus = ({
     queryFn: throttledCheck,
     enabled: !!user,
     // Significantly increased caching parameters to reduce API calls
-    staleTime: 5 * 60 * 1000, // 5 minutes - keeps data fresh much longer
-    refetchInterval: 10 * 60 * 1000, // 10 minutes - very infrequent background checks
+    staleTime: 15 * 60 * 1000, // 15 minutes - keeps data fresh much longer (increased from 5 min)
+    refetchInterval: 30 * 60 * 1000, // 30 minutes - very infrequent background checks (increased from 10 min)
     refetchOnWindowFocus: false, // Prevents checks when tab regains focus
     retry: 0, // No retries to avoid cascading failures
-    gcTime: 30 * 60 * 1000, // 30 minutes to keep in cache
-    refetchOnMount: "always",
+    gcTime: 60 * 60 * 1000, // 60 minutes to keep in cache (increased from 30 min)
+    refetchOnMount: false, // Changed from "always" to prevent excess calls
   });
 
   // Silently handle errors - no UI updates
@@ -157,6 +172,12 @@ export const useGmailConnectionStatus = ({
 
   const forceRefresh = async () => {
     if (!user) return false;
+    
+    // Don't allow refresh if one is already in progress or if in backoff mode
+    if (checkInProgressRef.current || backoffActiveRef.current) {
+      console.log("Skipping force refresh due to active check or backoff");
+      return false;
+    }
     
     try {
       // Use a throttled invalidation to prevent UI flickering

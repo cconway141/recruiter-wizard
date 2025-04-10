@@ -12,6 +12,10 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Add basic request deduplication with a simple tracking mechanism
+const recentRequests = new Map<string, number>();
+const REQUEST_WINDOW_MS = 10000; // 10 seconds deduplication window
+
 interface EmailRequest {
   to: string;
   cc?: string[];
@@ -36,6 +40,52 @@ serve(async (req) => {
   try {
     console.log("Parsing request body");
     const requestBody = await req.json();
+    
+    // Create a request fingerprint for deduplication
+    const fingerprint = JSON.stringify({
+      to: requestBody.to,
+      subject: requestBody.subject?.substring(0, 50),
+      userId: requestBody.userId,
+      threadId: requestBody.threadId,
+      timestamp: Math.floor(Date.now() / REQUEST_WINDOW_MS) // Round to nearest window
+    });
+    
+    // Check for duplicate requests
+    if (recentRequests.has(fingerprint)) {
+      const requestTime = recentRequests.get(fingerprint);
+      if (requestTime && Date.now() - requestTime < REQUEST_WINDOW_MS) {
+        console.log("Duplicate request detected, responding with cached success");
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            deduplicated: true,
+            threadId: requestBody.threadId,
+            messageId: "deduplicated-request"
+          }),
+          { 
+            status: 200, 
+            headers: { 
+              ...corsHeaders, 
+              'Content-Type': 'application/json' 
+            } 
+          }
+        );
+      }
+    }
+    
+    // Track this request
+    recentRequests.set(fingerprint, Date.now());
+    
+    // Clean up old entries periodically
+    if (recentRequests.size > 100) {
+      const now = Date.now();
+      for (const [key, time] of recentRequests.entries()) {
+        if (now - time > REQUEST_WINDOW_MS) {
+          recentRequests.delete(key);
+        }
+      }
+    }
+    
     console.log("Request body received:", JSON.stringify(requestBody));
     
     const { 
@@ -199,31 +249,64 @@ serve(async (req) => {
       console.log(`Adding threadId to request: ${threadId}`);
     }
     
-    // Send the email via Gmail API
+    // Send the email via Gmail API with retry logic
     console.log("Sending email to Gmail API...");
-    const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(requestBody)
-    });
+    let retries = 2;
+    let response;
+    let responseData;
     
-    console.log(`Gmail API response status: ${response.status} ${response.statusText}`);
-    const responseData = await response.json();
-    console.log("Gmail API response data:", JSON.stringify(responseData));
+    while (retries >= 0) {
+      try {
+        response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(requestBody)
+        });
+        
+        console.log(`Gmail API response status: ${response.status} ${response.statusText}`);
+        responseData = await response.json();
+        
+        if (response.ok) {
+          break; // Success, exit retry loop
+        }
+        
+        // Handle rate limiting specifically
+        if (response.status === 429) {
+          const retryAfter = response.headers.get('Retry-After') || '5';
+          const retrySeconds = parseInt(retryAfter, 10) || 5;
+          console.log(`Rate limited by Gmail API, waiting ${retrySeconds} seconds before retry`);
+          await new Promise(resolve => setTimeout(resolve, retrySeconds * 1000));
+        } else if (retries > 0) {
+          // For other errors, use exponential backoff
+          const backoffMs = 1000 * Math.pow(2, 2 - retries);
+          console.log(`Retrying after ${backoffMs}ms, attempts left: ${retries}`);
+          await new Promise(resolve => setTimeout(resolve, backoffMs));
+        } else {
+          console.error("Gmail API error after all retries:", responseData);
+          break;
+        }
+      } catch (error) {
+        console.error(`Network error during Gmail API call (retry ${2-retries}/2):`, error);
+        if (retries <= 0) break;
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+      
+      retries--;
+    }
     
-    if (!response.ok) {
-      console.error("Gmail API error:", { status: response.status, data: responseData });
+    if (!response || !response.ok) {
+      console.error("Gmail API error:", { status: response?.status, data: responseData });
       return new Response(
         JSON.stringify({ 
           error: 'Failed to send email through Gmail API',
-          status: response.status,
+          status: response?.status,
           details: responseData 
         }),
         { 
-          status: response.status, 
+          status: response?.status || 500, 
           headers: { 
             ...corsHeaders, 
             'Content-Type': 'application/json' 
