@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
@@ -14,7 +13,7 @@ const corsHeaders = {
 
 interface EmailRequest {
   to: string;
-  cc?: string;
+  cc?: string[];
   subject: string;
   body: string;
   candidateName: string;
@@ -31,7 +30,17 @@ serve(async (req) => {
   }
 
   try {
-    const { to, cc, subject, body, candidateName, jobTitle, threadId, messageId, userId } = await req.json() as EmailRequest;
+    const { 
+      to, 
+      cc = ['recruitment@theitbc.com'], 
+      subject, 
+      body, 
+      candidateName, 
+      jobTitle, 
+      threadId, 
+      messageId, 
+      userId 
+    } = await req.json() as EmailRequest;
 
     if (!to || !body || !userId) {
       return new Response(
@@ -70,7 +79,7 @@ serve(async (req) => {
     // Basic email structure
     let emailLines = [
       `To: ${to}`,
-      `Cc: ${emailCC}`,
+      `Cc: ${cc.join(', ')}`,
       'MIME-Version: 1.0',
       'Content-Type: text/html; charset=utf-8',
       `Message-ID: ${currentMessageId}`,
