@@ -21,7 +21,9 @@ export const GmailCard: React.FC = () => {
   const { isGmailConnected, handleDisconnectGmail } = useGmailCardState();
   
   // Get checkGmailConnection function for the one-time background check
-  const { checkGmailConnection } = useGmailConnection({ skipLoading: true });
+  const { checkGmailConnection } = useGmailConnection({ 
+    skipLoading: true // Critical: This prevents loading states from affecting UI
+  });
   
   // Run a single background connection check on mount
   // This will not affect the UI rendering since we use skipLoading
@@ -30,6 +32,7 @@ export const GmailCard: React.FC = () => {
       // Use setTimeout to ensure this happens after initial render
       // and doesn't block the UI in any way
       const timer = setTimeout(() => {
+        // Run a silent background check that won't affect UI
         checkGmailConnection().catch(() => {
           // Silently handle errors - we'll just show "Connect" button by default
           console.log("Background Gmail check failed - continuing silently");
@@ -44,6 +47,7 @@ export const GmailCard: React.FC = () => {
     }
   }, [user?.id, checkGmailConnection]);
   
+  // Always render immediately - don't show loading states
   return (
     <Card>
       <CardHeader>

@@ -1,23 +1,18 @@
 
 import { useEffect, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { Navbar } from "@/components/layout/Navbar";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProfileContent } from "@/components/profile/ProfileContent";
-import { ProfileLoading } from "@/components/profile/ProfileLoading";
 import { ProfileError } from "@/components/profile/ProfileError";
 import { useToast } from "@/hooks/use-toast";
 
 const Profile = () => {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
-  const [isInitialized, setIsInitialized] = useState(false);
-  const [gmailRefreshAttempted, setGmailRefreshAttempted] = useState(false);
   const { toast } = useToast();
 
-  // Initialize page and handle URL parameters for Gmail connection
+  // Process URL parameters for Gmail connection status
   useEffect(() => {
     try {
       // Check URL parameters for Gmail connection status
@@ -42,36 +37,17 @@ const Profile = () => {
           });
         }
       }
-      
-      // Immediately set initialized to true to prevent loading screen
-      setIsInitialized(true);
     } catch (error) {
       console.error("Error processing URL parameters:", error);
-      setIsInitialized(true);
     }
   }, [toast]);
-  
-  // Separate effect for Gmail query invalidation - runs in background
-  useEffect(() => {
-    if (user?.id && !gmailRefreshAttempted) {
-      try {
-        // Use setTimeout to defer this operation after initial render
-        // to ensure it doesn't block UI rendering
-        setTimeout(() => {
-          queryClient.invalidateQueries({ queryKey: ['gmail-connection', user.id] });
-          setGmailRefreshAttempted(true);
-        }, 500);
-      } catch (error) {
-        console.error("Error refreshing Gmail connection:", error);
-      }
-    }
-  }, [user?.id, queryClient, gmailRefreshAttempted]);
 
-  // Always render content immediately - no loading state for Gmail connection
+  // Show error page if needed
   if (error) {
     return <ProfileError error={error} />;
   }
 
+  // Always render content immediately without loading states
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />

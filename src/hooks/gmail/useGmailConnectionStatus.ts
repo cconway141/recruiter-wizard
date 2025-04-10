@@ -95,18 +95,18 @@ export const useGmailConnectionStatus = ({
     },
     enabled: !!user,
     // Performance optimizations - significantly increased to reduce API calls
-    staleTime: 10 * 60 * 1000, // 10 minutes (increased from 3 minutes)
-    refetchInterval: 30 * 60 * 1000, // 30 minutes (increased from 5 minutes)
-    refetchOnWindowFocus: false, // Only refresh when explicitly requested
-    retry: 1,
-    gcTime: 60 * 60 * 1000, // 1 hour to keep in cache (increased from 10 minutes)
+    staleTime: 10 * 60 * 1000, // 10 minutes - keeps data fresh longer
+    refetchInterval: 30 * 60 * 1000, // 30 minutes - reduces background checks
+    refetchOnWindowFocus: false, // Prevents checks when tab regains focus
+    retry: 1, // Only retry once to avoid excessive requests
+    gcTime: 60 * 60 * 1000, // 1 hour to keep in cache
   });
 
   // Silently handle errors - no UI updates
   useEffect(() => {
     if (error) {
       console.error("Connection check error:", error);
-      // Don't set UI error states
+      // Don't set UI error states to avoid blocking rendering
     }
   }, [error]);
 
@@ -126,7 +126,6 @@ export const useGmailConnectionStatus = ({
     if (!user) return false;
     
     try {
-      // Clear local connection cache and fetch fresh data
       // Use a throttled invalidation to prevent UI flickering
       setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ['gmail-connection', user.id] });
@@ -142,7 +141,7 @@ export const useGmailConnectionStatus = ({
   return {
     // If skipLoading is true, assume not connected when loading
     isConnected: isLoading && skipLoading ? false : !!connectionInfo?.connected && !connectionInfo?.expired,
-    isLoading,
+    isLoading: skipLoading ? false : isLoading, // Never report loading if skipLoading is true
     configError: errorMessage,
     checkGmailConnection,
     refreshGmailToken,

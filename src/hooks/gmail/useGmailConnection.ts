@@ -11,8 +11,7 @@ interface UseGmailConnectionProps {
 export const useGmailConnection = (props: UseGmailConnectionProps = {}) => {
   const { onConnectionChange, skipLoading = false } = props;
   
-  // Combine the functionality from the split hooks
-  // Pass skipLoading to prevent loading states from being exposed
+  // Pass skipLoading to prevent loading states from being exposed to UI
   const { 
     isConnected, 
     isLoading, 
@@ -20,14 +19,17 @@ export const useGmailConnection = (props: UseGmailConnectionProps = {}) => {
     checkGmailConnection, 
     refreshGmailToken,
     forceRefresh
-  } = useGmailConnectionStatus({ onConnectionChange, skipLoading });
+  } = useGmailConnectionStatus({ 
+    onConnectionChange, 
+    skipLoading // Critical flag: prevents loading state from affecting UI
+  });
   
   const { connectGmail } = useGmailAuthFlow({ onConnectionChange });
   
   const { disconnectGmail } = useGmailDisconnect({ onConnectionChange });
   
   return {
-    // When skipLoading is true, always return false for isLoading to prevent UI blocking
+    // When skipLoading is true, always hide loading state from components
     isConnected,
     isLoading: skipLoading ? false : isLoading,
     configError,

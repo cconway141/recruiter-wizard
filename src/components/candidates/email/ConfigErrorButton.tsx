@@ -1,9 +1,8 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, CheckCircle, MailX } from "lucide-react";
+import { AlertCircle, CheckCircle } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useGmailConnection } from "@/hooks/gmail";
 
 interface ConfigErrorButtonProps {
   className?: string;
@@ -20,6 +19,7 @@ export const ConfigErrorButton: React.FC<ConfigErrorButtonProps> = ({
 }) => {
   console.log("ConfigErrorButton: isConnected =", isConnected);
   
+  // Always render one of these buttons immediately without loading states
   if (isConnected) {
     return (
       <div className="flex flex-col gap-2">

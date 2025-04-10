@@ -6,8 +6,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { GmailCard } from "@/components/profile/GmailCard";
 import { GoogleAccountCard } from "@/components/profile/GoogleAccountCard";
 import { EmailSignatureCard } from "@/components/profile/EmailSignatureCard";
-import { ProfileLoading } from "@/components/profile/ProfileLoading";
-import { ProfileError } from "@/components/profile/ProfileError";
 
 export interface Profile {
   id: string;
@@ -29,7 +27,7 @@ interface ProfileContentProps {
 export const ProfileContent = ({ setError }: ProfileContentProps) => {
   const { user, isGoogleLinked } = useAuth();
 
-  // Get profile data
+  // Get profile data with optimized settings
   const { data: profile, isLoading: profileLoading, error: profileError } = useQuery({
     queryKey: ['profile', user?.id],
     queryFn: async () => {
@@ -50,19 +48,14 @@ export const ProfileContent = ({ setError }: ProfileContentProps) => {
         return null;
       }
     },
-    enabled: !!user?.id
+    enabled: !!user?.id,
+    // Don't refetch on window focus to reduce unnecessary loads
+    refetchOnWindowFocus: false
   });
 
   const isProfileGoogleLinked = profile?.google_linked || isGoogleLinked;
 
-  if (profileLoading && !profile) {
-    return <ProfileLoading />;
-  }
-
-  if (profileError) {
-    return <ProfileError error={profileError.message || "An error occurred while loading your profile"} />;
-  }
-
+  // Always render content immediately - even during profile loading
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
       {/* Email Signature Card */}
