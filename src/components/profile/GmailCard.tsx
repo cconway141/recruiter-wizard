@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from "react";
-import { MailCheck, AlertCircle } from "lucide-react";
+import { MailCheck, AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { 
   Card, 
@@ -10,13 +10,12 @@ import {
   CardTitle,
   CardFooter 
 } from "@/components/ui/card";
-import { GmailConnectButton } from "@/components/candidates/email/GmailConnectButton";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { useGmailConnection } from "@/hooks/gmail";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useGmailConnection } from "@/hooks/gmail";
 
 export const GmailCard: React.FC = () => {
   const { user } = useAuth();
@@ -25,11 +24,14 @@ export const GmailCard: React.FC = () => {
   const [connectionAttemptTime, setConnectionAttemptTime] = useState<number | null>(null);
   const [errorOccurred, setErrorOccurred] = useState(false);
   
+  // Use the combined hook that provides all Gmail functionality
   const { 
     isConnected: isGmailConnected, 
     isLoading: isCheckingGmail, 
     configError: errorMessage, 
-    checkGmailConnection 
+    checkGmailConnection,
+    connectGmail,
+    disconnectGmail
   } = useGmailConnection();
   
   useEffect(() => {
@@ -66,7 +68,8 @@ export const GmailCard: React.FC = () => {
   // Separate the Gmail connection check to prevent crashes
   useEffect(() => {
     if (user?.id) {
-      setTimeout(() => {
+      // Use setTimeout to defer the connection check after initial render
+      const timer = setTimeout(() => {
         try {
           console.log("Checking Gmail connection on GmailCard mount");
           checkGmailConnection().catch(err => {
@@ -78,8 +81,40 @@ export const GmailCard: React.FC = () => {
           setErrorOccurred(true);
         }
       }, 100);
+      
+      return () => clearTimeout(timer);
     }
   }, [user?.id, checkGmailConnection]);
+  
+  const handleDisconnectGmail = async () => {
+    try {
+      // Show loading toast
+      toast({
+        title: "Disconnecting Gmail",
+        description: "Please wait while we disconnect your Gmail account...",
+      });
+      
+      // Call the disconnect function from our hook
+      await disconnectGmail();
+      
+      // Clear any connection flags that might be in session storage
+      sessionStorage.removeItem('gmailConnectionInProgress');
+      sessionStorage.removeItem('gmailConnectionAttemptTime');
+      setConnectionAttemptTime(null);
+      
+      // Force refresh connection status
+      if (user?.id) {
+        queryClient.invalidateQueries({ queryKey: ['gmail-connection', user.id] });
+      }
+    } catch (error) {
+      console.error("Error disconnecting Gmail:", error);
+      toast({
+        title: "Error",
+        description: "Failed to disconnect Gmail. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
   
   const forceRefreshGmailStatus = () => {
     try {
@@ -116,6 +151,7 @@ export const GmailCard: React.FC = () => {
 
   console.log("Current Gmail connection status in GmailCard:", isGmailConnected);
 
+  // Show a loading skeleton while checking gmail connection
   if (isCheckingGmail && !errorOccurred) {
     return (
       <Card>
@@ -149,6 +185,17 @@ export const GmailCard: React.FC = () => {
           Allow this application to send emails on your behalf through your Gmail account.
         </p>
         
+        {/* Display connection status */}
+        {isGmailConnected && (
+          <Alert variant="success" className="bg-green-50 border-green-200 mb-4">
+            <MailCheck className="h-4 w-4 text-green-600" />
+            <AlertTitle className="text-green-600">Gmail Connected</AlertTitle>
+            <AlertDescription className="text-green-700">
+              Your Gmail account is connected and ready to use.
+            </AlertDescription>
+          </Alert>
+        )}
+        
         {errorMessage && (
           <Alert variant="destructive" className="mb-4">
             <AlertCircle className="h-4 w-4" />
@@ -180,15 +227,46 @@ export const GmailCard: React.FC = () => {
           </Alert>
         )}
         
-        <GmailConnectButton />
+        {/* Conditionally render connect or disconnect button based on connection status */}
+        {isGmailConnected ? (
+          // Disconnect button when connected
+          <Button 
+            variant="destructive" 
+            onClick={handleDisconnectGmail}
+            className="w-full mb-2"
+            disabled={isCheckingGmail}
+          >
+            {isCheckingGmail ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+                Checking...
+              </>
+            ) : (
+              "Disconnect Gmail"
+            )}
+          </Button>
+        ) : (
+          // Connect button when not connected
+          <div className="mb-2">
+            <GmailConnectButton />
+          </div>
+        )}
         
+        {/* Always show refresh button */}
         <Button 
           variant="ghost" 
           onClick={forceRefreshGmailStatus}
-          className="text-xs"
+          className="text-xs w-full"
           disabled={isCheckingGmail}
         >
-          {isCheckingGmail ? "Checking..." : "Refresh Connection Status"}
+          {isCheckingGmail ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+              Checking...
+            </>
+          ) : (
+            "Refresh Connection Status"
+          )}
         </Button>
       </CardContent>
       <CardFooter className="text-xs text-muted-foreground">

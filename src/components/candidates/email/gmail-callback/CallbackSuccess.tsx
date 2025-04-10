@@ -1,6 +1,6 @@
 
 import React, { useEffect } from "react";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface CallbackSuccessProps {
@@ -24,6 +24,7 @@ export const CallbackSuccess: React.FC<CallbackSuccessProps> = ({
     // Set up redirection after a delay
     const redirectTimer = setTimeout(() => {
       try {
+        console.log("Gmail connection successful, redirecting to profile page");
         // Use navigation to avoid page refresh
         navigate('/profile?gmail_connected=true');
       } catch (error) {
@@ -37,10 +38,14 @@ export const CallbackSuccess: React.FC<CallbackSuccessProps> = ({
   }, [redirectDelay, navigate]);
 
   return (
-    <div className="text-center">
-      <CheckCircle className="w-8 h-8 mx-auto text-green-500" />
+    <div className="text-center space-y-4">
+      <CheckCircle className="w-12 h-12 mx-auto text-green-500" />
       <h2 className="text-xl font-semibold text-green-600">Gmail API Connected!</h2>
       <p className="text-gray-500">You will be redirected to your profile in a moment.</p>
+      <div className="flex items-center justify-center gap-2 text-sm text-gray-400">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        Redirecting...
+      </div>
     </div>
   );
 };
