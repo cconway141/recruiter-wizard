@@ -2,11 +2,17 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
+interface ThreadInfo {
+  threadId: string;
+  messageId: string;
+}
+
 interface CandidateThreadData {
   candidateId: string;
-  threadIds: Record<string, string>;
+  threadIds: Record<string, ThreadInfo | string>; // Support legacy format
   jobId?: string;
   newThreadId?: string;
+  newMessageId?: string;
 }
 
 export const useCandidateThreads = () => {
@@ -16,7 +22,8 @@ export const useCandidateThreads = () => {
     candidateId, 
     threadIds, 
     jobId, 
-    newThreadId 
+    newThreadId,
+    newMessageId
   }: CandidateThreadData) => {
     if (!jobId || !newThreadId || !candidateId) {
       console.log("Missing data for thread saving:", { jobId, newThreadId, candidateId });
@@ -25,15 +32,33 @@ export const useCandidateThreads = () => {
     
     try {
       console.log("New thread ID created:", newThreadId);
-      console.log("Saving thread ID for job:", jobId);
+      console.log("New message ID created:", newMessageId);
+      console.log("Saving thread info for job:", jobId);
       
-      // Update the existing threadIds with the new one for this job
-      const threadIdsUpdate = { ...(threadIds || {}), [jobId]: newThreadId };
+      // Convert legacy format if needed
+      const convertedThreadIds: Record<string, ThreadInfo> = {};
+      
+      // Copy existing threads with conversion from legacy format
+      Object.entries(threadIds || {}).forEach(([key, value]) => {
+        if (typeof value === 'string') {
+          // Legacy format, just threadId as string
+          convertedThreadIds[key] = { threadId: value, messageId: value };
+        } else {
+          // Already in new format
+          convertedThreadIds[key] = value as ThreadInfo;
+        }
+      });
+      
+      // Add the new thread info
+      convertedThreadIds[jobId] = {
+        threadId: newThreadId,
+        messageId: newMessageId || newThreadId // Fallback to threadId if messageId not provided
+      };
       
       const { error: updateError } = await supabase
         .from('candidates')
         .update({
-          thread_ids: threadIdsUpdate
+          thread_ids: convertedThreadIds
         })
         .eq('id', candidateId);
         
@@ -47,7 +72,7 @@ export const useCandidateThreads = () => {
         return false;
       } 
       
-      console.log("Thread ID saved for job:", jobId, "Thread ID:", newThreadId);
+      console.log("Thread info saved for job:", jobId, "Thread ID:", newThreadId, "Message ID:", newMessageId);
       return true;
     } catch (err) {
       console.error("Error saving thread ID:", err);
@@ -55,7 +80,7 @@ export const useCandidateThreads = () => {
     }
   };
   
-  const getThreadId = async (candidateId: string, jobId: string) => {
+  const getThreadInfo = async (candidateId: string, jobId: string): Promise<ThreadInfo | null> => {
     if (!candidateId || !jobId) {
       return null;
     }
@@ -72,16 +97,40 @@ export const useCandidateThreads = () => {
         return null;
       }
       
-      // Return the thread ID for this specific job if it exists
-      return data.thread_ids?.[jobId] || null;
+      // Handle both legacy format and new format
+      const threadInfo = data.thread_ids?.[jobId];
+      
+      if (!threadInfo) {
+        return null;
+      }
+      
+      if (typeof threadInfo === 'string') {
+        // Legacy format - convert on the fly
+        return { threadId: threadInfo, messageId: threadInfo };
+      }
+      
+      // New format
+      return threadInfo as ThreadInfo;
     } catch (err) {
-      console.error("Error retrieving thread ID:", err);
+      console.error("Error retrieving thread info:", err);
       return null;
     }
+  };
+  
+  const getThreadId = async (candidateId: string, jobId: string): Promise<string | null> => {
+    const threadInfo = await getThreadInfo(candidateId, jobId);
+    return threadInfo?.threadId || null;
+  };
+  
+  const getMessageId = async (candidateId: string, jobId: string): Promise<string | null> => {
+    const threadInfo = await getThreadInfo(candidateId, jobId);
+    return threadInfo?.messageId || null;
   };
 
   return {
     saveThreadId,
-    getThreadId
+    getThreadId,
+    getMessageId,
+    getThreadInfo
   };
 };

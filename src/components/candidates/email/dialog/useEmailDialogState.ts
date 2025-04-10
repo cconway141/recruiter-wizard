@@ -33,6 +33,7 @@ export const useEmailDialogState = ({
   const [subject, setSubject] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [messageId, setMessageId] = useState<string | null>(null);
 
   const {
     isConnected: isGmailConnected,
@@ -42,7 +43,7 @@ export const useEmailDialogState = ({
     showLoadingUI: false,
   });
 
-  const { saveThreadId } = useCandidateThreads();
+  const { saveThreadId, getMessageId } = useCandidateThreads();
 
   const { emailTemplates, getEmailContent } = useEmailContent({
     candidateName,
@@ -66,6 +67,7 @@ export const useEmailDialogState = ({
     console.debug('Email Dialog State Props:', {
       jobId,
       candidateFacingTitle,
+      threadId
     });
 
     // Always construct a proper subject with proper handling of job title
@@ -85,12 +87,23 @@ export const useEmailDialogState = ({
       setBody(content.body || "");
     }
 
+    // Fetch the message ID if we have a thread ID
+    const fetchMessageId = async () => {
+      if (threadId && candidateId && jobId) {
+        const storedMessageId = await getMessageId(candidateId, jobId);
+        console.log("Retrieved message ID for threading:", storedMessageId);
+        setMessageId(storedMessageId);
+      }
+    };
+    
+    fetchMessageId();
+
     setTimeout(() => {
       checkGmailConnection().catch((err) => {
         console.error("Background Gmail check failed:", err);
       });
     }, 100);
-  }, [checkGmailConnection, candidateName, candidateFacingTitle, threadTitle, getEmailContent]);
+  }, [checkGmailConnection, candidateName, candidateFacingTitle, threadTitle, getEmailContent, threadId, candidateId, jobId, getMessageId]);
 
   const handleTemplateChange = (template: string) => {
     setSelectedTemplate(template);
@@ -129,25 +142,28 @@ export const useEmailDialogState = ({
         subject,
         candidateName,
         candidateFacingTitle,
-        threadId
+        threadId,
+        messageId
       });
 
-      const newThreadId = await sendEmailViaGmail(
+      const result = await sendEmailViaGmail(
         candidateEmail,
         subject,
         body,
         candidateName,
         candidateFacingTitle,
-        threadId
+        threadId,
+        messageId
       );
 
-      if (newThreadId && !threadId && candidateId && jobId) {
-        console.log("Saving new thread ID:", newThreadId);
+      if (result?.threadId && candidateId && jobId) {
+        console.log("Saving new thread and message IDs:", result);
         await saveThreadId({
           candidateId,
           threadIds: {},
           jobId,
-          newThreadId
+          newThreadId: result.threadId,
+          newMessageId: result.messageId
         });
       }
     } catch (error) {

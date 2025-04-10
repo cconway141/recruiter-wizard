@@ -20,6 +20,7 @@ interface EmailRequest {
   candidateName: string;
   jobTitle?: string;
   threadId?: string;
+  messageId?: string; // Add messageId for better threading
   userId: string;
 }
 
@@ -29,7 +30,7 @@ serve(async (req) => {
   }
 
   try {
-    const { to, cc, subject, body, candidateName, jobTitle, threadId, userId } = await req.json() as EmailRequest;
+    const { to, cc, subject, body, candidateName, jobTitle, threadId, messageId, userId } = await req.json() as EmailRequest;
 
     if (!to || !body || !userId) {
       return new Response(
@@ -75,6 +76,7 @@ serve(async (req) => {
 
     console.log(`Preparing to send email to ${to} with subject "${formattedSubject}"`);
     console.log(`Using thread ID: ${threadId || 'New thread'}`);
+    console.log(`Using message ID for reference: ${messageId || 'None (new conversation)'}`);
     
     const { data: tokenData, error: tokenError } = await supabase
       .from('gmail_tokens')
@@ -105,6 +107,9 @@ serve(async (req) => {
     
     const accessToken = tokenData.access_token;
 
+    // Generate a unique Message-ID for this email
+    const currentMessageId = `<itbc-${Date.now()}-${Math.random().toString(36).substring(2, 10)}@mail.gmail.com>`;
+    
     // Improved email headers with proper threading info
     let emailLines = [
       `To: ${to}`,
@@ -112,24 +117,22 @@ serve(async (req) => {
       `Subject: ${formattedSubject}`,
       'MIME-Version: 1.0',
       'Content-Type: text/html; charset=utf-8',
+      `Message-ID: ${currentMessageId}`,
     ];
     
-    // Improved threading headers for replies
-    if (threadId) {
-      console.log("Adding threading headers for thread ID:", threadId);
-      emailLines.push(`References: <${threadId}@mail.gmail.com>`);
-      emailLines.push(`In-Reply-To: <${threadId}@mail.gmail.com>`);
+    // Add proper threading headers for replies
+    if (threadId && messageId) {
+      console.log("Adding proper threading headers for existing conversation");
+      emailLines.push(`References: <${messageId}>`);
+      emailLines.push(`In-Reply-To: <${messageId}>`);
       emailLines.push(`Thread-Topic: ${formattedSubject}`);
-      // Add Message-ID header to help with threading
-      const messageId = `<reply-${Date.now()}-${threadId}@mail.gmail.com>`;
-      emailLines.push(`Message-ID: ${messageId}`);
     }
     
     emailLines.push('', body);
     
     const emailContent = emailLines.join('\r\n');
-    console.log("Email content prepared with proper threading headers");
-    console.log("Email content first 100 chars:", emailContent.substring(0, 100));
+    console.log("Email content prepared with proper RFC-compliant threading headers");
+    console.log("Email headers:", emailLines.slice(0, 7).join('\r\n'));
 
     const encodedEmail = btoa(emailContent)
       .replace(/\+/g, '-')
@@ -184,13 +187,19 @@ serve(async (req) => {
     const data = await response.json();
     console.log('Email sent successfully:', data);
     
-    const newThreadId = data.threadId || data.id;
+    // Extract both thread ID and message ID from the response
+    const newThreadId = data.threadId || threadId;
+    const newMessageId = data.id; // This is the actual message ID needed for threading
+    
+    console.log(`Successfully sent email with thread ID: ${newThreadId}`);
+    console.log(`Message ID (for future threading): ${newMessageId}`);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         message: `Email sent to ${candidateName} at ${to} with CC to ${emailCC}`,
         threadId: newThreadId,
+        messageId: newMessageId,
         subject: formattedSubject
       }),
       { 

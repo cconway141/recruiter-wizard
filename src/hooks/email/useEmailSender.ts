@@ -22,7 +22,8 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
     body: string,
     candidateName: string,
     jobTitle?: string,
-    threadId?: string | null
+    threadId?: string | null,
+    messageId?: string | null
   ) => {
     if (!to || !user) {
       const error = "Missing recipient email or user not logged in";
@@ -42,7 +43,8 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
       console.log("Sending email to:", to);
       console.log("Using subject:", subject);
       console.log("Thread ID:", threadId || "New thread");
-      console.log("Job Title:", jobTitle || "No job title provided"); // Updated log message
+      console.log("Message ID:", messageId || "New message");
+      console.log("Job Title:", jobTitle || "No job title provided");
       
       // Validate job title is present for new threads
       if (!threadId && !jobTitle) {
@@ -52,11 +54,15 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
       // Always CC the recruitment team
       const cc = "recruitment@theitbc.com";
       
-      // Format and clean the thread ID - ensure it's a valid string
+      // Format and clean the thread ID and message ID - ensure they're valid strings
       const cleanThreadId = threadId && typeof threadId === 'string' && threadId.trim() !== "" ? 
         threadId.trim() : undefined;
         
+      const cleanMessageId = messageId && typeof messageId === 'string' && messageId.trim() !== "" ? 
+        messageId.trim() : undefined;
+        
       console.log("Using cleaned thread ID:", cleanThreadId || "New thread");
+      console.log("Using cleaned message ID:", cleanMessageId || "New message");
       
       const { data, error } = await supabase.functions.invoke('send-gmail', {
         body: {
@@ -67,6 +73,7 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
           candidateName,
           jobTitle: jobTitle || '',
           threadId: cleanThreadId,
+          messageId: cleanMessageId,
           userId: user.id
         }
       });
@@ -84,7 +91,7 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
           const refreshed = await refreshGmailToken();
           if (refreshed) {
             // Try again with refreshed token
-            return sendEmailViaGmail(to, subject, body, candidateName, jobTitle, threadId);
+            return sendEmailViaGmail(to, subject, body, candidateName, jobTitle, threadId, messageId);
           }
         }
         
@@ -97,7 +104,11 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
         onSuccess();
       }
       
-      return data?.threadId;
+      // Return both thread ID and message ID
+      return {
+        threadId: data?.threadId,
+        messageId: data?.messageId
+      };
     } catch (error) {
       console.error("Error sending email:", error);
       const message = error instanceof Error ? error.message : "Failed to send email";
