@@ -1,11 +1,11 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ConfigErrorButton } from "./ConfigErrorButton";
 import { GmailButtonContent } from "./GmailButtonContent";
 import { useGmailConnection } from "@/hooks/useGmailConnection";
 import { useToast } from "@/hooks/use-toast";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Info } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface GmailConnectButtonProps {
@@ -21,6 +21,7 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
 }) => {
   const { toast } = useToast();
   const [showDebugInfo, setShowDebugInfo] = useState(false);
+  const [connectionAttemptsCount, setConnectionAttemptsCount] = useState(0);
   const {
     isConnected,
     isLoading,
@@ -29,6 +30,14 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
     disconnectGmail,
     forceRefresh
   } = useGmailConnection({ onConnectionChange });
+  
+  // Check for stored connection attempts
+  useEffect(() => {
+    const attemptCount = sessionStorage.getItem('gmailConnectionAttempts');
+    if (attemptCount) {
+      setConnectionAttemptsCount(parseInt(attemptCount, 10));
+    }
+  }, []);
   
   if (configError) {
     return <ConfigErrorButton className={className} />;
@@ -40,6 +49,11 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
       sessionStorage.removeItem('gmailConnectionInProgress');
       sessionStorage.removeItem('gmailConnectionAttemptTime');
       sessionStorage.removeItem('gmailConnectionError');
+      
+      // Track connection attempts
+      const newCount = connectionAttemptsCount + 1;
+      setConnectionAttemptsCount(newCount);
+      sessionStorage.setItem('gmailConnectionAttempts', newCount.toString());
       
       toast({
         title: "Connecting Gmail",
@@ -53,6 +67,11 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
       if (result?.redirectUri) {
         sessionStorage.setItem('gmailRedirectUri', result.redirectUri);
         console.log("Using redirect URI:", result.redirectUri);
+        console.log("Client ID:", result.clientId || "Not provided");
+      }
+      
+      if (result?.url) {
+        console.log("Redirecting to:", result.url.substring(0, 100) + "...");
       }
     } catch (error) {
       console.error("Error initiating Gmail connection:", error);
@@ -88,6 +107,18 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
   }
   
   const redirectUri = sessionStorage.getItem('gmailRedirectUri');
+  const storageItems = [];
+  
+  // Collect all Gmail-related session storage items for debugging
+  for (let i = 0; i < sessionStorage.length; i++) {
+    const key = sessionStorage.key(i);
+    if (key && key.toLowerCase().includes('gmail')) {
+      storageItems.push({
+        key,
+        value: sessionStorage.getItem(key)
+      });
+    }
+  }
   
   return (
     <div className="space-y-2">
@@ -118,11 +149,36 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
       
       {showDebugInfo && redirectUri && (
         <Alert className="mt-2">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Redirect URI Information</AlertTitle>
-          <AlertDescription className="text-xs break-all">
-            <p>Current redirect URI: <code className="bg-muted p-1 rounded">{redirectUri}</code></p>
-            <p className="mt-2">For Gmail API connection to work, this exact URI must be added to your Google Cloud Console OAuth 2.0 Client ID's authorized redirect URIs.</p>
+          <Info className="h-4 w-4" />
+          <AlertTitle>Gmail Connection Debug Information</AlertTitle>
+          <AlertDescription className="text-xs break-all space-y-2">
+            <div>
+              <p className="font-semibold">Current redirect URI:</p>
+              <code className="bg-muted p-1 rounded">{redirectUri}</code>
+            </div>
+            
+            <div>
+              <p className="font-semibold">Connection attempts: {connectionAttemptsCount}</p>
+              <p className="font-semibold mt-2">Current URL:</p>
+              <code className="bg-muted p-1 rounded">{window.location.href}</code>
+            </div>
+            
+            {storageItems.length > 0 && (
+              <div>
+                <p className="font-semibold mt-2">Session Storage:</p>
+                <div className="max-h-40 overflow-y-auto bg-muted rounded p-2">
+                  {storageItems.map((item, idx) => (
+                    <div key={idx} className="mb-1">
+                      <strong>{item.key}:</strong> {item.value}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            <p className="mt-2">
+              For Gmail API connection to work, the exact URI above must be added to your Google Cloud Console OAuth 2.0 Client ID's authorized redirect URIs.
+            </p>
           </AlertDescription>
         </Alert>
       )}

@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { Loader2, CheckCircle, XCircle, AlertCircle, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -14,6 +14,7 @@ export const GmailCallback: React.FC = () => {
   const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
   const [error, setError] = useState<string | null>(null);
   const [errorDetails, setErrorDetails] = useState<any>(null);
+  const [urlParams, setUrlParams] = useState<any>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
@@ -22,6 +23,18 @@ export const GmailCallback: React.FC = () => {
 
   useEffect(() => {
     const handleCallback = async () => {
+      // First, capture all URL parameters for debugging
+      const params = new URLSearchParams(location.search);
+      const paramObj: {[key: string]: string} = {};
+      
+      // Convert params to object for display
+      params.forEach((value, key) => {
+        paramObj[key] = value;
+      });
+      
+      setUrlParams(paramObj);
+      console.log("Callback URL parameters:", paramObj);
+      
       if (!user) {
         setError("You must be logged in to connect Gmail");
         setStatus('error');
@@ -30,7 +43,6 @@ export const GmailCallback: React.FC = () => {
 
       try {
         // Parse the URL for code and state parameters
-        const params = new URLSearchParams(location.search);
         const code = params.get("code");
         const state = params.get("state");
         
@@ -44,7 +56,8 @@ export const GmailCallback: React.FC = () => {
           // Store error for debugging
           sessionStorage.setItem('gmailConnectionError', JSON.stringify({
             message: `OAuth error: ${errorParam}`,
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            params: paramObj
           }));
           return;
         }
@@ -88,10 +101,11 @@ export const GmailCallback: React.FC = () => {
             }
             
             // If we received error details about redirect URI mismatch
-            if (data?.error && data?.redirectUriUsed) {
+            if (data?.error && (data?.redirectUriUsed || data?.requestDetails)) {
               setErrorDetails({ 
                 error: data.error,
                 redirectUriUsed: data.redirectUriUsed,
+                requestDetails: data.requestDetails,
                 details: data.details 
               });
               throw new Error(`Failed to exchange code: ${data.error}`);
@@ -152,7 +166,8 @@ export const GmailCallback: React.FC = () => {
           // Store error for debugging
           sessionStorage.setItem('gmailConnectionError', JSON.stringify({
             message: `Failed to exchange code after ${maxRetries} attempts`,
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            params: paramObj
           }));
         }
       } catch (err) {
@@ -163,7 +178,8 @@ export const GmailCallback: React.FC = () => {
         // Store error for debugging
         sessionStorage.setItem('gmailConnectionError', JSON.stringify({
           message: err.message,
-          timestamp: Date.now()
+          timestamp: Date.now(),
+          params: paramObj
         }));
       } finally {
         setIsProcessing(false);
@@ -198,6 +214,18 @@ export const GmailCallback: React.FC = () => {
             <h2 className="text-xl font-semibold text-red-600">Connection Failed</h2>
             <p className="text-gray-500">{error}</p>
             
+            {urlParams && (
+              <Alert variant="default" className="mt-4 text-left">
+                <Info className="h-4 w-4" />
+                <AlertTitle>URL Parameters</AlertTitle>
+                <AlertDescription className="text-xs">
+                  <pre className="whitespace-pre-wrap break-all mt-1 bg-slate-100 p-2 rounded">
+                    {JSON.stringify(urlParams, null, 2)}
+                  </pre>
+                </AlertDescription>
+              </Alert>
+            )}
+            
             {errorDetails && errorDetails.redirectUriUsed && (
               <Alert variant="destructive" className="mt-4 text-left">
                 <AlertCircle className="h-4 w-4" />
@@ -206,6 +234,13 @@ export const GmailCallback: React.FC = () => {
                   <p className="mb-2">The OAuth redirect URI doesn't match what's configured in Google Cloud Console.</p>
                   <p className="font-semibold">URI used: <code className="bg-muted p-1 rounded break-all">{errorDetails.redirectUriUsed}</code></p>
                   <p className="mt-2">Please ensure this exact URI is added to your OAuth client's authorized redirect URIs in Google Cloud Console.</p>
+                  
+                  {errorDetails.requestDetails && (
+                    <div className="mt-2 p-2 bg-black/10 rounded text-xs">
+                      <p className="font-bold">Request Details:</p>
+                      <pre className="whitespace-pre-wrap break-all mt-1">{JSON.stringify(errorDetails.requestDetails, null, 2)}</pre>
+                    </div>
+                  )}
                   
                   {errorDetails.details && errorDetails.details.error === "redirect_uri_mismatch" && (
                     <div className="mt-2 p-2 bg-black/10 rounded text-xs">

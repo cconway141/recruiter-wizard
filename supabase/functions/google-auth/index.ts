@@ -8,7 +8,7 @@ const GOOGLE_CLIENT_ID = Deno.env.get("GOOGLE_CLIENT_ID") || "";
 const GOOGLE_CLIENT_SECRET = Deno.env.get("GOOGLE_CLIENT_SECRET") || "";
 
 // IMPORTANT: This needs to exactly match what's registered in Google Cloud Console
-// Using hardcoded value since environment variable might be causing mismatch
+// Using hardcoded value to ensure exact match
 const REDIRECT_URI = "https://recruit.theitbootcamp.com/auth/gmail-callback";
 
 // Basic validation of required environment variables
@@ -69,13 +69,20 @@ serve(async (req) => {
       authUrl.searchParams.append('prompt', 'consent');
       authUrl.searchParams.append('state', state);
       
-      // Log the exact redirect URI being used for debugging
-      console.log(`Generated auth URL with redirect URI: ${REDIRECT_URI}`);
+      // Enhanced logging for debugging
+      console.log(`=== GMAIL AUTH DEBUG INFO ===`);
+      console.log(`Client ID: ${GOOGLE_CLIENT_ID.substring(0, 10)}...`);
+      console.log(`Redirect URI: ${REDIRECT_URI}`);
       console.log(`Full auth URL: ${authUrl.toString()}`);
-      console.log(`Client ID being used: ${GOOGLE_CLIENT_ID.substring(0, 10)}...`);
+      console.log(`State parameter: ${state}`);
+      console.log(`===========================`);
       
       return new Response(
-        JSON.stringify({ url: authUrl.toString(), redirectUri: REDIRECT_URI }),
+        JSON.stringify({ 
+          url: authUrl.toString(), 
+          redirectUri: REDIRECT_URI,
+          clientId: GOOGLE_CLIENT_ID.substring(0, 10) + '...'
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -111,7 +118,10 @@ serve(async (req) => {
       const userId = stateData.userId;
       const action = stateData.action || 'gmail'; // Default to gmail if not specified
       
-      console.log(`Exchanging code for tokens using redirect URI: ${REDIRECT_URI}`);
+      console.log(`Exchanging code for tokens:`);
+      console.log(`- Redirect URI: ${REDIRECT_URI}`);
+      console.log(`- Code length: ${code.length} characters`);
+      console.log(`- State data: ${JSON.stringify(stateData)}`);
       
       // Exchange the code for tokens
       const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
@@ -130,11 +140,23 @@ serve(async (req) => {
       
       if (tokenData.error) {
         console.error('Token exchange error:', tokenData);
+        
+        // Enhanced error logging with request details
+        console.log('Request details that caused the error:');
+        console.log(`- Client ID: ${GOOGLE_CLIENT_ID.substring(0, 10)}...`);
+        console.log(`- Redirect URI: ${REDIRECT_URI}`);
+        console.log(`- Code length: ${code.length} characters`);
+        
         return new Response(
           JSON.stringify({ 
             error: 'Failed to exchange code for tokens', 
             details: tokenData,
-            redirectUriUsed: REDIRECT_URI 
+            redirectUriUsed: REDIRECT_URI,
+            requestDetails: {
+              clientIdPrefix: GOOGLE_CLIENT_ID.substring(0, 10) + '...',
+              codeLength: code.length,
+              timestamp: new Date().toISOString()
+            }
           }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
