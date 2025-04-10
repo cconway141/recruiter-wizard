@@ -28,8 +28,8 @@ export const useGmailConnection = ({
     clearError,
     checkConnection,
     silentCheckConnection,
-    connectGmail,
-    disconnectGmail,
+    connectGmail: apiConnectGmail, // Renamed for clarity
+    disconnectGmail: apiDisconnectGmail, // Renamed for clarity
     refreshToken: refreshGmailToken
   } = useGmailApi({
     showLoadingUI,
@@ -38,6 +38,38 @@ export const useGmailConnection = ({
       if (onConnectionChange) onConnectionChange(connected);
     }
   });
+  
+  // Create wrapper function to add logging and prevent any issues
+  const connectGmail = useCallback(async () => {
+    console.log("useGmailConnection: connectGmail called");
+    if (!user) {
+      console.error("Cannot connect Gmail: No user logged in");
+      return null;
+    }
+    
+    try {
+      console.log("Attempting to connect Gmail via apiConnectGmail");
+      const result = await apiConnectGmail();
+      console.log("Gmail connection attempt result:", result);
+      return result;
+    } catch (error) {
+      console.error("Error connecting Gmail:", error);
+      return null;
+    }
+  }, [user, apiConnectGmail]);
+  
+  // Create wrapper function for disconnectGmail
+  const disconnectGmail = useCallback(async () => {
+    console.log("useGmailConnection: disconnectGmail called");
+    try {
+      const result = await apiDisconnectGmail();
+      console.log("Gmail disconnect result:", result);
+      return result;
+    } catch (error) {
+      console.error("Error disconnecting Gmail:", error);
+      return false;
+    }
+  }, [apiDisconnectGmail]);
   
   // Use React Query for connection state caching
   const { data: connectionInfo } = useQuery({
@@ -80,12 +112,15 @@ export const useGmailConnection = ({
     }
   }, [user?.id, silentCheckConnection]);
   
+  // Add a console log to verify the hook is initialized correctly
+  console.log("useGmailConnection hook: connectGmail is defined?", !!connectGmail);
+  
   return {
     isConnected: connectionStatus ?? false,
     isLoading,
     configError: apiError?.message,
-    connectGmail,
-    disconnectGmail,
+    connectGmail, // Return our wrapper function
+    disconnectGmail, // Return our wrapper function
     checkGmailConnection: checkConnection,
     silentCheckConnection,
     refreshGmailToken,

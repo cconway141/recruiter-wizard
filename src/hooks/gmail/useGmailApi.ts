@@ -1,4 +1,3 @@
-
 import { useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -34,6 +33,7 @@ export const useGmailApi = (options: {
     if (!user) return false;
     
     try {
+      console.log("useGmailApi: Checking Gmail connection for user", user.id);
       const { data, error } = await supabase.functions.invoke('google-auth', {
         body: {
           action: 'check-connection',
@@ -42,14 +42,17 @@ export const useGmailApi = (options: {
       });
       
       if (error) {
+        console.error("Error checking Gmail connection:", error);
         throw new Error(`Failed to check Gmail connection: ${error.message}`);
       }
       
       if (data?.error === 'Configuration error') {
+        console.error("Gmail configuration error:", data.message);
         throw new Error(data.message || "Missing Google API configuration");
       }
       
       const isConnected = !!data?.connected && !data?.expired;
+      console.log("Gmail connection status:", isConnected);
       
       // Notify about connection state change
       if (onConnectionChange) {
@@ -65,8 +68,13 @@ export const useGmailApi = (options: {
 
   // Connect Gmail using OAuth flow
   const connectGmail = useCallback(async () => {
+    console.log("useGmailApi: connectGmail called");
+    
     return executeOperation(async () => {
+      console.log("useGmailApi: executeOperation for connectGmail starting");
+      
       if (!user) {
+        console.error("Cannot connect Gmail: No user logged in");
         toast({
           title: "Authentication Required",
           description: "Please log in to connect your Gmail account.",
@@ -79,6 +87,7 @@ export const useGmailApi = (options: {
         // Check for in-progress connection
         const connectionInProgress = sessionStorage.getItem('gmailConnectionInProgress');
         if (connectionInProgress === 'true') {
+          console.log("Connection already in progress");
           toast({
             title: "Connection Already in Progress",
             description: "A Gmail connection attempt is already in progress.",
@@ -91,6 +100,7 @@ export const useGmailApi = (options: {
         sessionStorage.setItem('gmailConnectionInProgress', 'true');
         sessionStorage.setItem('gmailConnectionAttemptTime', Date.now().toString());
         
+        console.log("Getting auth URL from backend");
         // Get auth URL from backend
         const { data, error } = await supabase.functions.invoke('google-auth', {
           body: {
@@ -101,17 +111,21 @@ export const useGmailApi = (options: {
         });
         
         if (error) {
+          console.error("Error getting auth URL:", error);
           throw new Error(error.message || "Failed to start Gmail connection");
         }
         
         if (!data?.url) {
+          console.error("No auth URL returned:", data);
           throw new Error("Failed to generate authentication URL");
         }
         
+        console.log("Received auth URL, redirecting...");
         // Redirect to Google's OAuth flow
         window.location.href = data.url;
         return data;
       } catch (error) {
+        console.error("Error in connectGmail:", error);
         // Clear connection flags
         sessionStorage.removeItem('gmailConnectionInProgress');
         sessionStorage.removeItem('gmailConnectionAttemptTime');

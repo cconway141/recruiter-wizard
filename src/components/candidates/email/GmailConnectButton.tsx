@@ -29,6 +29,9 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
     showLoadingUI: false // Prevent blocking UI with loading states
   });
 
+  // Add console log to debug
+  console.log("GmailConnectButton: connectGmail is a function?", typeof connectGmail === 'function');
+
   // Notify parent component when connection status changes
   useEffect(() => {
     if (onConnectionChange) {
@@ -79,11 +82,20 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
     }
   }, [toast, onConnectionChange]);
 
+  // Check for null or undefined connectGmail
+  if (!connectGmail) {
+    console.error("connectGmail function is undefined in GmailConnectButton");
+    return null;
+  }
+
   // Use ConfigErrorButton component with proper onClick handler for the connect button
   return (
     <ConfigErrorButton
       isConnected={isGmailConnected}
-      onClick={connectGmail} // This ensures clicking the button initiates the OAuth flow
+      onClick={() => {
+        console.log("Gmail connect button clicked, executing connectGmail");
+        connectGmail();
+      }} // This ensures clicking the button initiates the OAuth flow
       onDisconnect={disconnectGmail}
       className={className}
     />

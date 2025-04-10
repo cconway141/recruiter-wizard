@@ -56,6 +56,9 @@ export function EmailDialog({
     onClose,
   });
 
+  // Add console log to debug
+  console.log("EmailDialog: connectGmail is a function?", typeof connectGmail === 'function');
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-4xl overflow-y-auto max-h-[90vh]">
@@ -67,7 +70,7 @@ export function EmailDialog({
         <EmailConnectionAlert 
           isGmailConnected={isGmailConnected}
           errorMessage={errorMessage}
-          onConnect={connectGmail}
+          onConnect={connectGmail} // This function should be correctly passed from useEmailDialog
         />
 
         <EmailDialogContent 

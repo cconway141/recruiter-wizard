@@ -46,7 +46,7 @@ export const ConfigErrorButton: React.FC<ConfigErrorButtonProps> = ({
     );
   }
   
-  // Updated: Ensure the onClick handler is properly attached to the button
+  // The not-connected button - ensure onClick is called when button is clicked
   return (
     <TooltipProvider>
       <Tooltip>
