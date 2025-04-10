@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -29,6 +28,7 @@ export const useGmailConnection = ({ onConnectionChange }: UseGmailConnectionPro
   // Check connection status on component mount
   useEffect(() => {
     if (user?.id) {
+      console.log("Checking Gmail connection on useGmailConnection mount");
       checkGmailConnection();
     } else {
       setIsConnected(false);
@@ -66,7 +66,7 @@ export const useGmailConnection = ({ onConnectionChange }: UseGmailConnectionPro
         return false;
       }
       
-      console.log("Gmail connection status:", data);
+      console.log("Gmail connection check response:", data);
       
       // If token is expired but we have a refresh token, try refreshing
       if (data.connected && data.expired && data.hasRefreshToken) {
@@ -75,9 +75,11 @@ export const useGmailConnection = ({ onConnectionChange }: UseGmailConnectionPro
       }
       
       // Update connection state
-      setIsConnected(data.connected);
-      if (onConnectionChange) onConnectionChange(data.connected);
-      return data.connected;
+      const isActuallyConnected = data.connected && !data.expired;
+      console.log("Setting isConnected to:", isActuallyConnected);
+      setIsConnected(isActuallyConnected);
+      if (onConnectionChange) onConnectionChange(isActuallyConnected);
+      return isActuallyConnected;
     } catch (err) {
       console.error("Error in checkGmailConnection:", err);
       setConfigError("Failed to check connection status");
@@ -178,7 +180,6 @@ export const useGmailConnection = ({ onConnectionChange }: UseGmailConnectionPro
     }
   };
   
-  // Force refresh the connection status from the server
   const forceRefresh = async () => {
     if (!user) return;
     
@@ -190,6 +191,8 @@ export const useGmailConnection = ({ onConnectionChange }: UseGmailConnectionPro
       
       // Check connection status directly
       const connected = await checkGmailConnection();
+      
+      console.log("Force refresh result:", connected);
       
       toast({
         title: connected ? "Gmail Connected" : "Gmail Not Connected",
@@ -212,7 +215,6 @@ export const useGmailConnection = ({ onConnectionChange }: UseGmailConnectionPro
     }
   };
   
-  // Connect Gmail function with better error handling
   const connectGmail = async (): Promise<GmailConnectionResult | null> => {
     if (!user) {
       toast({
@@ -296,6 +298,8 @@ export const useGmailConnection = ({ onConnectionChange }: UseGmailConnectionPro
       setIsLoading(false);
     }
   };
+  
+  console.log("Current connection status in useGmailConnection:", isConnected);
   
   return {
     isConnected,

@@ -52,9 +52,13 @@ export const GmailCard: React.FC = () => {
       }
     }
     
-    // Force a check on mount
+    // Force a check on mount and after route change
     if (user?.id) {
+      console.log("Forcing Gmail connection check on GmailCard mount");
       checkGmailConnection();
+      // Force invalidation of all Gmail connection queries
+      queryClient.invalidateQueries({ queryKey: ['gmail-connection', user.id] });
+      queryClient.invalidateQueries({ queryKey: ['gmail-connection'] });
     }
   }, [user, queryClient, toast, checkGmailConnection]);
   
@@ -74,11 +78,16 @@ export const GmailCard: React.FC = () => {
       sessionStorage.removeItem('gmailConnectionInProgress');
       sessionStorage.removeItem('gmailConnectionAttemptTime');
       setConnectionAttemptTime(null);
+      
+      // Explicitly check connection
+      checkGmailConnection();
     }
   };
   
   // Show alert if connection has been pending for more than 30 seconds
   const showPendingAlert = connectionAttemptTime && (Date.now() - connectionAttemptTime > 30 * 1000);
+
+  console.log("Current Gmail connection status in GmailCard:", isGmailConnected);
 
   return (
     <Card>

@@ -3,12 +3,13 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 export const useGmailAuth = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Use React Query for better state management and caching
   const { 
@@ -25,6 +26,8 @@ export const useGmailAuth = () => {
       
       setErrorMessage(null);
       
+      console.log("Checking Gmail connection in useGmailAuth for user:", user.id);
+      
       const { data, error } = await supabase.functions.invoke('google-auth/check-connection', {
         body: { userId: user.id }
       });
@@ -39,15 +42,10 @@ export const useGmailAuth = () => {
       }
       
       // Log connection status for debugging
-      console.log("Gmail connection status:", data);
+      console.log("Gmail connection status from API:", data);
       
       if (!data.connected || data.expired) {
         console.log("Gmail not connected or expired");
-        toast({
-          title: "Gmail Not Connected",
-          description: "Please connect your Gmail account to send emails.",
-          variant: "destructive"
-        });
       } else {
         console.log("Gmail is connected and valid");
       }
@@ -112,13 +110,21 @@ export const useGmailAuth = () => {
   const checkGmailConnection = async (): Promise<boolean> => {
     try {
       console.log("Explicitly checking Gmail connection...");
+      // Invalidate the query to ensure we get fresh data
+      queryClient.invalidateQueries({ queryKey: ['gmail-connection', user?.id] });
+      
       const result = await refetch();
-      return result.data?.connected && !result.data?.expired;
+      const isConnected = result.data?.connected && !result.data?.expired;
+      
+      console.log("Gmail connection check result:", isConnected);
+      return isConnected;
     } catch (error) {
       console.error("Error checking Gmail connection:", error);
       return false;
     }
   };
+
+  console.log("Current Gmail connection status in hook:", connectionInfo?.connected && !connectionInfo?.expired);
 
   return {
     isGmailConnected: connectionInfo?.connected && !connectionInfo?.expired,

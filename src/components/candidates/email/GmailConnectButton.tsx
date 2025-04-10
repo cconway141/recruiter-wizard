@@ -37,11 +37,10 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
     if (attemptCount) {
       setConnectionAttemptsCount(parseInt(attemptCount, 10));
     }
+    
+    // Force a refresh on mount to ensure we have the latest connection status
+    forceRefresh();
   }, []);
-  
-  if (configError) {
-    return <ConfigErrorButton className={className} />;
-  }
   
   const handleConnectGmail = async () => {
     try {
@@ -132,6 +131,7 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
     );
   }
   
+  // Debug info variables
   const redirectUri = sessionStorage.getItem('gmailRedirectUri');
   const storageItems = [];
   
