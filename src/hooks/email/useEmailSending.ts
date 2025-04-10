@@ -66,6 +66,13 @@ export const useEmailSending = ({
     try {
       setIsSending(true);
       setErrorMessage(null);
+      
+      console.log("Sending email with:", {
+        candidateEmail,
+        subject: threadId ? "" : subject,
+        threadId,
+        messageId
+      });
 
       // For replies, don't pass subject - Gmail will use the thread's subject
       const emailSubject = threadId ? "" : subject;
@@ -81,6 +88,11 @@ export const useEmailSending = ({
       );
 
       if (result?.threadId && candidateId && jobId) {
+        console.log("Email sent successfully, saving thread info:", {
+          threadId: result.threadId, 
+          messageId: result.messageId
+        });
+        
         // Get existing thread IDs
         const { data } = await supabase
           .from('candidates')
