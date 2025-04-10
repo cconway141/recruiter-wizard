@@ -28,8 +28,8 @@ export const useGmailConnection = ({
     clearError,
     checkConnection,
     silentCheckConnection,
-    connectGmail: apiConnectGmail, // Renamed for clarity
-    disconnectGmail: apiDisconnectGmail, // Renamed for clarity
+    connectGmail: apiConnectGmail, 
+    disconnectGmail: apiDisconnectGmail, 
     refreshToken: refreshGmailToken
   } = useGmailApi({
     showLoadingUI,
@@ -39,7 +39,7 @@ export const useGmailConnection = ({
     }
   });
   
-  // Critical fix: simplifying the connectGmail function to ensure it works
+  // Critical fix: Ensuring the connectGmail function properly passes through
   const connectGmail = useCallback(async () => {
     console.debug("useGmailConnection: connectGmail called");
     if (!user) {
@@ -48,21 +48,37 @@ export const useGmailConnection = ({
     }
     
     console.debug("Directly calling apiConnectGmail from useGmailConnection");
-    return await apiConnectGmail();
+    try {
+      const result = await apiConnectGmail();
+      return result;
+    } catch (error) {
+      console.error("Error in connectGmail:", error);
+      throw error; // Re-throw to allow proper error handling upstream
+    }
   }, [user, apiConnectGmail]);
   
   // Create wrapper function for disconnectGmail
   const disconnectGmail = useCallback(async () => {
     console.debug("useGmailConnection: disconnectGmail called");
-    return await apiDisconnectGmail();
+    try {
+      return await apiDisconnectGmail();
+    } catch (error) {
+      console.error("Error in disconnectGmail:", error);
+      throw error;
+    }
   }, [apiDisconnectGmail]);
   
   // Use React Query for connection state caching
   const { data: connectionInfo } = useQuery({
     queryKey: ['gmail-connection', user?.id],
     queryFn: async () => {
-      const isConnected = await silentCheckConnection();
-      return { connected: isConnected };
+      try {
+        const isConnected = await silentCheckConnection();
+        return { connected: isConnected };
+      } catch (error) {
+        console.error("Error in connection query:", error);
+        return { connected: false, error };
+      }
     },
     enabled: !!user,
     staleTime: 10 * 60 * 1000, // 10 minutes

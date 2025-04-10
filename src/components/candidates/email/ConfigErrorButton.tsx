@@ -53,17 +53,7 @@ export const ConfigErrorButton: React.FC<ConfigErrorButtonProps> = ({
     );
   }
   
-  // Critical fix: Make sure we're handling the click correctly
-  const handleClick = () => {
-    console.debug("Gmail connect button clicked inside ConfigErrorButton");
-    if (onClick) {
-      onClick();
-    } else {
-      console.error("ConfigErrorButton: onClick handler is not defined!");
-    }
-  };
-  
-  // The not-connected button - ensure onClick is called when button is clicked
+  // The not-connected button - ensure onClick is directly passed to the Button
   return (
     <TooltipProvider>
       <Tooltip>
@@ -72,7 +62,7 @@ export const ConfigErrorButton: React.FC<ConfigErrorButtonProps> = ({
             type="button"
             variant="outline"
             className={`flex items-center gap-2 bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 hover:text-amber-800 ${className}`}
-            onClick={handleClick} // Using our handler function with debug logging
+            onClick={onClick}
           >
             <AlertCircle className="h-4 w-4" />
             <span>Gmail Setup Required</span>
