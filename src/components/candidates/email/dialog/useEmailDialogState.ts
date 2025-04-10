@@ -72,14 +72,16 @@ export const useEmailDialogState = ({
 
     // Always construct a proper subject with proper handling of job title
     let standardizedSubject;
-    if (candidateFacingTitle) {
-      standardizedSubject = `ITBC ${candidateFacingTitle} - ${candidateName}`.trim();
+    if (candidateFacingTitle && candidateFacingTitle.trim() !== '') {
+      standardizedSubject = `ITBC ${candidateFacingTitle} ${candidateName}`.trim();
+      console.log("Created subject with job title:", standardizedSubject);
     } else {
       // This fallback should ideally never happen since job title is required
       console.warn("Missing candidateFacingTitle (job title) when constructing email subject");
       standardizedSubject = `ITBC ${candidateName}`.trim();
     }
     
+    // Use thread title if it exists (for replies), otherwise use our constructed subject
     setSubject(threadTitle || standardizedSubject);
 
     const content = getEmailContent();
