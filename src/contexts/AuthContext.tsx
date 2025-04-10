@@ -30,7 +30,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       inactivityTimer = setTimeout(() => {
         console.log('Session expired due to inactivity');
         signOut();
-      }, 1 * 60 * 60 * 1000); // Changed to 1 hour (1 * 60 * 60 * 1000 milliseconds)
+      }, 5 * 60 * 1000); // 5 minutes
     };
 
     // Set up event listeners for user activity
