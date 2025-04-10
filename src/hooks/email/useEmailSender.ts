@@ -48,6 +48,14 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
       // Gmail will use the existing thread subject
       const finalSubject = threadId ? "" : subject;
       
+      // Add console log to verify email body content
+      console.log("Email body before send:", {
+        body,
+        length: body.length,
+        firstChars: body.substring(0, 100),
+        threadId: threadId || 'new email'
+      });
+      
       const { data, error } = await supabase.functions.invoke('send-gmail', {
         body: {
           to,
