@@ -43,10 +43,17 @@ serve(async (req) => {
       userId 
     } = await req.json() as EmailRequest;
 
+    // Validate required fields
     if (!to || !body || !userId) {
       return new Response(
         JSON.stringify({ error: 'Missing required fields' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { 
+          status: 400, 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          } 
+        }
       );
     }
 
@@ -60,14 +67,26 @@ serve(async (req) => {
     if (tokenError || !tokenData) {
       return new Response(
         JSON.stringify({ error: 'Gmail not connected' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { 
+          status: 401, 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          } 
+        }
       );
     }
     
     if (new Date(tokenData.expires_at) <= new Date()) {
       return new Response(
         JSON.stringify({ error: 'Gmail token expired' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { 
+          status: 401, 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          } 
+        }
       );
     }
     
@@ -79,7 +98,8 @@ serve(async (req) => {
     // Basic email structure
     let emailLines = [
       `To: ${to}`,
-      `Cc: ${cc.join(', ')}`,
+      // Ensure CC is correctly formatted
+      ...(cc && cc.length > 0 ? [`Cc: ${cc.join(', ')}`] : []),
       'MIME-Version: 1.0',
       'Content-Type: text/html; charset=utf-8',
       `Message-ID: ${currentMessageId}`,
@@ -138,7 +158,13 @@ serve(async (req) => {
           error: 'Failed to send email through Gmail API',
           details: responseData 
         }),
-        { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { 
+          status: response.status, 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          } 
+        }
       );
     }
 
@@ -149,12 +175,30 @@ serve(async (req) => {
         threadId: responseData.threadId || threadId,
         messageId: responseData.id
       }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { 
+        status: 200, 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        } 
+      }
     );
   } catch (error) {
+    // More detailed error logging
+    console.error('Error in email sending:', error);
+    
     return new Response(
-      JSON.stringify({ error: 'Failed to send email', details: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ 
+        error: 'Failed to send email', 
+        details: error.message 
+      }),
+      { 
+        status: 500, 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json' 
+        } 
+      }
     );
   }
 });
