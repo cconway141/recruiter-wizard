@@ -17,7 +17,7 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
   onConnectionChange 
 }) => {
   const { user } = useAuth();
-  // Use the combined hook that provides all Gmail functionality with skipLoading to prevent UI blocking
+  // Use the combined hook that provides all Gmail functionality with showLoadingUI to prevent UI blocking
   const { 
     isConnected: isGmailConnected, 
     isLoading: isCheckingGmail,
@@ -25,7 +25,7 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
     disconnectGmail
   } = useGmailConnection({ 
     onConnectionChange,
-    skipLoading: true // Critical: prevent blocking UI with loading states
+    showLoadingUI: false // Critical: prevent blocking UI with loading states
   });
   const { toast } = useToast();
 

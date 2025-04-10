@@ -75,6 +75,7 @@ export const GmailCard: React.FC = () => {
         {isGmailConnected ? (
           <GmailDisconnectButton 
             onDisconnect={handleDisconnectGmail}
+            isLoading={false} {/* Add the missing isLoading prop */}
           />
         ) : (
           <div className="mb-2">

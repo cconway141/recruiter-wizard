@@ -43,13 +43,13 @@ export function EmailDialog({
   const [isSending, setIsSending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
-  // Critical change: Use skipLoading to prevent UI blocking
+  // Updated to use showLoadingUI: false instead of skipLoading
   const { 
     isConnected: isGmailConnected,
     checkGmailConnection,
     connectGmail
   } = useGmailConnection({ 
-    skipLoading: true, // Never block UI with loading state
+    showLoadingUI: false, // Never block UI with loading state
     onConnectionChange: (connected) => {
       console.log("Gmail connection status changed:", connected);
     }
