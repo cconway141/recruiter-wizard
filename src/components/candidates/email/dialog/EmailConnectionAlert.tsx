@@ -13,7 +13,24 @@ export const EmailConnectionAlert: React.FC<EmailConnectionAlertProps> = ({
   errorMessage,
   onConnect,
 }) => {
+  console.debug("EmailConnectionAlert rendered:", { 
+    isGmailConnected, 
+    hasErrorMessage: !!errorMessage, 
+    hasOnConnect: !!onConnect 
+  });
+
   if (isGmailConnected && !errorMessage) return null;
+  
+  // Add a wrapper function with debugging
+  const handleConnect = () => {
+    console.debug("Connect button clicked in EmailConnectionAlert");
+    if (onConnect) {
+      console.debug("Calling onConnect function from EmailConnectionAlert");
+      onConnect();
+    } else {
+      console.error("EmailConnectionAlert: onConnect function is not defined!");
+    }
+  };
 
   return (
     <div className="bg-amber-100 border border-amber-300 rounded-md p-3 mb-4">
@@ -32,7 +49,7 @@ export const EmailConnectionAlert: React.FC<EmailConnectionAlertProps> = ({
           <div className="flex justify-end">
             <ConfigErrorButton
               isConnected={false}
-              onClick={onConnect} // This ensures the connectGmail function is called on click
+              onClick={handleConnect} // Using our wrapper function
               className="mt-2"
             />
           </div>

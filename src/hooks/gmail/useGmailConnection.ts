@@ -39,36 +39,22 @@ export const useGmailConnection = ({
     }
   });
   
-  // Create wrapper function to add logging and prevent any issues
+  // Critical fix: simplifying the connectGmail function to ensure it works
   const connectGmail = useCallback(async () => {
-    console.log("useGmailConnection: connectGmail called");
+    console.debug("useGmailConnection: connectGmail called");
     if (!user) {
       console.error("Cannot connect Gmail: No user logged in");
       return null;
     }
     
-    try {
-      console.log("Attempting to connect Gmail via apiConnectGmail");
-      const result = await apiConnectGmail();
-      console.log("Gmail connection attempt result:", result);
-      return result;
-    } catch (error) {
-      console.error("Error connecting Gmail:", error);
-      return null;
-    }
+    console.debug("Directly calling apiConnectGmail from useGmailConnection");
+    return await apiConnectGmail();
   }, [user, apiConnectGmail]);
   
   // Create wrapper function for disconnectGmail
   const disconnectGmail = useCallback(async () => {
-    console.log("useGmailConnection: disconnectGmail called");
-    try {
-      const result = await apiDisconnectGmail();
-      console.log("Gmail disconnect result:", result);
-      return result;
-    } catch (error) {
-      console.error("Error disconnecting Gmail:", error);
-      return false;
-    }
+    console.debug("useGmailConnection: disconnectGmail called");
+    return await apiDisconnectGmail();
   }, [apiDisconnectGmail]);
   
   // Use React Query for connection state caching
@@ -113,7 +99,11 @@ export const useGmailConnection = ({
   }, [user?.id, silentCheckConnection]);
   
   // Add a console log to verify the hook is initialized correctly
-  console.log("useGmailConnection hook: connectGmail is defined?", !!connectGmail);
+  console.debug("useGmailConnection hook returned values:", {
+    isConnected: connectionStatus ?? false,
+    isLoading,
+    hasConnectGmail: !!connectGmail
+  });
   
   return {
     isConnected: connectionStatus ?? false,

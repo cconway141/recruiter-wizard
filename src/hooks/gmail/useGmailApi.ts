@@ -66,74 +66,79 @@ export const useGmailApi = (options: {
     }
   }, [user, onConnectionChange]);
 
-  // Connect Gmail using OAuth flow
+  // Connect Gmail using OAuth flow - FIX: Simplified implementation to ensure it works
   const connectGmail = useCallback(async () => {
     console.log("useGmailApi: connectGmail called");
     
-    return executeOperation(async () => {
-      console.log("useGmailApi: executeOperation for connectGmail starting");
-      
-      if (!user) {
-        console.error("Cannot connect Gmail: No user logged in");
+    if (!user) {
+      console.error("Cannot connect Gmail: No user logged in");
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to connect your Gmail account.",
+        variant: "destructive",
+      });
+      return null;
+    }
+    
+    try {
+      // Check for in-progress connection
+      const connectionInProgress = sessionStorage.getItem('gmailConnectionInProgress');
+      if (connectionInProgress === 'true') {
+        console.log("Connection already in progress");
         toast({
-          title: "Authentication Required",
-          description: "Please log in to connect your Gmail account.",
+          title: "Connection Already in Progress",
+          description: "A Gmail connection attempt is already in progress.",
           variant: "destructive",
         });
         return null;
       }
       
-      try {
-        // Check for in-progress connection
-        const connectionInProgress = sessionStorage.getItem('gmailConnectionInProgress');
-        if (connectionInProgress === 'true') {
-          console.log("Connection already in progress");
-          toast({
-            title: "Connection Already in Progress",
-            description: "A Gmail connection attempt is already in progress.",
-            variant: "destructive",
-          });
-          return null;
+      // Record the connection attempt
+      sessionStorage.setItem('gmailConnectionInProgress', 'true');
+      sessionStorage.setItem('gmailConnectionAttemptTime', Date.now().toString());
+      
+      console.log("Getting auth URL from backend");
+      // Get auth URL from backend
+      const { data, error } = await supabase.functions.invoke('google-auth', {
+        body: {
+          action: 'get-auth-url',
+          userId: user.id,
+          redirectUri: `${window.location.origin}/auth/gmail-callback`
         }
-        
-        // Record the connection attempt
-        sessionStorage.setItem('gmailConnectionInProgress', 'true');
-        sessionStorage.setItem('gmailConnectionAttemptTime', Date.now().toString());
-        
-        console.log("Getting auth URL from backend");
-        // Get auth URL from backend
-        const { data, error } = await supabase.functions.invoke('google-auth', {
-          body: {
-            action: 'get-auth-url',
-            userId: user.id,
-            redirectUri: `${window.location.origin}/auth/gmail-callback`
-          }
-        });
-        
-        if (error) {
-          console.error("Error getting auth URL:", error);
-          throw new Error(error.message || "Failed to start Gmail connection");
-        }
-        
-        if (!data?.url) {
-          console.error("No auth URL returned:", data);
-          throw new Error("Failed to generate authentication URL");
-        }
-        
-        console.log("Received auth URL, redirecting...");
-        // Redirect to Google's OAuth flow
-        window.location.href = data.url;
-        return data;
-      } catch (error) {
-        console.error("Error in connectGmail:", error);
-        // Clear connection flags
-        sessionStorage.removeItem('gmailConnectionInProgress');
-        sessionStorage.removeItem('gmailConnectionAttemptTime');
-        
-        throw error;
+      });
+      
+      if (error) {
+        console.error("Error getting auth URL:", error);
+        throw new Error(error.message || "Failed to start Gmail connection");
       }
-    });
-  }, [user, executeOperation, toast]);
+      
+      if (!data?.url) {
+        console.error("No auth URL returned:", data);
+        throw new Error("Failed to generate authentication URL");
+      }
+      
+      console.log("Received auth URL:", data.url.substring(0, 50) + "...");
+      console.log("Redirect URI:", data.redirectUri);
+      console.log("About to redirect to Google's OAuth flow");
+      
+      // Redirect to Google's OAuth flow - IMPORTANT FIX: make sure this happens
+      window.location.href = data.url;
+      return data;
+    } catch (error) {
+      console.error("Error in connectGmail:", error);
+      // Clear connection flags
+      sessionStorage.removeItem('gmailConnectionInProgress');
+      sessionStorage.removeItem('gmailConnectionAttemptTime');
+      
+      toast({
+        title: "Connection Error",
+        description: error instanceof Error ? error.message : "Failed to connect to Gmail",
+        variant: "destructive",
+      });
+      
+      return null;
+    }
+  }, [user, toast]);
 
   // Disconnect Gmail
   const disconnectGmail = useCallback(async () => {

@@ -56,8 +56,31 @@ export function EmailDialog({
     onClose,
   });
 
-  // Add console log to debug
-  console.log("EmailDialog: connectGmail is a function?", typeof connectGmail === 'function');
+  // Add improved logging to debug
+  console.debug("EmailDialog rendered:", {
+    isOpen,
+    candidateName,
+    candidateEmail,
+    isGmailConnected,
+    hasConnectGmail: !!connectGmail,
+    connectGmailType: typeof connectGmail
+  });
+  
+  // Add a wrapper function for connect with debugging
+  const handleConnectGmail = async () => {
+    console.debug("handleConnectGmail called in EmailDialog");
+    if (!connectGmail) {
+      console.error("connectGmail is undefined in EmailDialog");
+      return;
+    }
+    
+    try {
+      console.debug("Calling connectGmail from EmailDialog");
+      await connectGmail();
+    } catch (error) {
+      console.error("Error calling connectGmail in EmailDialog:", error);
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -70,7 +93,7 @@ export function EmailDialog({
         <EmailConnectionAlert 
           isGmailConnected={isGmailConnected}
           errorMessage={errorMessage}
-          onConnect={connectGmail} // This function should be correctly passed from useEmailDialog
+          onConnect={handleConnectGmail} // Using our wrapper function
         />
 
         <EmailDialogContent 

@@ -29,8 +29,12 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
     showLoadingUI: false // Prevent blocking UI with loading states
   });
 
-  // Add console log to debug
-  console.log("GmailConnectButton: connectGmail is a function?", typeof connectGmail === 'function');
+  // Improved logging for debugging
+  console.debug("GmailConnectButton: Component rendered", { 
+    isGmailConnected, 
+    isCheckingGmail,
+    connectGmailType: typeof connectGmail
+  });
 
   // Notify parent component when connection status changes
   useEffect(() => {
@@ -82,20 +86,37 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
     }
   }, [toast, onConnectionChange]);
 
-  // Check for null or undefined connectGmail
-  if (!connectGmail) {
-    console.error("connectGmail function is undefined in GmailConnectButton");
-    return null;
-  }
+  // Critical fix: Create a proper click handler function
+  const handleConnectClick = () => {
+    console.debug("Connect Gmail button clicked in GmailConnectButton");
+    if (!connectGmail) {
+      console.error("connectGmail function is undefined");
+      toast({
+        title: "Error",
+        description: "Gmail connection function is not available",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      console.debug("Executing connectGmail function");
+      connectGmail();
+    } catch (error) {
+      console.error("Error executing connectGmail:", error);
+      toast({
+        title: "Connection Error",
+        description: "Failed to initiate Gmail connection",
+        variant: "destructive"
+      });
+    }
+  };
 
   // Use ConfigErrorButton component with proper onClick handler for the connect button
   return (
     <ConfigErrorButton
       isConnected={isGmailConnected}
-      onClick={() => {
-        console.log("Gmail connect button clicked, executing connectGmail");
-        connectGmail();
-      }} // This ensures clicking the button initiates the OAuth flow
+      onClick={handleConnectClick} // Using our wrapped handler function
       onDisconnect={disconnectGmail}
       className={className}
     />

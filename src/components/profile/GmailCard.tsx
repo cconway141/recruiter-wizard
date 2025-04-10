@@ -22,9 +22,18 @@ export const GmailCard: React.FC = () => {
     isConnected: isGmailConnected, 
     isLoading: isCheckingConnection,
     disconnectGmail,
-    silentCheckConnection
+    silentCheckConnection,
+    connectGmail
   } = useGmailConnection({ 
     showLoadingUI: true
+  });
+  
+  // Add logging for debugging
+  console.debug("GmailCard rendered:", { 
+    isGmailConnected, 
+    isCheckingConnection, 
+    hasConnectGmail: !!connectGmail,
+    hasUser: !!user
   });
   
   // Run a silent background connection check on mount
@@ -44,6 +53,11 @@ export const GmailCard: React.FC = () => {
   // Create a void version of the disconnect function to fix the TypeScript error
   const handleDisconnect = async () => {
     await disconnectGmail();
+  };
+  
+  // Add a handler for connection change
+  const handleConnectionChange = (connected: boolean) => {
+    console.debug("Gmail connection status changed:", connected);
   };
   
   return (
@@ -86,7 +100,7 @@ export const GmailCard: React.FC = () => {
         ) : (
           <div className="mb-2">
             {/* Using GmailConnectButton which properly handles the OAuth flow */}
-            <GmailConnectButton />
+            <GmailConnectButton onConnectionChange={handleConnectionChange} />
           </div>
         )}
       </CardContent>
