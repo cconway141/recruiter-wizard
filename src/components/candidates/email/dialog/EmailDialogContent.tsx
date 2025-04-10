@@ -36,6 +36,7 @@ export const EmailDialogContent: React.FC<EmailDialogContentProps> = ({
 
   return (
     <div className="space-y-4">
+      {/* Template selector - ALWAYS visible */}
       <div className="space-y-2">
         <label className="text-sm font-medium">Select a template</label>
         <EmailTemplateSelector
