@@ -9,7 +9,7 @@ interface UseEmailDialogStateProps {
   candidateName: string;
   candidateEmail?: string;
   jobId?: string;
-  jobTitle?: string;
+  candidateFacingTitle?: string;
   candidateId?: string;
   threadId?: string | null;
   threadTitle?: string;
@@ -20,7 +20,7 @@ export const useEmailDialogState = ({
   candidateName,
   candidateEmail,
   jobId,
-  jobTitle,
+  candidateFacingTitle,
   candidateId,
   threadId,
   threadTitle,
@@ -45,7 +45,7 @@ export const useEmailDialogState = ({
 
   const { emailTemplates, getEmailContent } = useEmailContent({
     candidateName,
-    jobTitle,
+    jobTitle: candidateFacingTitle,
     selectedTemplate,
   });
 
@@ -64,11 +64,10 @@ export const useEmailDialogState = ({
   useEffect(() => {
     console.debug('Email Dialog State Props:', {
       jobId,
-      jobTitle,
-      candidateFacingTitle: jobTitle
+      candidateFacingTitle,
     });
 
-    const standardizedSubject = `ITBC ${jobTitle ? jobTitle + ' - ' : ''}${candidateName}`.trim();
+    const standardizedSubject = `ITBC ${candidateFacingTitle} ${candidateName}`.trim();
     setSubject(threadTitle || standardizedSubject);
 
     const content = getEmailContent();
@@ -81,7 +80,7 @@ export const useEmailDialogState = ({
         console.error("Background Gmail check failed:", err);
       });
     }, 100);
-  }, [checkGmailConnection, candidateName, jobTitle, threadTitle, getEmailContent]);
+  }, [checkGmailConnection, candidateName, candidateFacingTitle, threadTitle, getEmailContent]);
 
   const handleTemplateChange = (template: string) => {
     setSelectedTemplate(template);
@@ -119,7 +118,7 @@ export const useEmailDialogState = ({
         subject,
         body,
         candidateName,
-        jobTitle,
+        candidateFacingTitle,
         threadId
       );
 
@@ -161,12 +160,12 @@ export const useEmailDialogState = ({
       subject,
       body,
       candidateName,
-      jobTitle,
+      candidateFacingTitle,
       threadId
     );
 
     onClose();
-  }, [candidateEmail, subject, body, candidateName, jobTitle, threadId, composeEmailInGmail, onClose, toast]);
+  }, [candidateEmail, subject, body, candidateName, candidateFacingTitle, threadId, composeEmailInGmail, onClose, toast]);
 
   const handleOpenThreadInGmail = useCallback(() => {
     const searchQuery = encodeURIComponent(`subject:(${subject})`);
