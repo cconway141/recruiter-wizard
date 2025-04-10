@@ -3,28 +3,26 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useQuery } from "@tanstack/react-query";
 
 export const useGmailAuth = () => {
-  const [isCheckingGmail, setIsCheckingGmail] = useState(false);
-  const [isGmailConnected, setIsGmailConnected] = useState<boolean | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (user) {
-      checkGmailConnection();
-    }
-  }, [user]);
-
-  const checkGmailConnection = async (): Promise<boolean> => {
-    if (!user) {
-      setErrorMessage("You must be logged in to use Gmail integration");
-      return false;
-    }
-    
-    try {
-      setIsCheckingGmail(true);
+  // Use React Query for better state management and caching
+  const { 
+    data: connectionInfo,
+    isLoading: isCheckingGmail,
+    refetch,
+    error
+  } = useQuery({
+    queryKey: ['gmail-connection', user?.id],
+    queryFn: async () => {
+      if (!user) {
+        throw new Error("You must be logged in to use Gmail integration");
+      }
+      
       setErrorMessage(null);
       
       const { data, error } = await supabase.functions.invoke('google-auth/check-connection', {
@@ -33,14 +31,14 @@ export const useGmailAuth = () => {
       
       if (error) {
         console.error("Error checking Gmail connection:", error);
-        setErrorMessage("Failed to check Gmail connection");
-        return false;
+        throw new Error("Failed to check Gmail connection");
       }
       
-      const isConnected = data.connected && !data.expired;
-      setIsGmailConnected(isConnected);
+      if (data?.error === 'Configuration error') {
+        throw new Error(data.message || 'Google OAuth is not properly configured');
+      }
       
-      if (!isConnected) {
+      if (!data.connected || data.expired) {
         toast({
           title: "Gmail Not Connected",
           description: "Please connect your Gmail account to send emails.",
@@ -49,19 +47,35 @@ export const useGmailAuth = () => {
       }
       
       if (data.needsRefresh) {
-        const refreshResult = await refreshGmailToken();
-        return refreshResult;
+        await refreshGmailToken();
+        // Re-fetch after refresh
+        const { data: refreshedData } = await supabase.functions.invoke('google-auth/check-connection', {
+          body: { userId: user.id }
+        });
+        return refreshedData;
       }
       
-      return isConnected;
-    } catch (error) {
-      console.error("Error checking Gmail connection:", error);
-      setErrorMessage("Failed to check Gmail connection");
-      return false;
-    } finally {
-      setIsCheckingGmail(false);
+      return data;
+    },
+    enabled: !!user,
+    refetchOnWindowFocus: true,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  useEffect(() => {
+    if (error) {
+      setErrorMessage((error as Error).message);
     }
-  };
+  }, [error]);
+
+  // Set error message when connection fails
+  useEffect(() => {
+    if (!isCheckingGmail && !connectionInfo?.connected) {
+      setErrorMessage("Gmail connection not established");
+    } else {
+      setErrorMessage(null);
+    }
+  }, [connectionInfo, isCheckingGmail]);
 
   const refreshGmailToken = async (): Promise<boolean> => {
     if (!user) return false;
@@ -77,7 +91,6 @@ export const useGmailAuth = () => {
         return false;
       }
       
-      setIsGmailConnected(true);
       return true;
     } catch (error) {
       console.error("Error refreshing Gmail token:", error);
@@ -86,8 +99,18 @@ export const useGmailAuth = () => {
     }
   };
 
+  const checkGmailConnection = async (): Promise<boolean> => {
+    try {
+      const result = await refetch();
+      return result.data?.connected && !result.data?.expired;
+    } catch (error) {
+      console.error("Error checking Gmail connection:", error);
+      return false;
+    }
+  };
+
   return {
-    isGmailConnected,
+    isGmailConnected: connectionInfo?.connected && !connectionInfo?.expired,
     isCheckingGmail,
     errorMessage,
     checkGmailConnection,
