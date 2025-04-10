@@ -6,7 +6,10 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const GOOGLE_CLIENT_ID = Deno.env.get("GOOGLE_CLIENT_ID") || "";
 const GOOGLE_CLIENT_SECRET = Deno.env.get("GOOGLE_CLIENT_SECRET") || "";
-const REDIRECT_URI = "https://recruit.theitbootcamp.com/auth/gmail-callback";
+
+// IMPORTANT: This needs to exactly match what's registered in Google Cloud Console
+// Changed from a hardcoded value to environment variable if available
+const REDIRECT_URI = Deno.env.get("GMAIL_REDIRECT_URI") || "https://recruit.theitbootcamp.com/auth/gmail-callback";
 
 // Basic validation of required environment variables
 if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
@@ -66,7 +69,7 @@ serve(async (req) => {
       authUrl.searchParams.append('prompt', 'consent');
       authUrl.searchParams.append('state', state);
       
-      console.log("Generated auth URL with redirect URI:", REDIRECT_URI);
+      console.log(`Generated auth URL for user ${userId} with redirect URI: ${REDIRECT_URI}`);
       
       return new Response(
         JSON.stringify({ url: authUrl.toString() }),
@@ -95,6 +98,7 @@ serve(async (req) => {
           throw new Error('State is expired');
         }
       } catch (error) {
+        console.error('Error parsing state:', error);
         return new Response(
           JSON.stringify({ error: 'Invalid state parameter' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -104,7 +108,7 @@ serve(async (req) => {
       const userId = stateData.userId;
       const action = stateData.action || 'gmail'; // Default to gmail if not specified
       
-      console.log("Exchanging code for tokens with redirect URI:", REDIRECT_URI);
+      console.log(`Exchanging code for tokens for user ${userId} with redirect URI: ${REDIRECT_URI}`);
       
       // Exchange the code for tokens
       const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
@@ -129,59 +133,67 @@ serve(async (req) => {
         );
       }
       
-      console.log("Token exchange successful, storing tokens");
+      console.log("Token exchange successful for user:", userId);
       
       // Store the tokens in Supabase
       if (action === 'gmail') {
-        // First delete any existing tokens to ensure clean state
-        console.log("Deleting any existing tokens for user:", userId);
-        await supabase
-          .from('gmail_tokens')
-          .delete()
-          .eq('user_id', userId);
+        try {
+          // First delete any existing tokens to ensure clean state
+          console.log("Deleting any existing tokens for user:", userId);
+          await supabase
+            .from('gmail_tokens')
+            .delete()
+            .eq('user_id', userId);
+            
+          // Then insert the new tokens
+          console.log("Inserting new tokens for user:", userId);
           
-        // Then insert the new tokens
-        console.log("Inserting new tokens for user:", userId);
-        const { error } = await supabase
-          .from('gmail_tokens')
-          .insert({
+          const expiresAt = new Date(Date.now() + tokenData.expires_in * 1000).toISOString();
+          console.log(`Token will expire at: ${expiresAt}`);
+          
+          const insertData = {
             user_id: userId,
             access_token: tokenData.access_token,
             refresh_token: tokenData.refresh_token,
-            expires_at: new Date(Date.now() + tokenData.expires_in * 1000).toISOString(),
+            expires_at: expiresAt,
             token_type: tokenData.token_type,
             scope: tokenData.scope,
-          });
-        
-        if (error) {
-          console.error('Error storing tokens:', error);
-          return new Response(
-            JSON.stringify({ error: 'Failed to store tokens', details: error }),
-            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-        
-        // Verify tokens were stored successfully
-        const { data: verifyData, error: verifyError } = await supabase
-          .from('gmail_tokens')
-          .select('*')
-          .eq('user_id', userId)
-          .single();
+          };
           
-        if (verifyError || !verifyData) {
-          console.error('Error verifying tokens were stored:', verifyError);
+          const { error: insertError } = await supabase
+            .from('gmail_tokens')
+            .insert(insertData);
+          
+          if (insertError) {
+            console.error('Error storing tokens:', insertError);
+            throw insertError;
+          }
+          
+          // Verify tokens were stored successfully
+          const { data: verifyData, error: verifyError } = await supabase
+            .from('gmail_tokens')
+            .select('*')
+            .eq('user_id', userId)
+            .single();
+            
+          if (verifyError || !verifyData) {
+            console.error('Error verifying tokens were stored:', verifyError);
+            throw new Error('Failed to verify tokens were stored');
+          }
+          
+          console.log("Tokens stored and verified for user:", userId);
+          
           return new Response(
-            JSON.stringify({ error: 'Failed to verify tokens were stored', details: verifyError }),
+            JSON.stringify({ success: true, message: 'Gmail connected successfully' }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        } catch (storageError) {
+          console.error('Error in token storage process:', storageError);
+          return new Response(
+            JSON.stringify({ error: 'Failed to store tokens', details: storageError.message }),
             { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
-        
-        console.log("Tokens stored and verified for user:", userId);
-        
-        return new Response(
-          JSON.stringify({ success: true, message: 'Gmail connected successfully' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
       }
       
       // This could be enhanced for other Google services in the future
@@ -286,7 +298,7 @@ serve(async (req) => {
       // Check if the user has connected Gmail
       const { data, error } = await supabase
         .from('gmail_tokens')
-        .select('expires_at, access_token')
+        .select('expires_at, access_token, refresh_token')
         .eq('user_id', userId)
         .maybeSingle();
       
@@ -300,17 +312,28 @@ serve(async (req) => {
       
       const isConnected = !!data && !!data.access_token;
       const isExpired = data ? new Date(data.expires_at) <= new Date() : false;
+      const hasRefreshToken = !!data?.refresh_token;
       
       console.log("Gmail connection status for user", userId, ":", {
         connected: isConnected,
         expired: isExpired,
+        hasRefreshToken: hasRefreshToken,
         needsRefresh: isConnected && isExpired
       });
+      
+      if (isConnected) {
+        // Additional token details for debugging
+        console.log(`Token expires at: ${data.expires_at}`);
+        console.log(`Current time: ${new Date().toISOString()}`);
+        console.log(`Token is ${isExpired ? 'expired' : 'valid'}`);
+        console.log(`Has refresh token: ${hasRefreshToken}`);
+      }
       
       return new Response(
         JSON.stringify({ 
           connected: isConnected,
           expired: isExpired,
+          hasRefreshToken: hasRefreshToken,
           needsRefresh: isConnected && isExpired
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

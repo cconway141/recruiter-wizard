@@ -43,6 +43,8 @@ export const GmailCallback: React.FC = () => {
           return;
         }
 
+        console.log("Received code and state from Google OAuth flow");
+        console.log("Decoded state:", atob(state));
         console.log("Exchanging code for Gmail API access tokens...");
         
         // Exchange the code for tokens with retry logic
@@ -74,7 +76,12 @@ export const GmailCallback: React.FC = () => {
             queryClient.invalidateQueries({ queryKey: ['gmail-connection'] });
             queryClient.invalidateQueries({ queryKey: ['gmail-connection', user.id] });
             
+            // Mark a successful connection in sessionStorage for UI feedback
+            sessionStorage.setItem('gmailConnectionSuccess', 'true');
+            sessionStorage.setItem('gmailConnectionTimestamp', Date.now().toString());
+            
             // Verify the tokens were saved by checking the connection
+            console.log("Verifying connection after token exchange...");
             const { data: checkData } = await supabase.functions.invoke('google-auth/check-connection', {
               body: { userId: user.id }
             });
@@ -117,6 +124,12 @@ export const GmailCallback: React.FC = () => {
         console.error("Error processing callback:", err);
         setError("An unexpected error occurred while connecting Gmail");
         setStatus('error');
+        
+        // Store error for debugging
+        sessionStorage.setItem('gmailConnectionError', JSON.stringify({
+          message: err.message,
+          timestamp: Date.now()
+        }));
       } finally {
         setIsProcessing(false);
       }

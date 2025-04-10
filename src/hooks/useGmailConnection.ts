@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -14,6 +14,49 @@ export const useGmailConnection = ({ onConnectionChange }: UseGmailConnectionPro
   const { user } = useAuth();
   const [configError, setConfigError] = useState<string | null>(null);
   const queryClient = useQueryClient();
+
+  // Check for successful connection from callback page
+  useEffect(() => {
+    const connectionSuccess = sessionStorage.getItem('gmailConnectionSuccess');
+    if (connectionSuccess === 'true') {
+      // Clear the flag
+      sessionStorage.removeItem('gmailConnectionSuccess');
+      
+      toast({
+        title: "Gmail Connected",
+        description: "Your Gmail account has been successfully connected.",
+      });
+      
+      // Force refresh connection status
+      if (user?.id) {
+        console.log("Connection was successful, refreshing status...");
+        queryClient.invalidateQueries({ queryKey: ['gmail-connection', user.id] });
+      }
+    }
+    
+    // Check for connection errors
+    const connectionError = sessionStorage.getItem('gmailConnectionError');
+    if (connectionError) {
+      try {
+        const errorData = JSON.parse(connectionError);
+        console.error("Gmail connection error:", errorData);
+        
+        // Only show errors that are recent (within last minute)
+        if (Date.now() - errorData.timestamp < 60000) {
+          toast({
+            title: "Gmail Connection Failed",
+            description: errorData.message || "Failed to connect Gmail. Please try again.",
+            variant: "destructive",
+          });
+        }
+        
+        // Clear the error
+        sessionStorage.removeItem('gmailConnectionError');
+      } catch (e) {
+        sessionStorage.removeItem('gmailConnectionError');
+      }
+    }
+  }, [user, queryClient, toast]);
   
   // Query for checking Gmail connection status with more aggressive refreshing
   const { 
@@ -24,7 +67,7 @@ export const useGmailConnection = ({ onConnectionChange }: UseGmailConnectionPro
   } = useQuery({
     queryKey: ['gmail-connection', user?.id],
     queryFn: async () => {
-      if (!user) return { connected: false, expired: false, needsRefresh: false };
+      if (!user) return { connected: false, expired: false, needsRefresh: false, hasRefreshToken: false };
       
       try {
         console.log("Checking Gmail connection for user:", user.id);
@@ -39,14 +82,15 @@ export const useGmailConnection = ({ onConnectionChange }: UseGmailConnectionPro
         }
         
         console.log("Connection status:", data.connected ? "Connected" : "Not connected");
+        console.log("Connection details:", data);
         
         if (data?.error === 'Configuration error') {
           setConfigError(data.message || 'Google OAuth is not properly configured');
-          return { connected: false, expired: false, needsRefresh: false };
+          return { connected: false, expired: false, needsRefresh: false, hasRefreshToken: false };
         }
         
         // If token needs refresh, attempt to refresh it
-        if (data.needsRefresh) {
+        if (data.needsRefresh && data.hasRefreshToken) {
           console.log("Token needs refresh, attempting refresh...");
           await refreshToken();
           // Re-fetch after refresh attempt
@@ -65,7 +109,7 @@ export const useGmailConnection = ({ onConnectionChange }: UseGmailConnectionPro
         return data;
       } catch (error) {
         console.error("Error checking Gmail connection:", error);
-        return { connected: false, expired: false, needsRefresh: false };
+        return { connected: false, expired: false, needsRefresh: false, hasRefreshToken: false };
       }
     },
     enabled: !!user?.id,
@@ -168,6 +212,7 @@ export const useGmailConnection = ({ onConnectionChange }: UseGmailConnectionPro
       
       // Store a flag in sessionStorage to identify that we're in the process of connecting Gmail
       sessionStorage.setItem('gmailConnectionInProgress', 'true');
+      sessionStorage.setItem('gmailConnectionAttemptTime', Date.now().toString());
       
       // Redirect to Google's OAuth flow
       window.location.href = data.url;

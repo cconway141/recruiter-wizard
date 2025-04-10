@@ -1,41 +1,52 @@
 
-import React, { useEffect } from "react";
-import { MailCheck } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { MailCheck, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { 
   Card, 
   CardContent, 
   CardDescription, 
   CardHeader, 
-  CardTitle 
+  CardTitle,
+  CardFooter 
 } from "@/components/ui/card";
 import { GmailConnectButton } from "@/components/candidates/email/GmailConnectButton";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 export const GmailCard: React.FC = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [connectionAttemptTime, setConnectionAttemptTime] = useState<number | null>(null);
   
   // Check for Gmail connection in progress when component mounts
   useEffect(() => {
     const connectionInProgress = sessionStorage.getItem('gmailConnectionInProgress');
-    if (connectionInProgress === 'true') {
-      // Clear the flag
-      sessionStorage.removeItem('gmailConnectionInProgress');
+    const attemptTimeStr = sessionStorage.getItem('gmailConnectionAttemptTime');
+    
+    if (connectionInProgress === 'true' && attemptTimeStr) {
+      const attemptTime = parseInt(attemptTimeStr, 10);
+      setConnectionAttemptTime(attemptTime);
       
-      // Force refresh connection status
-      if (user?.id) {
-        console.log("Connection was in progress, forcing refresh...");
-        queryClient.invalidateQueries({ queryKey: ['gmail-connection', user.id] });
-        queryClient.invalidateQueries({ queryKey: ['gmail-connection'] });
-        
-        toast({
-          title: "Checking connection status",
-          description: "Verifying Gmail API connection status...",
-        });
+      // Only clear flags if they're older than 5 minutes
+      if (Date.now() - attemptTime > 5 * 60 * 1000) {
+        sessionStorage.removeItem('gmailConnectionInProgress');
+        sessionStorage.removeItem('gmailConnectionAttemptTime');
+        setConnectionAttemptTime(null);
+      } else {
+        // Force refresh connection status
+        if (user?.id) {
+          console.log("Connection was in progress, forcing refresh...");
+          queryClient.invalidateQueries({ queryKey: ['gmail-connection', user.id] });
+          
+          toast({
+            title: "Checking connection status",
+            description: "Verifying Gmail API connection status...",
+          });
+        }
       }
     }
   }, [user, queryClient, toast]);
@@ -51,8 +62,16 @@ export const GmailCard: React.FC = () => {
       
       queryClient.invalidateQueries({ queryKey: ['gmail-connection', user.id] });
       queryClient.invalidateQueries({ queryKey: ['gmail-connection'] });
+      
+      // Clear any pending connection flags
+      sessionStorage.removeItem('gmailConnectionInProgress');
+      sessionStorage.removeItem('gmailConnectionAttemptTime');
+      setConnectionAttemptTime(null);
     }
   };
+  
+  // Show alert if connection has been pending for more than 30 seconds
+  const showPendingAlert = connectionAttemptTime && (Date.now() - connectionAttemptTime > 30 * 1000);
 
   return (
     <Card>
@@ -66,7 +85,21 @@ export const GmailCard: React.FC = () => {
         <p className="text-sm text-muted-foreground">
           Allow this application to send emails on your behalf through your Gmail account.
         </p>
+        
+        {showPendingAlert && (
+          <Alert variant="warning" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Connection Pending</AlertTitle>
+            <AlertDescription>
+              A Gmail connection attempt is pending but hasn't completed. 
+              If you started the connection process but haven't finished it, 
+              please try again or refresh the status.
+            </AlertDescription>
+          </Alert>
+        )}
+        
         <GmailConnectButton />
+        
         <Button 
           variant="ghost" 
           onClick={forceRefreshGmailStatus}
@@ -75,6 +108,12 @@ export const GmailCard: React.FC = () => {
           Refresh Connection Status
         </Button>
       </CardContent>
+      <CardFooter className="text-xs text-muted-foreground">
+        <p>
+          Note: Gmail connection is separate from Google account login. 
+          This enables the application to send emails through your Gmail account.
+        </p>
+      </CardFooter>
     </Card>
   );
 };
