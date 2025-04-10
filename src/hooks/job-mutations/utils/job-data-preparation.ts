@@ -1,3 +1,4 @@
+
 import { uuid } from "@/utils/uuid";
 import { Job } from "@/types/job";
 import { calculateRates } from "@/utils/rateUtils";
@@ -49,7 +50,7 @@ export const mapJobToDatabase = (job: Job) => {
   return {
     id: job.id,
     internal_title: job.internalTitle,
-    candidate_facing_title: job.candidateFacingTitle,
+    candidate_facing_title: job.candidateFacingTitle, // Convert camelCase to snake_case
     jd: job.jd || "",
     status: job.status,
     status_id: job.statusId,
@@ -89,7 +90,7 @@ export const mapDatabaseToJob = (dbJob: any): Job => {
   return {
     id: dbJob.id,
     internalTitle: dbJob.internal_title,
-    candidateFacingTitle: dbJob.candidate_facing_title,
+    candidateFacingTitle: dbJob.candidate_facing_title, // Convert snake_case to camelCase
     jd: dbJob.jd,
     status: dbJob.status,
     statusId: dbJob.status_id,

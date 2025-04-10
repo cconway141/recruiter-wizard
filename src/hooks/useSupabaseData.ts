@@ -45,6 +45,7 @@ export function useSupabaseData() {
 
       // Update state with data from Supabase
       if (jobsData) {
+        // Map database column names (snake_case) to frontend property names (camelCase) 
         const transformedJobs: Job[] = jobsData.map(job => ({
           id: job.id,
           internalTitle: job.internal_title,
