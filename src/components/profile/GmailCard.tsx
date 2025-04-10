@@ -16,6 +16,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGmailConnection } from "@/hooks/gmail";
+// Import the GmailConnectButton component
+import { GmailConnectButton } from "@/components/candidates/email/GmailConnectButton";
 
 export const GmailCard: React.FC = () => {
   const { user } = useAuth();
@@ -185,9 +187,9 @@ export const GmailCard: React.FC = () => {
           Allow this application to send emails on your behalf through your Gmail account.
         </p>
         
-        {/* Display connection status */}
+        {/* Display connection status - Fixed "success" variant issue by using "default" with custom styling */}
         {isGmailConnected && (
-          <Alert variant="success" className="bg-green-50 border-green-200 mb-4">
+          <Alert className="bg-green-50 border-green-200 mb-4">
             <MailCheck className="h-4 w-4 text-green-600" />
             <AlertTitle className="text-green-600">Gmail Connected</AlertTitle>
             <AlertDescription className="text-green-700">
@@ -246,7 +248,7 @@ export const GmailCard: React.FC = () => {
             )}
           </Button>
         ) : (
-          // Connect button when not connected
+          // Connect button when not connected - Fixed missing component issue by using GmailConnectButton
           <div className="mb-2">
             <GmailConnectButton />
           </div>
