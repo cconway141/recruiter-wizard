@@ -36,7 +36,8 @@ export function EmailDialog({
   const job = jobId ? getJob(jobId) : undefined;
   
   // Always use the job title from the job object for consistency
-  const actualJobTitle = job?.candidateFacingTitle || jobTitle;
+  // If job title isn't available from context, fallback to the prop
+  const actualJobTitle = job?.candidateFacingTitle || jobTitle || "";
 
   console.group('EmailDialog Initialization');
   console.log('Props received in EmailDialog:', {
@@ -71,7 +72,7 @@ export function EmailDialog({
     candidateName,
     candidateEmail,
     jobId,
-    candidateFacingTitle: actualJobTitle, // Use the reliable job title
+    candidateFacingTitle: actualJobTitle, // Use the reliable job title with fallback
     candidateId,
     threadId,
     threadTitle,

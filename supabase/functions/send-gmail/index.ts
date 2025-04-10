@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
@@ -58,29 +57,10 @@ serve(async (req) => {
       );
     }
 
-    // Validate jobTitle exists for new threads
-    if (!threadId && !jobTitle) {
-      console.warn("Creating new email thread without job title");
-    }
-
-    // Format subject line
-    let formattedSubject;
-    if (threadId) {
-      // For replies, use the original subject
-      formattedSubject = subject;
-      console.log("Using existing subject for reply:", formattedSubject);
-    } else {
-      // For new emails, format correctly with job title
-      if (jobTitle && jobTitle.trim() !== '') {
-        formattedSubject = `ITBC ${jobTitle} ${candidateName}`.trim();
-      } else {
-        console.warn("Missing job title for new email. Using fallback format.");
-        formattedSubject = `ITBC ${candidateName}`.trim();
-      }
-      console.log("Created new subject for email:", formattedSubject);
-    }
-    
-    console.log(`Email subject: "${formattedSubject}"`);
+    // Format subject line for new threads
+    // Use the provided subject directly - it should already be properly formatted from useEmailSubject
+    let formattedSubject = subject;
+    console.log(`Using email subject: "${formattedSubject}"`);
 
     const emailCC = cc || "recruitment@theitbc.com";
     console.log(`CC'ing: ${emailCC}`);

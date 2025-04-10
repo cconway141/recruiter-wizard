@@ -22,20 +22,27 @@ export const useEmailSubject = ({
       threadTitle: threadTitle || 'UNDEFINED'
     });
 
-    if (!candidateFacingTitle) {
-      console.error("ERROR: Job title (candidateFacingTitle) is missing! This should never happen.");
+    // Use threadTitle if available (for replies to existing threads)
+    if (threadTitle) {
+      console.log("Using existing threadTitle for reply:", threadTitle);
+      setSubject(threadTitle);
+      console.log('Final Subject (from thread):', threadTitle);
+      console.groupEnd();
+      return;
     }
     
-    const standardizedSubject = `ITBC ${candidateFacingTitle} ${candidateName}`.trim();
+    // For new threads, ensure we have proper formatting
+    // Make sure we have a string, even if empty
+    const jobTitle = candidateFacingTitle || "";
+    
+    // Create standard subject format: "ITBC [Job Title] [Candidate Name]"
+    // Avoid having "ITBC undefined" by using empty string if job title is missing
+    const standardizedSubject = `ITBC ${jobTitle} ${candidateName}`.trim();
     console.log("Created standardized subject:", standardizedSubject);
     
-    const finalSubject = threadTitle || standardizedSubject;
-    
-    console.log('Final Subject:', finalSubject);
-    console.log('Thread Title Used:', !!threadTitle);
+    setSubject(standardizedSubject);
+    console.log('Final Subject (new):', standardizedSubject);
     console.groupEnd();
-    
-    setSubject(finalSubject);
   }, [candidateName, candidateFacingTitle, threadTitle]);
 
   return {

@@ -72,7 +72,7 @@ export const useEmailSending = ({
       console.log("Recipient:", candidateEmail);
       console.log("Subject:", subject);
       console.log("Candidate:", candidateName);
-      console.log("Job Title:", candidateFacingTitle);
+      console.log("Job Title:", candidateFacingTitle || "NOT PROVIDED");
       console.log("Thread ID:", threadId || "NEW THREAD");
       console.log("Message ID:", messageId || "NEW MESSAGE");
       console.log("==================================================\n");
@@ -82,7 +82,7 @@ export const useEmailSending = ({
         subject,
         body,
         candidateName,
-        candidateFacingTitle,
+        candidateFacingTitle || "", // Ensure we pass empty string instead of undefined
         threadId,
         messageId
       );
@@ -134,7 +134,7 @@ export const useEmailSending = ({
       subject,
       body,
       candidateName,
-      candidateFacingTitle,
+      candidateFacingTitle || "", // Ensure we pass empty string instead of undefined
       threadId
     );
 
