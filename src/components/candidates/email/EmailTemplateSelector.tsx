@@ -14,6 +14,17 @@ export const EmailTemplateSelector: React.FC<EmailTemplateSelectorProps> = ({
   selectedTemplate,
   onSelectTemplate
 }) => {
+  // Filter templates to only include M1, M2, M3 categories
+  const sequenceTemplates = templates.filter(template => 
+    ['M1', 'M2', 'M3'].includes(template.category)
+  );
+
+  // Sort templates to ensure M1, M2, M3 order
+  const sortedTemplates = sequenceTemplates.sort((a, b) => {
+    const order = { 'M1': 1, 'M2': 2, 'M3': 3 };
+    return order[a.category] - order[b.category];
+  });
+
   return (
     <div className="space-y-4">
       <div className="grid w-full items-center gap-1.5">
@@ -24,9 +35,9 @@ export const EmailTemplateSelector: React.FC<EmailTemplateSelectorProps> = ({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="custom">Custom Message</SelectItem>
-            {templates.map((template) => (
+            {sortedTemplates.map((template) => (
               <SelectItem key={template.id} value={template.id}>
-                {template.id}: {template.situation || template.name || "Template"}
+                {template.category} - {template.situation || "Template"}
               </SelectItem>
             ))}
           </SelectContent>
