@@ -7,7 +7,7 @@ interface UseEmailDialogProps {
   candidateName: string;
   candidateEmail?: string;
   jobId?: string;
-  jobTitle?: string;
+  candidateFacingTitle?: string;
   candidateId?: string;
   threadId?: string | null;
   threadTitle?: string;
@@ -18,7 +18,7 @@ export const useEmailDialog = ({
   candidateName,
   candidateEmail,
   jobId,
-  jobTitle,
+  candidateFacingTitle,
   candidateId,
   threadId,
   threadTitle,
@@ -45,7 +45,7 @@ export const useEmailDialog = ({
     candidateName,
     candidateEmail,
     jobId,
-    jobTitle,
+    jobTitle: candidateFacingTitle, // Keep this for backwards compatibility
     candidateId,
     threadId,
     threadTitle,
