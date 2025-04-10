@@ -11,6 +11,7 @@ import { useEmailActions } from "./useEmailActions";
 import { useGmailAuth } from "@/hooks/useGmailAuth";
 import { useNavigate } from "react-router-dom";
 import { GmailConnectButton } from "./GmailConnectButton";
+import { Mail, ExternalLink, Search } from "lucide-react";
 
 interface EmailDialogProps {
   isOpen: boolean;
@@ -87,6 +88,12 @@ export function EmailDialog({
     navigate('/profile');
   };
 
+  const openThreadInGmail = () => {
+    const subjectLine = `ITBC ${jobTitle || ''} ${candidateName}`.trim();
+    const encodedSubject = encodeURIComponent(`"${subjectLine}"`);
+    window.open(`https://mail.google.com/mail/u/0/#search/${encodedSubject}`, '_blank');
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
@@ -150,9 +157,28 @@ export function EmailDialog({
         />
 
         <DialogFooter>
-          <div className="flex justify-end gap-2">
+          <div className="flex flex-wrap justify-end gap-2">
             <Button variant="outline" onClick={onClose}>
               Cancel
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={openThreadInGmail}
+              className="flex items-center gap-2"
+            >
+              <Search className="h-4 w-4" />
+              <span>Open Thread in Gmail</span>
+              <ExternalLink className="h-3 w-3" />
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={composeEmail}
+              disabled={!isGmailConnected}
+              className="flex items-center gap-2"
+            >
+              <Mail className="h-4 w-4" />
+              <span>Compose in Gmail</span>
+              <ExternalLink className="h-3 w-3" />
             </Button>
             <Button 
               onClick={handleSendEmail}

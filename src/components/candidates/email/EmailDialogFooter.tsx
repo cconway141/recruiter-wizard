@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { ExternalLink, Loader2, Mail } from "lucide-react";
+import { ExternalLink, Loader2, Mail, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DialogClose } from "@/components/ui/dialog";
 import { GmailConnectButton } from "./GmailConnectButton";
@@ -8,9 +8,12 @@ import { useAuth } from "@/contexts/AuthContext";
 
 interface EmailDialogFooterProps {
   candidateEmail?: string | null;
+  candidateName: string;
+  jobTitle?: string;
   isSending: boolean;
   onSendEmail: () => Promise<void>;
   onComposeEmail: () => void;
+  onOpenThreadInGmail: () => void;
   isGmailConnected?: boolean | null;
   checkGmailConnection?: () => Promise<boolean>;
   goToProfilePage?: () => void;
@@ -18,9 +21,12 @@ interface EmailDialogFooterProps {
 
 export const EmailDialogFooter: React.FC<EmailDialogFooterProps> = ({
   candidateEmail,
+  candidateName,
+  jobTitle,
   isSending,
   onSendEmail,
   onComposeEmail,
+  onOpenThreadInGmail,
   isGmailConnected,
   checkGmailConnection,
   goToProfilePage
@@ -47,13 +53,23 @@ export const EmailDialogFooter: React.FC<EmailDialogFooterProps> = ({
   };
 
   return (
-    <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">
+    <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 flex-wrap gap-2">
       <DialogClose asChild>
         <Button variant="outline">Cancel</Button>
       </DialogClose>
       
       {candidateEmail && (
         <>
+          <Button 
+            onClick={onOpenThreadInGmail}
+            className="flex items-center gap-2"
+            variant="outline"
+          >
+            <Search className="h-4 w-4" />
+            <span>Open Thread in Gmail</span>
+            <ExternalLink className="h-3 w-3" />
+          </Button>
+          
           <Button 
             onClick={onComposeEmail}
             className="flex items-center gap-2"
