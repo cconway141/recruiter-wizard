@@ -69,19 +69,28 @@ export const useEmailSending = ({
 
       console.group("EMAIL SENDING PROCESS");
       console.log("Sending email to:", candidateEmail);
-      console.log("Subject:", subject);
+      console.log("Is reply to existing thread:", !!threadId);
+      
+      // For replies, log the thread we're replying to
+      if (threadId) {
+        console.log("Replying to existing thread:", threadId);
+        console.log("Using message ID for threading:", messageId || "NO MESSAGE ID");
+        // Don't pass subject for replies since Gmail uses the thread's subject
+        subject = "";
+      } else {
+        console.log("Starting new conversation with subject:", subject);
+      }
+      
       console.log("Body length:", body.length);
       console.log("Candidate:", candidateName);
-      console.log("Job Title:", candidateFacingTitle || "USING DEFAULT: General Position");
-      console.log("Thread ID:", threadId || "NEW THREAD");
-      console.log("Message ID:", messageId || "NEW MESSAGE");
+      console.log("Job Title:", candidateFacingTitle || "");
       
       // Ensure we never pass undefined for job title
       const safeJobTitle = candidateFacingTitle || "";
 
       const result = await sendEmailViaGmail(
         candidateEmail,
-        subject,
+        subject, // Will be empty string for replies
         body,
         candidateName,
         safeJobTitle,

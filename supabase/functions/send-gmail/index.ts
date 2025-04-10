@@ -37,10 +37,10 @@ serve(async (req) => {
     console.log("================================================");
     console.log(`CANDIDATE: ${candidateName}`);
     console.log(`TO: ${to}`);
-    console.log(`SUBJECT: "${subject}"`);
-    console.log(`JOB TITLE: ${jobTitle || "NOT PROVIDED"}`);
     console.log(`THREAD ID: ${threadId || "NEW THREAD"}`);
     console.log(`REFERENCE MESSAGE ID: ${messageId || "NONE"}`);
+    console.log(`SUBJECT: ${subject ? `"${subject}"` : "Using existing thread subject"}`);
+    console.log(`JOB TITLE: ${jobTitle || "NOT PROVIDED"}`);
     console.log("================================================\n");
 
     if (!to || !body || !userId) {
@@ -58,24 +58,30 @@ serve(async (req) => {
       );
     }
 
-    // Format subject line for new threads
-    // Use the provided subject directly - it should already be properly formatted from useEmailSubject
+    // Only use subject for new threads, not for replies
     let formattedSubject = subject;
     
-    // Safety check - if somehow subject is undefined, create a proper one
-    if (!formattedSubject && !threadId) {
-      formattedSubject = `ITBC ${jobTitle || ""} ${candidateName}`.trim();
-      console.log(`Created fallback subject: "${formattedSubject}"`);
+    // If it's a reply (has threadId) but somehow subject is provided, log a warning
+    if (threadId && subject) {
+      console.log(`Warning: Subject provided for reply email "${subject}" but will be ignored as this is a reply`);
+      // For replies, don't set the subject - Gmail will use the thread's subject
+      formattedSubject = "";
     }
     
-    console.log(`Using email subject: "${formattedSubject}"`);
+    // For new threads, if no subject is provided, create a default one
+    if (!threadId && (!formattedSubject || formattedSubject.trim() === '')) {
+      formattedSubject = `ITBC ${jobTitle || ""} ${candidateName}`.trim();
+      console.log(`Created default subject for new thread: "${formattedSubject}"`);
+    }
+    
+    console.log(`Final email subject: ${formattedSubject || "Using thread subject (reply)"}`);
 
     const emailCC = cc || "recruitment@theitbc.com";
     console.log(`CC'ing: ${emailCC}`);
 
-    console.log(`Preparing to send email to ${to} with subject "${formattedSubject}"`);
-    console.log(`Using thread ID: ${threadId || 'New thread'}`);
-    console.log(`Using message ID for reference: ${messageId || 'None (new conversation)'}`);
+    console.log(`Preparing to ${threadId ? 'reply to existing thread' : 'start new conversation'}`);
+    console.log(`Using thread ID: ${threadId || 'None (new conversation)'}`);
+    console.log(`Using message ID for reference: ${messageId || 'None'}`);
     
     const { data: tokenData, error: tokenError } = await supabase
       .from('gmail_tokens')
@@ -122,14 +128,21 @@ serve(async (req) => {
     let emailLines = [
       `To: ${to}`,
       `Cc: ${emailCC}`,
-      `Subject: ${formattedSubject}`,
+    ];
+    
+    // Only add Subject header for new threads
+    if (!threadId) {
+      emailLines.push(`Subject: ${formattedSubject}`);
+    }
+    
+    emailLines = [
+      ...emailLines,
       'MIME-Version: 1.0',
       'Content-Type: text/html; charset=utf-8',
       `Message-ID: ${currentMessageId}`,
     ];
     
     // Add proper threading headers for replies - this is critical for Gmail threading
-    // Ensure messageId has angle brackets as required by RFC 2822
     if (threadId && messageId) {
       console.log("Adding proper threading headers for reply to existing conversation");
       
@@ -141,9 +154,6 @@ serve(async (req) => {
       
       // The In-Reply-To header should also contain the message ID we're replying to
       emailLines.push(`In-Reply-To: ${formattedMessageId}`);
-      
-      // Include thread topic for additional threading support
-      emailLines.push(`Thread-Topic: ${formattedSubject}`);
       
       console.log("Added threading headers:");
       console.log(`References: ${formattedMessageId}`);
@@ -231,7 +241,6 @@ serve(async (req) => {
     
     console.log(`Successfully sent email with thread ID: ${newThreadId}`);
     console.log(`Message ID (for future threading): ${newMessageId}`);
-    console.log(`Subject: "${formattedSubject}"`);
     console.log(`Is reply: ${!!threadId}`);
 
     return new Response(
@@ -240,7 +249,7 @@ serve(async (req) => {
         message: `Email sent to ${candidateName} at ${to} with CC to ${emailCC}`,
         threadId: newThreadId,
         messageId: newMessageId,
-        subject: formattedSubject
+        subject: formattedSubject || "Reply to existing thread"
       }),
       { 
         status: 200, 
