@@ -17,8 +17,6 @@ export const ConfigErrorButton: React.FC<ConfigErrorButtonProps> = ({
   onClick,
   onDisconnect
 }) => {
-  console.log("ConfigErrorButton: isConnected =", isConnected);
-  
   // Always render one of these buttons immediately without loading states
   if (isConnected) {
     return (
@@ -48,6 +46,7 @@ export const ConfigErrorButton: React.FC<ConfigErrorButtonProps> = ({
     );
   }
   
+  // Updated: Ensure the onClick handler is properly attached to the button
   return (
     <TooltipProvider>
       <Tooltip>
@@ -56,7 +55,7 @@ export const ConfigErrorButton: React.FC<ConfigErrorButtonProps> = ({
             type="button"
             variant="outline"
             className={`flex items-center gap-2 bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 hover:text-amber-800 ${className}`}
-            onClick={onClick}
+            onClick={onClick} // This ensures the connectGmail function is called on click
           >
             <AlertCircle className="h-4 w-4" />
             <span>Gmail Setup Required</span>

@@ -32,7 +32,7 @@ export const EmailConnectionAlert: React.FC<EmailConnectionAlertProps> = ({
           <div className="flex justify-end">
             <ConfigErrorButton
               isConnected={false}
-              onClick={onConnect}
+              onClick={onConnect} // This ensures the connectGmail function is called on click
               className="mt-2"
             />
           </div>

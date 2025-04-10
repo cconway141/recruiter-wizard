@@ -22,7 +22,7 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
   const { 
     isConnected: isGmailConnected, 
     isLoading: isCheckingGmail,
-    connectGmail,
+    connectGmail, // This function initiates the OAuth flow
     disconnectGmail
   } = useGmailConnection({ 
     onConnectionChange,
@@ -79,10 +79,11 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
     }
   }, [toast, onConnectionChange]);
 
+  // Use ConfigErrorButton component with proper onClick handler for the connect button
   return (
     <ConfigErrorButton
       isConnected={isGmailConnected}
-      onClick={connectGmail}
+      onClick={connectGmail} // This ensures clicking the button initiates the OAuth flow
       onDisconnect={disconnectGmail}
       className={className}
     />

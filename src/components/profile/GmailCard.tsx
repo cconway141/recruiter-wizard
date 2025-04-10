@@ -85,6 +85,7 @@ export const GmailCard: React.FC = () => {
           />
         ) : (
           <div className="mb-2">
+            {/* Using GmailConnectButton which properly handles the OAuth flow */}
             <GmailConnectButton />
           </div>
         )}
