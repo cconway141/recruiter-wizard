@@ -15,12 +15,14 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// ------- Rate Limiting Logic -------
-
 // Rate limiting configuration
 const RATE_LIMIT_WINDOW = 60000; // 1 minute
 const RATE_LIMIT_MAX_REQUESTS = 10; // Max 10 requests per minute per IP
 const ipRequestCounts = new Map<string, {count: number, timestamp: number}>();
+
+// Deduplication to prevent duplicate requests
+const recentRequests = new Map<string, {timestamp: number, result: any}>();
+const DEDUPLICATION_WINDOW = 10000; // 10 seconds
 
 // Clean up rate limit entries older than the window
 function cleanupRateLimits() {
@@ -28,6 +30,16 @@ function cleanupRateLimits() {
   for (const [ip, data] of ipRequestCounts.entries()) {
     if (now - data.timestamp > RATE_LIMIT_WINDOW) {
       ipRequestCounts.delete(ip);
+    }
+  }
+}
+
+// Clean up recent requests older than the deduplication window
+function cleanupRecentRequests() {
+  const now = Date.now();
+  for (const [key, data] of recentRequests.entries()) {
+    if (now - data.timestamp > DEDUPLICATION_WINDOW) {
+      recentRequests.delete(key);
     }
   }
 }
@@ -54,22 +66,6 @@ function isRateLimited(ip: string): boolean {
   ipRequestCounts.set(ip, data);
   
   return data.count > RATE_LIMIT_MAX_REQUESTS;
-}
-
-// ------- Request Deduplication Logic -------
-
-// Deduplication to prevent duplicate requests
-const recentRequests = new Map<string, {timestamp: number, result: any}>();
-const DEDUPLICATION_WINDOW = 10000; // 10 seconds
-
-// Clean up recent requests older than the deduplication window
-function cleanupRecentRequests() {
-  const now = Date.now();
-  for (const [key, data] of recentRequests.entries()) {
-    if (now - data.timestamp > DEDUPLICATION_WINDOW) {
-      recentRequests.delete(key);
-    }
-  }
 }
 
 // Generate a request hash for deduplication
@@ -104,8 +100,6 @@ function storeRequestResult(body: any, result: any) {
   recentRequests.set(hash, { timestamp: Date.now(), result });
 }
 
-// ------- Gmail API Integration -------
-
 // Function to build and send a Gmail message
 async function sendGmailMessage(
   to: string,
@@ -132,7 +126,18 @@ async function sendGmailMessage(
     });
     
     // Build email headers
-    const headers = buildEmailHeaders(to, cc, subject, messageId);
+    let headers = `To: ${to}\r\n`;
+    if (cc) headers += `Cc: ${cc}\r\n`;
+    if (subject) headers += `Subject: ${subject}\r\n`;
+    
+    // Add threading headers if this is a reply (both threadId and messageId required)
+    if (messageId) {
+      console.log("Adding threading headers with messageId:", messageId);
+      headers += `In-Reply-To: <${messageId}>\r\n`;
+      headers += `References: <${messageId}>\r\n`;
+    }
+    
+    headers += 'Content-Type: text/html; charset=utf-8\r\n\r\n';
     
     // Build email content
     let email: any = {
@@ -161,7 +166,18 @@ async function sendGmailMessage(
     });
     
     if (!response.ok) {
-      return handleGmailApiError(response);
+      const errorText = await response.text();
+      console.error('Gmail API error:', errorText);
+      
+      if (response.status === 401) {
+        return { error: "Gmail token expired", details: errorText };
+      }
+      
+      if (response.status === 429) {
+        return { error: "Gmail rate limit exceeded", details: errorText };
+      }
+      
+      return { error: `Gmail API error: ${response.status}`, details: errorText };
     }
     
     const data = await response.json();
@@ -180,68 +196,6 @@ async function sendGmailMessage(
     return { error: error.message || "Unknown error in Gmail sending" };
   }
 }
-
-// Build email headers including threading headers if applicable
-function buildEmailHeaders(to: string, cc: string, subject: string, messageId?: string): string {
-  let headers = `To: ${to}\r\n`;
-  if (cc) headers += `Cc: ${cc}\r\n`;
-  if (subject) headers += `Subject: ${subject}\r\n`;
-  
-  // Add threading headers if this is a reply
-  if (messageId) {
-    console.log("Adding threading headers with messageId:", messageId);
-    headers += `In-Reply-To: <${messageId}>\r\n`;
-    headers += `References: <${messageId}>\r\n`;
-  }
-  
-  headers += 'Content-Type: text/html; charset=utf-8\r\n\r\n';
-  return headers;
-}
-
-// Handle Gmail API errors
-async function handleGmailApiError(response: Response) {
-  const errorText = await response.text();
-  console.error('Gmail API error:', errorText);
-  
-  if (response.status === 401) {
-    return { error: "Gmail token expired", details: errorText };
-  }
-  
-  if (response.status === 429) {
-    return { error: "Gmail rate limit exceeded", details: errorText };
-  }
-  
-  return { error: `Gmail API error: ${response.status}`, details: errorText };
-}
-
-// Get Gmail tokens for a user
-async function getGmailTokens(userId: string) {
-  const { data: tokenData, error: tokenError } = await supabase
-    .from('gmail_tokens')
-    .select('access_token, expires_at, refresh_token')
-    .eq('user_id', userId)
-    .single();
-  
-  if (tokenError || !tokenData) {
-    return { error: 'Gmail not connected' };
-  }
-  
-  // Check if token is expired
-  if (new Date(tokenData.expires_at) <= new Date()) {
-    console.log('Token expired, refresh needed');
-    
-    if (!tokenData.refresh_token) {
-      return { error: 'No refresh token available. Please reconnect Gmail.' };
-    }
-    
-    // Refresh logic is handled by the google-auth function
-    return { error: 'Gmail token expired' };
-  }
-  
-  return { tokenData };
-}
-
-// ------- Main Request Handler -------
 
 // Main request handler
 serve(async (req) => {
@@ -284,14 +238,41 @@ serve(async (req) => {
     }
     
     // Get the Gmail tokens for this user
-    const { tokenData, error: tokenError } = await getGmailTokens(userId);
+    const { data: tokenData, error: tokenError } = await supabase
+      .from('gmail_tokens')
+      .select('access_token, expires_at, refresh_token')
+      .eq('user_id', userId)
+      .single();
     
-    if (tokenError) {
-      const result = { error: tokenError };
+    if (tokenError || !tokenData) {
+      const result = { error: 'Gmail not connected' };
       storeRequestResult(body, result);
       return new Response(
         JSON.stringify(result),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    // Check if token is expired
+    if (new Date(tokenData.expires_at) <= new Date()) {
+      // Use Gmail API to refresh the token
+      console.log('Token expired, refreshing...');
+      
+      if (!tokenData.refresh_token) {
+        const result = { error: 'No refresh token available. Please reconnect Gmail.' };
+        storeRequestResult(body, result);
+        return new Response(
+          JSON.stringify(result),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      // Refresh logic is actually handled by the google-auth function
+      const result = { error: 'Gmail token expired' };
+      storeRequestResult(body, result);
+      return new Response(
+        JSON.stringify(result),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
     
