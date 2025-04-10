@@ -19,11 +19,14 @@ serve(async (req) => {
     const { jobDescription } = await req.json();
 
     if (!jobDescription) {
+      console.error('Error: Job description is empty or missing');
       return new Response(
         JSON.stringify({ error: 'Job description is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    console.log(`Processing job description (${jobDescription.length} chars)`);
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -60,19 +63,27 @@ ${jobDescription}`
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(`API request failed: ${JSON.stringify(errorData)}`);
+      const errorText = await response.text();
+      console.error(`OpenAI API error (${response.status}): ${errorText}`);
+      throw new Error(`API request failed: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
+    
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      console.error('Unexpected API response format:', JSON.stringify(data));
+      throw new Error('Invalid response from OpenAI API');
+    }
+    
     const extractedSkills = data.choices[0].message.content;
+    console.log('Successfully extracted skills');
 
     return new Response(JSON.stringify({ skills: extractedSkills }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
     console.error('Error in extract-skills function:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: error.message || 'Failed to extract skills from job description' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

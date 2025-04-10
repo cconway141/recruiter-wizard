@@ -4,9 +4,10 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/comp
 import { Textarea } from "@/components/ui/textarea";
 import { useFormContext } from "react-hook-form";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Check, RefreshCw } from "lucide-react";
+import { Loader2, Check, RefreshCw, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export function JobFormDescription() {
   const form = useFormContext();
@@ -16,6 +17,7 @@ export function JobFormDescription() {
   const [skillsExtracted, setSkillsExtracted] = useState(false);
   const [minSkillsExtracted, setMinSkillsExtracted] = useState(false);
   const [videoQuestionsGenerated, setVideoQuestionsGenerated] = useState(false);
+  const [extractionError, setExtractionError] = useState<string | null>(null);
   
   // Track if functions have already been called to prevent multiple calls
   const skillsExtractedRef = useRef(false);
@@ -28,14 +30,23 @@ export function JobFormDescription() {
   const videoQuestionsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const extractSkillsFromDescription = async (description: string) => {
-    if (!description.trim()) return;
+    if (!description.trim()) {
+      toast({
+        title: "Missing job description",
+        description: "Please enter a job description to extract skills.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     setIsGeneratingSkills(true);
     setSkillsExtracted(false);
+    setExtractionError(null);
     
     // Set a timeout for the API call (60 seconds)
     skillsTimeoutRef.current = setTimeout(() => {
       setIsGeneratingSkills(false);
+      setExtractionError("Request timed out. Please try again.");
       toast({
         title: "Skills extraction timed out",
         description: "The request took too long. You can try again or enter skills manually.",
@@ -44,6 +55,8 @@ export function JobFormDescription() {
     }, 60000);
     
     try {
+      console.log("Extracting skills from job description...", description.substring(0, 100) + "...");
+      
       const { data, error } = await supabase.functions.invoke('extract-skills', {
         body: { jobDescription: description },
       });
@@ -54,10 +67,27 @@ export function JobFormDescription() {
         skillsTimeoutRef.current = null;
       }
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase function error:", error);
+        setExtractionError(`Error calling extraction function: ${error.message}`);
+        throw error;
+      }
+
+      if (!data) {
+        console.error("No data returned from skills extraction");
+        setExtractionError("No data returned from skills extraction");
+        throw new Error("No data returned from skills extraction");
+      }
+      
+      if (data.error) {
+        console.error("API returned error:", data.error);
+        setExtractionError(`Could not extract skills: ${data.error}`);
+        throw new Error(data.error);
+      }
 
       // Update the skills field with the generated content
-      if (data?.skills) {
+      if (data.skills) {
+        console.log("Skills extracted successfully");
         form.setValue('skillsSought', data.skills, { 
           shouldDirty: true,
           shouldTouch: true,
@@ -77,12 +107,20 @@ export function JobFormDescription() {
         setTimeout(() => {
           extractMinimumSkills(data.skills, description);
         }, 500);
+      } else {
+        console.error("No skills returned in the response");
+        setExtractionError("No skills returned in the response");
+        throw new Error("No skills returned in the response");
       }
     } catch (error) {
       console.error("Error extracting skills:", error);
+      const errorMessage = error instanceof Error ? error.message : "Could not extract skills from the job description";
+      if (!extractionError) {
+        setExtractionError(errorMessage);
+      }
       toast({
         title: "Error extracting skills",
-        description: "Could not extract skills from the job description.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -298,7 +336,7 @@ export function JobFormDescription() {
                 {...field}
                 onBlur={(e) => {
                   field.onBlur();
-                  if (!skillsExtractedRef.current) {
+                  if (!skillsExtractedRef.current && e.target.value.trim()) {
                     extractSkillsFromDescription(e.target.value);
                   }
                 }}
@@ -310,6 +348,13 @@ export function JobFormDescription() {
       />
 
       <div className="space-y-6">
+        {extractionError && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>{extractionError}</AlertDescription>
+          </Alert>
+        )}
+        
         <FormField
           control={form.control}
           name="skillsSought"
@@ -332,7 +377,18 @@ export function JobFormDescription() {
                     size="sm" 
                     variant="outline"
                     className="ml-auto flex items-center gap-1 text-xs"
-                    onClick={handleRegenerateSkills}
+                    onClick={() => {
+                      const description = form.getValues('jd');
+                      if (description) {
+                        extractSkillsFromDescription(description);
+                      } else {
+                        toast({
+                          title: "Missing job description",
+                          description: "Please enter a job description to extract skills.",
+                          variant: "destructive",
+                        });
+                      }
+                    }}
                   >
                     <RefreshCw className="h-3 w-3" />
                     Regenerate
