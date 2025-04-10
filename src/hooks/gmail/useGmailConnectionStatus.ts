@@ -24,10 +24,22 @@ export const useGmailConnectionStatus = ({
   // Add rate limiting reference
   const lastCheckRef = useRef<number>(0);
   const checkThrottleMs = 10000; // 10 seconds minimum between checks
+  const maxErrorsBeforeBackoff = 3;
+  const errorCountRef = useRef<number>(0);
+  const backoffActiveRef = useRef<boolean>(false);
 
   // Rate limiting function to prevent excessive edge function calls
   const throttledCheck = async () => {
     const now = Date.now();
+    
+    // Check if we're in backoff mode due to repeated errors
+    if (backoffActiveRef.current) {
+      console.log("Gmail connection check in backoff mode, using cached data");
+      return queryClient.getQueryData(['gmail-connection', user?.id]) || 
+        { connected: false, expired: false, hasRefreshToken: false };
+    }
+    
+    // Standard throttling check
     if (now - lastCheckRef.current < checkThrottleMs) {
       console.log("Gmail connection check throttled, using cached data");
       return queryClient.getQueryData(['gmail-connection', user?.id]) || 
@@ -42,24 +54,21 @@ export const useGmailConnectionStatus = ({
     setErrorMessage(null);
     
     try {
-      // Use GET request with query params for connection check
-      const url = new URL(`${supabase.functions.url('google-auth')}`);
-      url.searchParams.append('action', 'check-connection');
-      url.searchParams.append('userId', user?.id || '');
-      
-      const response = await fetch(url.toString(), {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabase.auth.session()?.access_token || ''}`
+      // Use correct method to call the edge function with query params
+      const { data, error } = await supabase.functions.invoke('google-auth', {
+        body: {
+          action: 'check-connection',
+          userId: user?.id || ''
         }
       });
       
-      if (!response.ok) {
-        throw new Error(`Server returned ${response.status}`);
-      }
+      // Reset error count on success
+      errorCountRef.current = 0;
+      backoffActiveRef.current = false;
       
-      const data = await response.json();
+      if (error) {
+        throw new Error(`Server returned an error: ${error.message}`);
+      }
       
       if (data?.error === 'Configuration error') {
         console.error("Configuration error:", data.message);
@@ -78,30 +87,40 @@ export const useGmailConnectionStatus = ({
           return { connected: false, expired: true, hasRefreshToken: true };
         }
         
-        // Re-fetch after refresh using the same throttling approach
-        const refreshUrl = new URL(`${supabase.functions.url('google-auth')}`);
-        refreshUrl.searchParams.append('action', 'check-connection');
-        refreshUrl.searchParams.append('userId', user?.id || '');
-        
-        const refreshResponse = await fetch(refreshUrl.toString(), {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${supabase.auth.session()?.access_token || ''}`
+        // Re-fetch after refresh
+        const { data: refreshData, error: refreshError } = await supabase.functions.invoke('google-auth', {
+          body: {
+            action: 'check-connection',
+            userId: user?.id || ''
           }
         });
         
-        if (!refreshResponse.ok) {
+        if (refreshError) {
           throw new Error("Failed to check connection after refresh");
         }
         
-        const refreshData = await refreshResponse.json();
         return refreshData || { connected: false, expired: false };
       }
       
       return data || { connected: false, expired: false };
     } catch (error: any) {
       console.error("Error in throttledCheck:", error);
+      
+      // Increase error count and potentially trigger backoff
+      errorCountRef.current += 1;
+      
+      if (errorCountRef.current >= maxErrorsBeforeBackoff) {
+        console.log(`Activating backoff after ${errorCountRef.current} consecutive errors`);
+        backoffActiveRef.current = true;
+        
+        // Reset backoff after 30 seconds
+        setTimeout(() => {
+          console.log("Resetting connection check backoff");
+          backoffActiveRef.current = false;
+          errorCountRef.current = 0;
+        }, 30000);
+      }
+      
       setErrorMessage(error.message || "Failed to check Gmail connection");
       return { connected: false, expired: false, hasRefreshToken: false };
     }

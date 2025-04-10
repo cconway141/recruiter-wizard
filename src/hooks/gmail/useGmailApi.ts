@@ -36,16 +36,13 @@ export const useGmailApi = (options: {
     try {
       console.log("useGmailApi: Checking Gmail connection for user", user.id);
       
-      // Fix TypeScript error: use string concatenation instead of URL constructor
-      const functionUrl = `${supabase.functions.url('google-auth')}?action=check-connection&userId=${user.id}`;
-      
-      const { data, error } = await fetch(functionUrl, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabase.auth.session()?.access_token || ''}`
+      // Use the correct method to call the edge function
+      const { data, error } = await supabase.functions.invoke('google-auth', {
+        body: {
+          action: 'check-connection',
+          userId: user.id
         }
-      }).then(r => r.json());
+      });
       
       if (error) {
         console.error("Error checking Gmail connection:", error);
