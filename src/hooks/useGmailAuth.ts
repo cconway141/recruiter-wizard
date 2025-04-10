@@ -71,8 +71,9 @@ export const useGmailAuth = () => {
         }
         
         return data;
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error in queryFn:", error);
+        setErrorMessage(error.message || "Failed to check Gmail connection");
         throw error;
       }
     },
@@ -80,19 +81,21 @@ export const useGmailAuth = () => {
     refetchOnWindowFocus: true,
     staleTime: 30 * 1000, // 30 seconds - reduced to ensure more frequent checks
     refetchInterval: 60 * 1000, // Refresh every minute
+    retry: 1, // Limit retries to prevent flooding with requests
   });
 
   useEffect(() => {
     if (error) {
-      setErrorMessage((error as Error).message);
+      const errorMsg = error instanceof Error ? error.message : "Unknown error checking Gmail connection";
+      setErrorMessage(errorMsg);
     }
   }, [error]);
 
   // Set error message when connection fails
   useEffect(() => {
-    if (!isCheckingGmail && !connectionInfo?.connected) {
+    if (!isCheckingGmail && connectionInfo && !connectionInfo.connected) {
       setErrorMessage("Gmail connection not established");
-    } else {
+    } else if (!isCheckingGmail && connectionInfo && connectionInfo.connected) {
       setErrorMessage(null);
     }
   }, [connectionInfo, isCheckingGmail]);
@@ -141,6 +144,41 @@ export const useGmailAuth = () => {
     }
   };
 
+  const disconnectGmail = async (): Promise<boolean> => {
+    if (!user) return false;
+    
+    try {
+      console.log("Disconnecting Gmail...");
+      const { data, error } = await supabase.functions.invoke('google-auth', {
+        body: {
+          action: 'disconnect',
+          userId: user.id
+        }
+      });
+      
+      if (error) {
+        console.error("Error disconnecting Gmail:", error);
+        setErrorMessage("Failed to disconnect Gmail. Please try again.");
+        return false;
+      }
+      
+      // Force refresh the connection status
+      queryClient.invalidateQueries({ queryKey: ['gmail-connection', user?.id] });
+      console.log("Gmail disconnected successfully");
+      
+      toast({
+        title: "Gmail Disconnected",
+        description: "Your Gmail account has been disconnected successfully."
+      });
+      
+      return true;
+    } catch (error) {
+      console.error("Error disconnecting Gmail:", error);
+      setErrorMessage("Failed to disconnect Gmail. Please try again.");
+      return false;
+    }
+  };
+
   console.log("Current Gmail connection status in hook:", connectionInfo?.connected && !connectionInfo?.expired);
 
   return {
@@ -148,6 +186,7 @@ export const useGmailAuth = () => {
     isCheckingGmail,
     errorMessage,
     checkGmailConnection,
-    refreshGmailToken
+    refreshGmailToken,
+    disconnectGmail
   };
 };
