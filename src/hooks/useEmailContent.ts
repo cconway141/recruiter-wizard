@@ -41,9 +41,9 @@ export const useEmailContent = ({
     const jobTitle_placeholder = '{job_title}';
     const userSignature_placeholder = '{user_signature}';
     
-    // Handle different property names in MessageTemplate type
-    let subject = template.subject || template.title || '';
-    let body = template.content || template.message || '';
+    // Use the correct property names from MessageTemplate
+    let subject = template.situation || ''; // Use situation as the subject/title
+    let body = template.message || ''; // Use message as the content/body
     
     // Replace candidate name
     if (candidateName) {

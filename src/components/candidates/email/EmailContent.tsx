@@ -44,8 +44,8 @@ export const EmailContent: React.FC<EmailContentProps> = ({
   const getTemplateContent = () => {
     if (selectedTemplate && selectedTemplate !== "custom" && emailTemplates) {
       const template = emailTemplates.find(t => t.id === selectedTemplate);
-      if (template && (template.message || template.content)) {
-        let content = (template.message || template.content || '').replace(/\[First Name\]/g, candidateName.split(' ')[0]).replace(/\[Full Name\]/g, candidateName);
+      if (template && template.message) {
+        let content = template.message.replace(/\[First Name\]/g, candidateName.split(' ')[0]).replace(/\[Full Name\]/g, candidateName);
         return content;
       }
     }
