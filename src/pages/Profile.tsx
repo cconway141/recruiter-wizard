@@ -57,8 +57,9 @@ const Profile = () => {
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [gmailRefreshAttempted, setGmailRefreshAttempted] = useState(false);
 
-  // Force refresh Gmail status on component mount and when URL has gmail_connected param
+  // Separate Gmail refresh effect from the main profile effect
   useEffect(() => {
     try {
       // Check URL parameters for Gmail connection status
@@ -84,16 +85,27 @@ const Profile = () => {
         }
       }
       
-      // Invalidate Gmail connection query to force refresh
-      if (user?.id) {
-        queryClient.invalidateQueries({ queryKey: ['gmail-connection', user.id] });
-        setIsInitialized(true);
-      }
+      setIsInitialized(true);
     } catch (error) {
-      console.error("Error refreshing Gmail connection:", error);
+      console.error("Error processing URL parameters:", error);
       setIsInitialized(true);
     }
-  }, [user?.id, queryClient, toast]);
+  }, [toast]);
+  
+  // Separate effect for Gmail query invalidation
+  useEffect(() => {
+    if (user?.id && !gmailRefreshAttempted) {
+      try {
+        // Use setTimeout to defer this operation after initial render
+        setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ['gmail-connection', user.id] });
+          setGmailRefreshAttempted(true);
+        }, 500);
+      } catch (error) {
+        console.error("Error refreshing Gmail connection:", error);
+      }
+    }
+  }, [user?.id, queryClient, gmailRefreshAttempted]);
 
   // Get profile data
   const { data: profile, isLoading: profileLoading, error: profileError } = useQuery({

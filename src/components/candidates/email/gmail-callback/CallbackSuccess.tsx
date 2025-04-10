@@ -13,10 +13,24 @@ export const CallbackSuccess: React.FC<CallbackSuccessProps> = ({
   const navigate = useNavigate();
   
   useEffect(() => {
+    // Clear any connection progress flags
+    try {
+      sessionStorage.removeItem('gmailConnectionInProgress');
+      sessionStorage.removeItem('gmailConnectionAttemptTime');
+    } catch (error) {
+      console.error("Error clearing session storage:", error);
+    }
+    
     // Set up redirection after a delay
     const redirectTimer = setTimeout(() => {
-      // Use navigation to avoid page refresh
-      navigate('/profile?gmail_connected=true');
+      try {
+        // Use navigation to avoid page refresh
+        navigate('/profile?gmail_connected=true');
+      } catch (error) {
+        console.error("Error during navigation:", error);
+        // Fallback to window location if navigation fails
+        window.location.href = '/profile?gmail_connected=true';
+      }
     }, redirectDelay);
     
     return () => clearTimeout(redirectTimer);

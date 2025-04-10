@@ -23,7 +23,7 @@ export const useGmailConnectionStatus = ({ onConnectionChange }: UseGmailConnect
     queryKey: ['gmail-connection', user?.id],
     queryFn: async () => {
       if (!user) {
-        throw new Error("You must be logged in to use Gmail integration");
+        return { connected: false, expired: false, hasRefreshToken: false };
       }
       
       setErrorMessage(null);
@@ -44,13 +44,14 @@ export const useGmailConnectionStatus = ({ onConnectionChange }: UseGmailConnect
         }
         
         if (data?.error === 'Configuration error') {
-          throw new Error(data.message || 'Google OAuth is not properly configured');
+          console.error("Configuration error:", data.message);
+          return { connected: false, expired: false, hasRefreshToken: false, configError: data.message };
         }
         
         // Log connection status for debugging
         console.log("Gmail connection status from API:", data);
         
-        if (data.needsRefresh) {
+        if (data?.needsRefresh) {
           console.log("Gmail token needs refresh, refreshing...");
           await refreshGmailToken();
           // Re-fetch after refresh
@@ -60,17 +61,18 @@ export const useGmailConnectionStatus = ({ onConnectionChange }: UseGmailConnect
           
           if (refreshResult.error) {
             console.error("Error after refreshing token:", refreshResult.error);
-            throw new Error("Failed to verify refreshed connection");
+            return { connected: false, expired: true, hasRefreshToken: true };
           }
           
-          return refreshResult.data;
+          return refreshResult.data || { connected: false, expired: false };
         }
         
-        return data;
+        return data || { connected: false, expired: false };
       } catch (error: any) {
         console.error("Error in queryFn:", error);
         setErrorMessage(error.message || "Failed to check Gmail connection");
-        throw error;
+        // Return a safe default value instead of throwing
+        return { connected: false, expired: false, hasRefreshToken: false };
       }
     },
     enabled: !!user,

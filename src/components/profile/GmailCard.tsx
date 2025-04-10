@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { MailCheck, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,8 @@ export const GmailCard: React.FC = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [connectionAttemptTime, setConnectionAttemptTime] = useState<number | null>(null);
+  const [errorOccurred, setErrorOccurred] = useState(false);
+  
   const { 
     isConnected: isGmailConnected, 
     isLoading: isCheckingGmail, 
@@ -54,17 +57,29 @@ export const GmailCard: React.FC = () => {
           }
         }
       }
-      
-      if (user?.id) {
-        console.log("Forcing Gmail connection check on GmailCard mount");
-        checkGmailConnection();
-        queryClient.invalidateQueries({ queryKey: ['gmail-connection', user.id] });
-        queryClient.invalidateQueries({ queryKey: ['gmail-connection'] });
-      }
     } catch (error) {
       console.error("Error in GmailCard useEffect:", error);
+      setErrorOccurred(true);
     }
-  }, [user, queryClient, toast, checkGmailConnection]);
+  }, [user, queryClient, toast]);
+  
+  // Separate the Gmail connection check to prevent crashes
+  useEffect(() => {
+    if (user?.id) {
+      setTimeout(() => {
+        try {
+          console.log("Checking Gmail connection on GmailCard mount");
+          checkGmailConnection().catch(err => {
+            console.error("Error checking Gmail connection:", err);
+            setErrorOccurred(true);
+          });
+        } catch (error) {
+          console.error("Error in Gmail check effect:", error);
+          setErrorOccurred(true);
+        }
+      }, 100);
+    }
+  }, [user?.id, checkGmailConnection]);
   
   const forceRefreshGmailStatus = () => {
     try {
@@ -76,13 +91,15 @@ export const GmailCard: React.FC = () => {
         });
         
         queryClient.invalidateQueries({ queryKey: ['gmail-connection', user.id] });
-        queryClient.invalidateQueries({ queryKey: ['gmail-connection'] });
         
         sessionStorage.removeItem('gmailConnectionInProgress');
         sessionStorage.removeItem('gmailConnectionAttemptTime');
         setConnectionAttemptTime(null);
         
-        checkGmailConnection();
+        checkGmailConnection().catch(err => {
+          console.error("Error checking Gmail connection:", err);
+          setErrorOccurred(true);
+        });
       }
     } catch (error) {
       console.error("Error refreshing Gmail status:", error);
@@ -91,6 +108,7 @@ export const GmailCard: React.FC = () => {
         description: "Failed to refresh connection status",
         variant: "destructive"
       });
+      setErrorOccurred(true);
     }
   };
   
@@ -98,7 +116,7 @@ export const GmailCard: React.FC = () => {
 
   console.log("Current Gmail connection status in GmailCard:", isGmailConnected);
 
-  if (isCheckingGmail) {
+  if (isCheckingGmail && !errorOccurred) {
     return (
       <Card>
         <CardHeader>
@@ -136,6 +154,17 @@ export const GmailCard: React.FC = () => {
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Connection Error</AlertTitle>
             <AlertDescription>{errorMessage}</AlertDescription>
+          </Alert>
+        )}
+        
+        {errorOccurred && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Connection Error</AlertTitle>
+            <AlertDescription>
+              There was a problem checking your Gmail connection status.
+              Please try refreshing the status or reconnecting your account.
+            </AlertDescription>
           </Alert>
         )}
         
