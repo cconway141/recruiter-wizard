@@ -6,9 +6,8 @@ import { Navbar } from "@/components/layout/Navbar";
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useJobs } from "@/contexts/JobContext";
-import { JobProvider } from "@/contexts/JobContext";
 
-const IndexContent = () => {
+const Index = () => {
   const location = useLocation();
   const { loadFromSupabase } = useJobs();
   const refreshingRef = useRef(false);
@@ -53,14 +52,6 @@ const IndexContent = () => {
         <JobsTable />
       </main>
     </div>
-  );
-};
-
-const Index = () => {
-  return (
-    <JobProvider>
-      <IndexContent />
-    </JobProvider>
   );
 };
 

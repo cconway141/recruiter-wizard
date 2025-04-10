@@ -1,6 +1,6 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Mail, AlertCircle, Loader2 } from "lucide-react";
+import { Mail, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -33,11 +33,6 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
         
         if (error) {
           console.error("Error checking Gmail connection:", error);
-          toast({
-            title: "Error",
-            description: "Failed to check Gmail connection status",
-            variant: "destructive",
-          });
           return;
         }
         
@@ -46,16 +41,14 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
           return;
         }
         
-        const connected = data.connected && !data.expired && data.tokenPresent;
-        setIsConnected(connected);
+        setIsConnected(data.connected && !data.expired);
         
         if (data.needsRefresh) {
-          console.log("Token needs refresh, refreshing...");
           await refreshToken();
         }
         
         if (onConnectionChange) {
-          onConnectionChange(connected);
+          onConnectionChange(data.connected && !data.expired);
         }
       } catch (error) {
         console.error("Error checking Gmail connection:", error);
@@ -65,42 +58,22 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
     };
     
     checkGmailConnection();
-  }, [user, onConnectionChange, toast]);
+  }, [user, onConnectionChange]);
   
   const refreshToken = async () => {
-    if (!user) return false;
+    if (!user) return;
     
     try {
-      console.log("Refreshing token...");
       const { data, error } = await supabase.functions.invoke('google-auth/refresh-token', {
         body: { userId: user.id }
       });
       
       if (error) {
         console.error("Error refreshing token:", error);
-        toast({
-          title: "Error",
-          description: "Failed to refresh your Gmail token",
-          variant: "destructive",
-        });
         return false;
       }
       
-      if (data?.error) {
-        console.error("Error from refresh token endpoint:", data.error);
-        toast({
-          title: "Error",
-          description: data.error,
-          variant: "destructive",
-        });
-        return false;
-      }
-      
-      console.log("Token refreshed successfully");
       setIsConnected(true);
-      if (onConnectionChange) {
-        onConnectionChange(true);
-      }
       return true;
     } catch (error) {
       console.error("Error refreshing token:", error);
@@ -146,13 +119,6 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
         return;
       }
       
-      console.log("Redirecting to Google auth:", data.url);
-      toast({
-        title: "Connecting to Gmail",
-        description: "You will be redirected to Google to authorize access.",
-      });
-      
-      // Redirect to Google auth page
       window.location.href = data.url;
     } catch (error) {
       console.error("Error connecting Gmail:", error);
@@ -178,9 +144,17 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
       
       if (revokeError) {
         console.error("Error revoking token:", revokeError);
+      }
+      
+      const { error } = await supabase.rpc('delete_gmail_token', {
+        user_id_param: user.id
+      });
+      
+      if (error) {
+        console.error("Error disconnecting Gmail:", error);
         toast({
           title: "Error",
-          description: "Failed to revoke Gmail access. Please try again.",
+          description: "Failed to disconnect Gmail. Please try again.",
           variant: "destructive",
         });
         return;
@@ -230,17 +204,8 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
       onClick={isConnected ? disconnectGmail : connectGmail}
       disabled={isLoading}
     >
-      {isLoading ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
-      ) : (
-        <Mail className="h-4 w-4" />
-      )}
-      {isLoading 
-        ? "Loading..." 
-        : isConnected 
-          ? "Gmail Connected" 
-          : "Connect Gmail"
-      }
+      <Mail className="h-4 w-4" />
+      {isLoading ? "Loading..." : isConnected ? "Gmail Connected" : "Connect Gmail"}
     </Button>
   );
 };

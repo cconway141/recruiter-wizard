@@ -1,188 +1,91 @@
 
-import React, { useEffect, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
+// Custom Google icon component
+const Google = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" />
+    <path d="M17.24 14.32C16.24 17.36 13.28 19.26 9.98 18.87C7.2 18.54 4.93 16.47 4.36 13.75C3.63 10.17 5.91 6.79 9.39 5.91C11.19 5.46 12.89 5.73 14.33 6.6C14.96 7 15.5 7.57 16.03 8.14C15.38 8.78 14.76 9.41 14.12 10.05C13.58 9.53 12.95 9.07 12.2 8.86C10.33 8.32 8.3 9.36 7.64 11.17C6.94 13.08 7.89 15.29 9.74 16.08C11.61 16.96 13.98 16.15 14.9 14.24H12.32V11.95H17.28C17.38 12.74 17.41 13.54 17.24 14.32Z" />
+  </svg>
+);
+
 const Auth = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const [isProcessingAuth, setIsProcessingAuth] = useState(false);
-  const [imagesLoaded, setImagesLoaded] = useState({
-    logo: false,
-    googleIcon: false
-  });
-  
-  // Enhanced logging for debugging
+
   useEffect(() => {
-    console.log("Current URL:", window.location.href);
-    console.log("Location object:", location);
-    console.log("Origin:", window.location.origin);
-  }, [location]);
-  
-  useEffect(() => {
-    const handleAuth = async () => {
-      try {
-        setIsProcessingAuth(true);
-        
-        // Check for access_token in URL hash
-        if (location.hash && location.hash.includes('access_token')) {
-          console.log("Found access_token in URL hash, attempting to process");
-          
-          // Let Supabase handle the auth tokens from hash
-          const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-          
-          if (sessionError) {
-            console.error('Error getting session from hash params:', sessionError);
-            toast({
-              title: "Authentication failed",
-              description: sessionError.message,
-              variant: "destructive"
-            });
-          } else if (sessionData.session) {
-            console.log("Successfully processed hash, user is authenticated");
-            
-            // Clean up the URL by removing the hash
-            window.history.replaceState(null, document.title, window.location.pathname);
-            
-            // Authentication successful, redirect to home page
-            toast({
-              title: "Authentication successful",
-              description: "You are now signed in!"
-            });
-            
-            navigate('/');
-            return;
-          } else {
-            console.log("No session found after processing hash");
-          }
-        }
-        
-        // If there's no hash or hash processing didn't result in a session,
-        // check if the user is already logged in
-        const { data } = await supabase.auth.getSession();
-        if (data.session) {
-          console.log("User already has a valid session");
-          navigate("/");
-          return;
-        }
-      } catch (err) {
-        console.error('Error in auth process:', err);
-        toast({
-          title: "Authentication error",
-          description: "An unexpected error occurred",
-          variant: "destructive"
-        });
-      } finally {
-        setIsProcessingAuth(false);
+    // Check if user is already logged in
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        navigate("/");
       }
     };
-
-    handleAuth();
-  }, [navigate, location]);
+    
+    checkSession();
+  }, [navigate]);
 
   const handleGoogleSignIn = async () => {
     try {
-      // Get current URL for the redirect - use the actual production URL if available
-      // This is crucial for proper redirection after Google auth
-      let redirectTo = "";
-      
-      // First check if we're on our production domain
-      if (window.location.hostname === "recruit.theitbootcamp.com") {
-        redirectTo = "https://recruit.theitbootcamp.com/auth/callback";
-      } else {
-        // Fallback to current origin (will handle Lovable preview URLs)
-        redirectTo = `${window.location.origin}/auth/callback`;
-      }
-      
-      console.log("Redirecting to Google with callback URL:", redirectTo);
-      
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: redirectTo,
+          redirectTo: `${window.location.origin}/auth/callback`,
           queryParams: {
             access_type: 'offline',
-            prompt: 'consent'
+            prompt: 'consent',
           }
         }
       });
       
       if (error) {
-        console.error("Google sign in error:", error);
         toast({
           title: "Google sign in failed",
           description: error.message,
-          variant: "destructive"
+          variant: "destructive",
         });
-      } else {
-        console.log("Redirecting to Google OAuth...");
       }
     } catch (error: any) {
-      console.error("Error initiating Google sign in:", error);
       toast({
         title: "Google sign in failed",
         description: error.message,
-        variant: "destructive"
+        variant: "destructive",
       });
     }
-  };
-
-  const handleImageLoad = (imageType: 'logo' | 'googleIcon') => {
-    setImagesLoaded(prev => ({
-      ...prev,
-      [imageType]: true
-    }));
   };
 
   return (
     <div className="flex justify-center items-center min-h-screen bg-gray-50">
       <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1 flex flex-col items-center">
-          <div className="w-32 h-32 flex items-center justify-center overflow-hidden transition-opacity duration-300" 
-               style={{ opacity: imagesLoaded.logo ? 1 : 0.7 }}>
-            <img 
-              src="/lovable-uploads/c52867a5-bcb6-4787-a1d0-6dafe3716176.png" 
-              alt="Company Logo" 
-              className="w-32 h-32 object-contain"
-              loading="lazy"
-              onLoad={() => handleImageLoad('logo')}
-            />
-          </div>
-          <CardTitle className="text-2xl font-bold text-center">ITBC Recruitment Portal</CardTitle>
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold text-center">Message Master</CardTitle>
           <CardDescription className="text-center">
-            Sign in with Google to access this application
+            Sign in with Google to access the application
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex justify-center flex-col items-center">
-          {isProcessingAuth ? (
-            <div className="flex items-center justify-center py-4">
-              <div className="w-6 h-6 border-2 border-t-blue-500 border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin mr-2"></div>
-              <span>Processing authentication...</span>
-            </div>
-          ) : (
-            <>
-              <Button 
-                onClick={handleGoogleSignIn} 
-                className="w-full bg-blue-900 hover:bg-blue-950 text-white flex items-center justify-center gap-2" 
-                variant="default"
-              >
-                Sign in with Google
-              </Button>
-              <div className="w-16 h-16 flex items-center justify-center overflow-hidden transition-opacity duration-300 mt-4"
-                   style={{ opacity: imagesLoaded.googleIcon ? 1 : 0.7 }}>
-                <img 
-                  src="/lovable-uploads/84c3c664-fba4-4005-985a-802a5ae8353d.png" 
-                  alt="Google Logo" 
-                  className="w-16 h-16 object-contain"
-                  loading="lazy"
-                  onLoad={() => handleImageLoad('googleIcon')}
-                />
-              </div>
-            </>
-          )}
+        <CardContent className="flex justify-center">
+          <Button 
+            onClick={handleGoogleSignIn} 
+            className="w-full flex items-center justify-center gap-2" 
+            variant="outline"
+          >
+            <Google />
+            Sign in with Google
+          </Button>
         </CardContent>
       </Card>
     </div>
