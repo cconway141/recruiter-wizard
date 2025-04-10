@@ -57,7 +57,7 @@ export const useEmailDialogState = ({
     }, 100);
   }, [checkGmailConnection, candidateName, candidateEmail, jobId, candidateFacingTitle, candidateId, threadId, threadTitle]);
 
-  // Use our new hooks
+  // Use our hooks with proper logging
   const { subject, setSubject } = useEmailSubject({
     candidateName,
     candidateFacingTitle,
@@ -68,6 +68,10 @@ export const useEmailDialogState = ({
     candidateName,
     jobTitle: candidateFacingTitle
   });
+
+  useEffect(() => {
+    console.log(`Email template state: template=${selectedTemplate}, bodyLength=${body?.length || 0}`);
+  }, [selectedTemplate, body]);
 
   const { messageId, handleOpenThreadInGmail } = useGmailThread({
     candidateId,

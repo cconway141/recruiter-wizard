@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from "react";
-import { useEmailContent } from "@/hooks/useEmailContent";
+import { useMessageTemplates } from "@/hooks/useMessageTemplates";
 
 interface UseEmailTemplateProps {
   candidateName: string;
@@ -16,25 +15,40 @@ export const useEmailTemplate = ({
   const [selectedTemplate, setSelectedTemplate] = useState(initialTemplate);
   const [body, setBody] = useState("");
 
-  const { emailTemplates, getEmailContent } = useEmailContent({
-    candidateName,
-    jobTitle,
-    selectedTemplate,
-  });
+  const { templates: emailTemplates, loading: templatesLoading } = useMessageTemplates();
 
+  // Effect to set the body content when template changes
   useEffect(() => {
-    const content = getEmailContent();
-    if (content) {
-      setBody(content.body || "");
+    if (!templatesLoading && emailTemplates && emailTemplates.length > 0) {
+      const template = emailTemplates.find(t => t.id === selectedTemplate);
+      
+      if (template && template.message) {
+        // Apply proper replacements
+        let content = template.message;
+        if (candidateName) {
+          content = content.replace(/\[First Name\]/g, candidateName.split(' ')[0]);
+          content = content.replace(/\[Full Name\]/g, candidateName);
+        }
+        
+        if (jobTitle) {
+          content = content.replace(/\[Title\]/g, jobTitle);
+          content = content.replace(/\[Job Title\]/g, jobTitle);
+        }
+        
+        setBody(content);
+        console.log(`Template selected: ${selectedTemplate}, content length: ${content.length}`);
+      } else if (selectedTemplate === "custom") {
+        // Keep the current body for custom templates
+        console.log("Custom template selected, keeping current body");
+      } else {
+        console.warn(`Template ${selectedTemplate} not found or has no content`);
+      }
     }
-  }, [getEmailContent, selectedTemplate]);
+  }, [selectedTemplate, emailTemplates, templatesLoading, candidateName, jobTitle]);
 
   const handleTemplateChange = (template: string) => {
+    console.log(`Changing template to: ${template}`);
     setSelectedTemplate(template);
-    const content = getEmailContent(template);
-    if (content) {
-      setBody(content.body || "");
-    }
   };
 
   return {

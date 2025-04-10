@@ -54,7 +54,7 @@ export const useEmailSending = ({
       return;
     }
 
-    if (!body.trim()) {
+    if (!body?.trim()) {
       toast({
         title: "Email is empty",
         description: "Please enter some content before sending.",
@@ -79,6 +79,7 @@ export const useEmailSending = ({
       console.group("EMAIL SENDING PROCESS");
       console.log("Sending email to:", candidateEmail);
       console.log("Subject:", subject);
+      console.log("Body length:", body.length);
       console.log("Candidate:", candidateName);
       console.log("Job Title:", candidateFacingTitle || "USING DEFAULT: General Position");
       console.log("Thread ID:", threadId || "NEW THREAD");
@@ -110,7 +111,7 @@ export const useEmailSending = ({
           .from('candidates')
           .select('thread_ids')
           .eq('id', candidateId)
-          .single();
+          .maybeSingle();
           
         // Create a safe default empty object if there are no thread IDs
         const existingThreadIds = (data?.thread_ids || {}) as Record<string, any>;

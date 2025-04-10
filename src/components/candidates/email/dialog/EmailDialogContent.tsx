@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { EmailTemplateSelector } from "../EmailTemplateSelector";
 
 interface EmailDialogContentProps {
@@ -23,6 +23,16 @@ export const EmailDialogContent: React.FC<EmailDialogContentProps> = ({
   onSubjectChange,
   onBodyChange,
 }) => {
+  // Add debug logging
+  useEffect(() => {
+    console.log("EmailDialogContent rendered with: ", {
+      selectedTemplate,
+      templateCount: emailTemplates?.length || 0,
+      subject: subject?.substring(0, 20) + "...",
+      bodyLength: body?.length || 0
+    });
+  }, [selectedTemplate, emailTemplates, subject, body]);
+
   return (
     <div className="space-y-4">
       {!threadId && (
@@ -31,7 +41,10 @@ export const EmailDialogContent: React.FC<EmailDialogContentProps> = ({
           <EmailTemplateSelector
             templates={emailTemplates || []}
             selectedTemplate={selectedTemplate}
-            onSelectTemplate={onTemplateChange}
+            onSelectTemplate={(newTemplate) => {
+              console.log(`Template selected in dialog: ${newTemplate}`);
+              onTemplateChange(newTemplate);
+            }}
           />
         </div>
       )}
