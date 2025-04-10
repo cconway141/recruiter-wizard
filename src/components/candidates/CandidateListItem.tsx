@@ -37,6 +37,27 @@ export const CandidateListItem: React.FC<CandidateListItemProps> = ({
     setEmailDialogOpen(true);
   };
 
+  // Get first thread ID if available
+  const getFirstThreadId = (): string | null => {
+    if (!candidate.threadIds) return null;
+    
+    // Check if threadIds exists and has at least one entry
+    const threadEntries = Object.entries(candidate.threadIds);
+    if (threadEntries.length === 0) return null;
+    
+    // Get the first entry
+    const [, firstThread] = threadEntries[0];
+    
+    // Handle both legacy (string) and new format (object with threadId property)
+    if (typeof firstThread === 'string') {
+      return firstThread;
+    } else if (typeof firstThread === 'object' && firstThread !== null) {
+      return firstThread.threadId || null;
+    }
+    
+    return null;
+  };
+
   return (
     <>
       <div className="grid grid-cols-8 gap-2 items-center p-2 rounded hover:bg-gray-50">
@@ -105,7 +126,7 @@ export const CandidateListItem: React.FC<CandidateListItemProps> = ({
         onClose={() => setEmailDialogOpen(false)}
         candidateName={candidate.name}
         candidateEmail={candidate.email}
-        threadId={candidate.threadIds ? Object.values(candidate.threadIds)[0] : null}
+        threadId={getFirstThreadId()}
       />
     </>
   );

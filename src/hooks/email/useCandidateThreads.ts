@@ -88,12 +88,28 @@ export const useCandidateThreads = () => {
         .eq('id', candidateId)
         .single();
         
-      if (error || !data || !data.thread_ids) {
+      if (error || !data) {
+        console.error("Error retrieving thread data:", error);
+        return null;
+      }
+      
+      // Safely parse thread_ids
+      let threadIds: Record<string, any> = {};
+      try {
+        // Check if thread_ids is a string and needs parsing
+        if (typeof data.thread_ids === 'string') {
+          threadIds = JSON.parse(data.thread_ids || '{}');
+        } else {
+          // Already an object
+          threadIds = data.thread_ids || {};
+        }
+      } catch (parseError) {
+        console.error("Error parsing thread_ids:", parseError);
         return null;
       }
       
       // Handle both legacy format and new format
-      const threadInfo = data.thread_ids[jobId];
+      const threadInfo = threadIds[jobId];
       
       if (!threadInfo) {
         return null;

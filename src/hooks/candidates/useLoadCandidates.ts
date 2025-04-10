@@ -77,8 +77,20 @@ export function useLoadCandidates(
       const mappedCandidates = candidatesData.map(candidate => {
         const application = applications.find(app => app.candidate_id === candidate.id);
         
-        // Access thread_ids from the candidate data
-        const threadIds = candidate.thread_ids || {};
+        // Safely parse thread_ids from JSON
+        let threadIds: Record<string, any> = {};
+        try {
+          // Check if thread_ids is a string and needs parsing
+          if (typeof candidate.thread_ids === 'string') {
+            threadIds = JSON.parse(candidate.thread_ids || '{}');
+          } else {
+            // Already an object
+            threadIds = candidate.thread_ids || {};
+          }
+        } catch (error) {
+          console.error(`Error parsing thread_ids for candidate ${candidate.id}:`, error);
+          threadIds = {};
+        }
         
         return {
           id: candidate.id,
