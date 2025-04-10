@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
@@ -50,9 +51,11 @@ serve(async (req) => {
       );
     }
 
-    // Always ensure the subject line follows the correct format: "ITBC Candidate Facing Title Candidate Full Name"
-    const emailSubject = subject || `ITBC ${jobTitle || ''} ${candidateName}`;
-    console.log(`Email subject: "${emailSubject}"`);
+    // FIXED: Ensure the subject follows the correct format - explicitly set it here
+    // regardless of what's passed in from the client to ensure consistency
+    const formattedJobTitle = jobTitle ? jobTitle.trim() : '';
+    const emailSubject = `ITBC ${formattedJobTitle} ${candidateName}`.trim();
+    console.log(`Email subject (enforced format): "${emailSubject}"`);
 
     // Always CC the recruitment team
     const emailCC = cc || "recruitment@theitbc.com";
@@ -96,7 +99,7 @@ serve(async (req) => {
     let emailLines = [
       `To: ${to}`,
       `Cc: ${emailCC}`, // Always include recruitment CC
-      `Subject: ${emailSubject}`,
+      `Subject: ${emailSubject}`, // Using our enforced format
       'MIME-Version: 1.0',
       'Content-Type: text/html; charset=utf-8',
     ];
@@ -182,7 +185,8 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         message: `Email sent to ${candidateName} at ${to} with CC to ${emailCC}`,
-        threadId: newThreadId
+        threadId: newThreadId,
+        subject: emailSubject // Return the enforced subject for confirmation
       }),
       { 
         status: 200, 

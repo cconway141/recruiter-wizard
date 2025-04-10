@@ -78,8 +78,8 @@ export const useGmailAuth = () => {
     },
     enabled: !!user,
     refetchOnWindowFocus: true,
-    staleTime: 1 * 60 * 1000, // 1 minute - reduced to ensure more frequent checks
-    refetchInterval: 2 * 60 * 1000, // Refresh every 2 minutes
+    staleTime: 30 * 1000, // 30 seconds - reduced to ensure more frequent checks
+    refetchInterval: 60 * 1000, // Refresh every minute
   });
 
   useEffect(() => {

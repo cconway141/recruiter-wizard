@@ -89,8 +89,10 @@ export const useEmailActions = ({
         return;
       }
       
-      // Format the email subject consistently
-      const formattedSubject = `ITBC ${jobTitle || ''} ${candidate.name}`.trim();
+      // FIXED: Format the email subject consistently - no spaces before or after ITBC
+      const formattedJobTitle = jobTitle ? jobTitle.trim() : '';
+      const formattedSubject = `ITBC ${formattedJobTitle} ${candidate.name}`.trim();
+      console.log("Sending email with subject:", formattedSubject);
       
       // Send the email
       const newThreadId = await sendEmailViaGmail({
@@ -98,7 +100,7 @@ export const useEmailActions = ({
         subject: formattedSubject,
         body,
         candidateName: candidate.name,
-        jobTitle,
+        jobTitle: formattedJobTitle,
         threadId
       });
       
@@ -138,7 +140,9 @@ export const useEmailActions = ({
       return;
     }
     
-    const formattedSubject = `ITBC ${jobTitle || ''} ${candidate.name}`.trim();
+    // FIXED: Format the email subject consistently - no spaces before or after ITBC
+    const formattedJobTitle = jobTitle ? jobTitle.trim() : '';
+    const formattedSubject = `ITBC ${formattedJobTitle} ${candidate.name}`.trim();
     
     composeEmailInGmail({
       to: candidate.email,
@@ -150,7 +154,9 @@ export const useEmailActions = ({
   };
   
   const openThreadInGmailSearch = () => {
-    const formattedSubject = `ITBC ${jobTitle || ''} ${candidate.name}`.trim();
+    // FIXED: Format the email subject consistently - no spaces before or after ITBC
+    const formattedJobTitle = jobTitle ? jobTitle.trim() : '';
+    const formattedSubject = `ITBC ${formattedJobTitle} ${candidate.name}`.trim();
     openThreadInGmail(formattedSubject);
   };
 

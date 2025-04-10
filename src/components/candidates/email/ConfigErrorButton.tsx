@@ -17,6 +17,8 @@ export const ConfigErrorButton: React.FC<ConfigErrorButtonProps> = ({
   onClick,
   onDisconnect
 }) => {
+  console.log("ConfigErrorButton: isConnected =", isConnected);
+  
   if (isConnected) {
     return (
       <div className="flex flex-col gap-2">
