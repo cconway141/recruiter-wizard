@@ -12,7 +12,7 @@ export const CallbackSuccess: React.FC<CallbackSuccessProps> = ({
   useEffect(() => {
     // Set up redirection after a delay
     const redirectTimer = setTimeout(() => {
-      // Redirect to profile page with success parameter
+      // Use proper format for the redirect URL with success parameter
       window.location.href = `${window.location.origin}/profile?gmail_connected=true`;
     }, redirectDelay);
     

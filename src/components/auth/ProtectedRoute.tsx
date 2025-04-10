@@ -16,7 +16,12 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   useEffect(() => {
     // Once the auth state is no longer loading, we can stop checking
     if (!loading) {
-      setIsChecking(false);
+      // Add a small delay to ensure auth context is fully initialized
+      const timer = setTimeout(() => {
+        setIsChecking(false);
+      }, 300);
+      
+      return () => clearTimeout(timer);
     }
   }, [loading]);
 
@@ -32,8 +37,11 @@ export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
   if (!user) {
     // Redirect to auth page if not authenticated
+    console.log("User not authenticated, redirecting to /auth");
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
+  // User is authenticated, render the protected content
+  console.log("User authenticated, rendering protected content");
   return <>{children}</>;
 };

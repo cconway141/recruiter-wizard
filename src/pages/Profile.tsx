@@ -57,6 +57,42 @@ const Profile = () => {
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
 
+  // Force refresh Gmail status on component mount and when URL has gmail_connected param
+  useEffect(() => {
+    try {
+      // Check URL parameters for Gmail connection status
+      const urlParams = new URLSearchParams(window.location.search);
+      const gmailConnected = urlParams.get('gmail_connected');
+      
+      if (gmailConnected) {
+        // Clear URL params without page refresh
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        // Show appropriate toast notification
+        if (gmailConnected === 'true') {
+          toast({
+            title: "Gmail Connected",
+            description: "Your Gmail account has been connected successfully!",
+          });
+        } else if (gmailConnected === 'false') {
+          toast({
+            title: "Connection Failed",
+            description: "Failed to connect to Gmail. Please try again.",
+            variant: "destructive",
+          });
+        }
+      }
+      
+      // Invalidate Gmail connection query to force refresh
+      if (user?.id) {
+        queryClient.invalidateQueries({ queryKey: ['gmail-connection', user.id] });
+      }
+    } catch (error) {
+      console.error("Error refreshing Gmail connection:", error);
+    }
+  }, [user?.id, queryClient, toast]);
+
+  // Get profile data
   const { data: profile, isLoading: profileLoading, error: profileError } = useQuery({
     queryKey: ['profile', user?.id],
     queryFn: async () => {
@@ -80,17 +116,7 @@ const Profile = () => {
     enabled: !!user?.id
   });
 
-  // Force refresh Gmail status on component mount
-  useEffect(() => {
-    try {
-      if (user?.id) {
-        queryClient.invalidateQueries({ queryKey: ['gmail-connection', user.id] });
-      }
-    } catch (error) {
-      console.error("Error refreshing Gmail connection:", error);
-    }
-  }, [user?.id, queryClient]);
-
+  // Initialize form with profile data
   const form = useForm<EmailSignatureFormValues>({
     resolver: zodResolver(emailSignatureSchema),
     defaultValues: {
