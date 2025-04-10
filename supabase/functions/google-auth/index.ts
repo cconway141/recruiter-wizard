@@ -6,7 +6,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const GOOGLE_CLIENT_ID = Deno.env.get("GOOGLE_CLIENT_ID") || "";
 const GOOGLE_CLIENT_SECRET = Deno.env.get("GOOGLE_CLIENT_SECRET") || "";
-const REDIRECT_URI = "https://recruit.theitbootcamp.com/auth/callback";
+const REDIRECT_URI = "https://recruit.theitbootcamp.com/auth/gmail-callback";
 
 // Basic validation of required environment variables
 if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
@@ -56,7 +56,7 @@ serve(async (req) => {
       // This will include the user ID so we can associate the tokens with the correct user
       const state = btoa(JSON.stringify({ userId, timestamp: Date.now(), action: 'gmail' }));
       
-      // Build the authorization URL
+      // Build the authorization URL with correct redirect URI
       const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
       authUrl.searchParams.append('client_id', GOOGLE_CLIENT_ID);
       authUrl.searchParams.append('redirect_uri', REDIRECT_URI);
@@ -65,6 +65,8 @@ serve(async (req) => {
       authUrl.searchParams.append('access_type', 'offline');
       authUrl.searchParams.append('prompt', 'consent');
       authUrl.searchParams.append('state', state);
+      
+      console.log("Generated auth URL with redirect URI:", REDIRECT_URI);
       
       return new Response(
         JSON.stringify({ url: authUrl.toString() }),
@@ -102,6 +104,8 @@ serve(async (req) => {
       const userId = stateData.userId;
       const action = stateData.action || 'gmail'; // Default to gmail if not specified
       
+      console.log("Exchanging code for tokens with redirect URI:", REDIRECT_URI);
+      
       // Exchange the code for tokens
       const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
         method: 'POST',
@@ -125,11 +129,22 @@ serve(async (req) => {
         );
       }
       
+      console.log("Token exchange successful, storing tokens");
+      
       // Store the tokens in Supabase
       if (action === 'gmail') {
+        // First delete any existing tokens to ensure clean state
+        console.log("Deleting any existing tokens for user:", userId);
+        await supabase
+          .from('gmail_tokens')
+          .delete()
+          .eq('user_id', userId);
+          
+        // Then insert the new tokens
+        console.log("Inserting new tokens for user:", userId);
         const { error } = await supabase
           .from('gmail_tokens')
-          .upsert({
+          .insert({
             user_id: userId,
             access_token: tokenData.access_token,
             refresh_token: tokenData.refresh_token,
@@ -145,6 +160,23 @@ serve(async (req) => {
             { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
+        
+        // Verify tokens were stored successfully
+        const { data: verifyData, error: verifyError } = await supabase
+          .from('gmail_tokens')
+          .select('*')
+          .eq('user_id', userId)
+          .single();
+          
+        if (verifyError || !verifyData) {
+          console.error('Error verifying tokens were stored:', verifyError);
+          return new Response(
+            JSON.stringify({ error: 'Failed to verify tokens were stored', details: verifyError }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        
+        console.log("Tokens stored and verified for user:", userId);
         
         return new Response(
           JSON.stringify({ success: true, message: 'Gmail connected successfully' }),
@@ -249,10 +281,12 @@ serve(async (req) => {
         );
       }
       
+      console.log("Checking Gmail connection for user:", userId);
+      
       // Check if the user has connected Gmail
       const { data, error } = await supabase
         .from('gmail_tokens')
-        .select('expires_at')
+        .select('expires_at, access_token')
         .eq('user_id', userId)
         .maybeSingle();
       
@@ -264,8 +298,14 @@ serve(async (req) => {
         );
       }
       
-      const isConnected = !!data;
+      const isConnected = !!data && !!data.access_token;
       const isExpired = data ? new Date(data.expires_at) <= new Date() : false;
+      
+      console.log("Gmail connection status for user", userId, ":", {
+        connected: isConnected,
+        expired: isExpired,
+        needsRefresh: isConnected && isExpired
+      });
       
       return new Response(
         JSON.stringify({ 

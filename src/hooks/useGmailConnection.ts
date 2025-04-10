@@ -15,7 +15,7 @@ export const useGmailConnection = ({ onConnectionChange }: UseGmailConnectionPro
   const [configError, setConfigError] = useState<string | null>(null);
   const queryClient = useQueryClient();
   
-  // Query for checking Gmail connection status
+  // Query for checking Gmail connection status with more aggressive refreshing
   const { 
     data: connectionStatus, 
     isLoading, 
@@ -70,42 +70,62 @@ export const useGmailConnection = ({ onConnectionChange }: UseGmailConnectionPro
     },
     enabled: !!user?.id,
     refetchOnWindowFocus: true,
-    refetchInterval: 10 * 1000, // Refetch every 10 seconds (more aggressive)
-    staleTime: 5 * 1000 // Consider data stale after 5 seconds (more aggressive)
+    refetchInterval: 5 * 1000, // Refetch every 5 seconds (more aggressive)
+    staleTime: 2 * 1000 // Consider data stale after 2 seconds (more aggressive)
   });
   
   const isConnected = connectionStatus?.connected && !connectionStatus?.expired;
   
-  // Refresh token function
+  // Refresh token function with retry logic
   const refreshToken = async () => {
     if (!user) return false;
     
     try {
       console.log("Refreshing token...");
-      const { data, error } = await supabase.functions.invoke('google-auth/refresh-token', {
-        body: { userId: user.id }
-      });
       
-      if (error) {
-        console.error("Error refreshing token:", error);
-        toast({
-          title: "Connection Error",
-          description: "Failed to refresh Gmail token. Please reconnect your account.",
-          variant: "destructive",
-        });
-        return false;
+      let retryCount = 0;
+      const maxRetries = 3;
+      
+      while (retryCount < maxRetries) {
+        try {
+          const { data, error } = await supabase.functions.invoke('google-auth/refresh-token', {
+            body: { userId: user.id }
+          });
+          
+          if (error) {
+            console.error(`Attempt ${retryCount + 1}: Error refreshing token:`, error);
+            throw error;
+          }
+          
+          console.log(`Attempt ${retryCount + 1}: Token refreshed successfully`);
+          await refetch(); // Refetch connection status after refreshing token
+          return true;
+        } catch (retryError) {
+          console.error(`Refresh attempt ${retryCount + 1} failed:`, retryError);
+          retryCount++;
+          
+          if (retryCount < maxRetries) {
+            console.log(`Retrying token refresh in 1 second... (${retryCount}/${maxRetries})`);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        }
       }
       
-      console.log("Token refreshed successfully");
-      await refetch(); // Refetch connection status after refreshing token
-      return true;
+      console.error(`Failed to refresh token after ${maxRetries} attempts`);
+      toast({
+        title: "Connection Error",
+        description: "Failed to refresh Gmail token after multiple attempts. Please reconnect your account.",
+        variant: "destructive",
+      });
+      
+      return false;
     } catch (error) {
       console.error("Error refreshing token:", error);
       return false;
     }
   };
   
-  // Connect Gmail function
+  // Connect Gmail function with better error handling
   const connectGmail = async () => {
     if (!user) {
       toast({
@@ -146,6 +166,9 @@ export const useGmailConnection = ({ onConnectionChange }: UseGmailConnectionPro
       
       console.log("Generated auth URL:", data.url);
       
+      // Store a flag in sessionStorage to identify that we're in the process of connecting Gmail
+      sessionStorage.setItem('gmailConnectionInProgress', 'true');
+      
       // Redirect to Google's OAuth flow
       window.location.href = data.url;
     } catch (error) {
@@ -158,7 +181,7 @@ export const useGmailConnection = ({ onConnectionChange }: UseGmailConnectionPro
     }
   };
   
-  // Disconnect Gmail function
+  // Disconnect Gmail function with better error handling
   const disconnectGmail = async () => {
     if (!user) return;
     
@@ -215,6 +238,7 @@ export const useGmailConnection = ({ onConnectionChange }: UseGmailConnectionPro
   
   // Force refresh Gmail connection status
   const forceRefresh = () => {
+    console.log("Forcing refresh of Gmail connection status");
     queryClient.invalidateQueries({ queryKey: ['gmail-connection', user?.id] });
     refetch();
   };
