@@ -64,7 +64,7 @@ export const useCandidateThreads = () => {
       const { error: updateError } = await supabase
         .from('candidates')
         .update({
-          thread_ids: convertedThreadIds as Json
+          thread_ids: convertedThreadIds as unknown as Json
         })
         .eq('id', candidateId);
         

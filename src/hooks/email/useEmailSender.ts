@@ -21,14 +21,14 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
     subject: string,
     body: string,
     candidateName: string,
-    jobTitle?: string,
+    jobTitle: string = "General Position", // Provide default value
     threadId?: string | null,
     messageId?: string | null
   ) => {
     console.log("\n==================================================");
     console.log(`🔵 SENDING EMAIL TO: ${candidateName} <${to}>`);
     console.log(`🔵 SUBJECT: "${subject}"`);
-    console.log(`🔵 JOB TITLE: ${jobTitle || "NOT PROVIDED"}`);
+    console.log(`🔵 JOB TITLE: ${jobTitle || "USING DEFAULT: General Position"}`);
     console.log(`🔵 THREAD ID: ${threadId || "NEW THREAD"}`);
     console.log(`🔵 MESSAGE ID: ${messageId || "NEW MESSAGE"}`);
     console.log("==================================================\n");
@@ -51,10 +51,8 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
       setIsSending(true);
       setErrorMessage(null);
       
-      // Validate job title is present for new threads
-      if (!threadId && !jobTitle) {
-        console.warn("⚠️ Creating new email thread without job title");
-      }
+      // Ensure job title is always present (double check)
+      const finalJobTitle = jobTitle || "General Position";
       
       // Always CC the recruitment team
       const cc = "recruitment@theitbc.com";
@@ -72,7 +70,7 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
       console.log(`- Subject: "${subject}"`);
       console.log(`- Thread ID: ${cleanThreadId || "New thread"}`);
       console.log(`- Message ID: ${cleanMessageId || "New message"}`);
-      console.log(`- Job Title: ${jobTitle || "Not provided"}`);
+      console.log(`- Job Title: ${finalJobTitle}`);
       console.log(`- Body length: ${body.length} characters`);
       
       const { data, error } = await supabase.functions.invoke('send-gmail', {
@@ -82,7 +80,7 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
           subject,
           body,
           candidateName,
-          jobTitle: jobTitle || '',
+          jobTitle: finalJobTitle,
           threadId: cleanThreadId,
           messageId: cleanMessageId,
           userId: user.id
@@ -105,7 +103,7 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
           if (refreshed) {
             console.log("🔄 Gmail token refreshed successfully, retrying send...");
             // Try again with refreshed token
-            return sendEmailViaGmail(to, subject, body, candidateName, jobTitle, threadId, messageId);
+            return sendEmailViaGmail(to, subject, body, candidateName, finalJobTitle, threadId, messageId);
           }
         }
         
@@ -140,7 +138,7 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
     subject: string,
     body: string,
     candidateName: string,
-    jobTitle?: string,
+    jobTitle: string = "General Position", // Provide default
     threadId?: string | null
   ) => {
     try {
@@ -150,10 +148,13 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
       const toEncoded = encodeURIComponent(to);
       const ccEncoded = encodeURIComponent(cc);
       
+      // Ensure job title is never undefined
+      const finalJobTitle = jobTitle || "General Position";
+      
       console.log("🔗 Opening Gmail compose with:", {
         to,
         subject,
-        jobTitle: jobTitle || "No job title provided",
+        jobTitle: finalJobTitle,
         candidateName,
         threadId: threadId || "New thread"
       });

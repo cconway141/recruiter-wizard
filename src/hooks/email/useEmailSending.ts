@@ -80,7 +80,7 @@ export const useEmailSending = ({
       console.log("Sending email to:", candidateEmail);
       console.log("Subject:", subject);
       console.log("Candidate:", candidateName);
-      console.log("Job Title:", candidateFacingTitle || "NOT PROVIDED");
+      console.log("Job Title:", candidateFacingTitle || "USING DEFAULT: General Position");
       console.log("Thread ID:", threadId || "NEW THREAD");
       console.log("Message ID:", messageId || "NEW MESSAGE");
       
@@ -112,11 +112,12 @@ export const useEmailSending = ({
           .eq('id', candidateId)
           .single();
           
-        const threadIds = data?.thread_ids || {};
+        // Create a safe default empty object if there are no thread IDs
+        const existingThreadIds = (data?.thread_ids || {}) as Record<string, any>;
         
         await saveThreadId({
           candidateId,
-          threadIds,
+          threadIds: existingThreadIds,
           jobId,
           newThreadId: result.threadId,
           newMessageId: result.messageId

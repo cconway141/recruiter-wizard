@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
@@ -60,6 +61,14 @@ serve(async (req) => {
     // Format subject line for new threads
     // Use the provided subject directly - it should already be properly formatted from useEmailSubject
     let formattedSubject = subject;
+    
+    // Safety check - if somehow subject is undefined, create a proper one
+    if (!formattedSubject && !threadId) {
+      const safeJobTitle = jobTitle || "General Position";
+      formattedSubject = `ITBC ${safeJobTitle} ${candidateName}`;
+      console.log(`Created fallback subject: "${formattedSubject}"`);
+    }
+    
     console.log(`Using email subject: "${formattedSubject}"`);
 
     const emailCC = cc || "recruitment@theitbc.com";
