@@ -33,7 +33,7 @@ serve(async (req) => {
   try {
     const { 
       to, 
-      cc = ['recruitment@theitbc.com'], 
+      cc = ['recruitment@theitbc.com'], // Default CC if none provided
       subject, 
       body, 
       candidateName, 
