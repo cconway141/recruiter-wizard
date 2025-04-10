@@ -2,7 +2,6 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useGmailAuth } from "@/hooks/useGmailAuth";
 import { useEmailContent } from "@/hooks/useEmailContent";
 import { useToast } from "@/hooks/use-toast";
 
@@ -15,7 +14,6 @@ interface EmailActionOptions {
   jobId?: string;
   candidateId?: string;
   threadId?: string | null;
-  threadTitle?: string;
 }
 
 export const useEmailActions = () => {
@@ -23,10 +21,6 @@ export const useEmailActions = () => {
   const { toast } = useToast();
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
-  const resetState = () => {
-    setError(null);
-  };
 
   const sendEmail = async (options: EmailActionOptions) => {
     const {
@@ -37,8 +31,7 @@ export const useEmailActions = () => {
       templates,
       jobId,
       candidateId,
-      threadId,
-      threadTitle
+      threadId
     } = options;
 
     if (!candidateEmail) {
@@ -55,10 +48,9 @@ export const useEmailActions = () => {
       setIsSending(true);
       setError(null);
       
-      // Use a hardcoded subject if not available from the content
-      const subject = threadTitle || `ITBC ${jobTitle || ''} - ${candidateName}`;
+      // Generate a unique subject line per candidate-job combination
+      const subject = `ITBC ${jobTitle || ''} - ${candidateName}`.trim();
       
-      // Get email content from a hypothetical hook
       const { getEmailContent } = useEmailContent({ 
         candidateName, 
         jobTitle, 
@@ -80,12 +72,21 @@ export const useEmailActions = () => {
           candidateName,
           jobTitle,
           threadId,
+          jobId,  // Pass job ID to help with thread tracking
           userId: user?.id
         }
       });
       
       if (sendError) {
         throw sendError;
+      }
+      
+      // Update thread ID for this candidate-job combination if a new thread was created
+      if (jobId && data?.threadId && (!threadId || data.threadId !== threadId)) {
+        await supabase
+          .from('candidates')
+          .update({ thread_ids: { [jobId]: data.threadId } })
+          .eq('id', candidateId);
       }
       
       toast({
@@ -107,24 +108,10 @@ export const useEmailActions = () => {
       setIsSending(false);
     }
   };
-  
-  const composeEmailInGmail = (email: string, subject: string, body: string) => {
-    // Create a Gmail compose URL
-    const params = new URLSearchParams({
-      to: email,
-      subject: subject || "",
-      body: body.replace(/<[^>]*>/g, '') // Strip HTML for mailto links
-    });
-    
-    const composeUrl = `https://mail.google.com/mail/?view=cm&fs=1&${params.toString()}`;
-    window.open(composeUrl, '_blank');
-  };
 
   return {
     sendEmail,
-    composeEmailInGmail,
     isSending,
-    error,
-    resetState
+    error
   };
 };
