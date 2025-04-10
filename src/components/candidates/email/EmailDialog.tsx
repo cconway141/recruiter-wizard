@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { useEmailDialogState } from "./dialog/useEmailDialogState";
+import { useEmailDialog } from "./dialog/useEmailDialog";
 import { EmailDialogHeader } from "./dialog/EmailDialogHeader";
 import { EmailConnectionAlert } from "./dialog/EmailConnectionAlert";
 import { EmailDialogContent } from "./dialog/EmailDialogContent";
@@ -45,7 +45,7 @@ export function EmailDialog({
     handleComposeInGmail,
     handleOpenThreadInGmail,
     connectGmail,
-  } = useEmailDialogState({
+  } = useEmailDialog({
     candidateName,
     candidateEmail,
     jobId,

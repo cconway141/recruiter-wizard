@@ -41,6 +41,11 @@ export const GmailCard: React.FC = () => {
     }
   }, [user?.id, silentCheckConnection]);
   
+  // Create a void version of the disconnect function to fix the TypeScript error
+  const handleDisconnect = async () => {
+    await disconnectGmail();
+  };
+  
   return (
     <Card>
       <CardHeader>
@@ -75,7 +80,7 @@ export const GmailCard: React.FC = () => {
         {/* Show either connect or disconnect button based on connection status */}
         {isGmailConnected ? (
           <GmailDisconnectButton 
-            onDisconnect={disconnectGmail}
+            onDisconnect={handleDisconnect}
             isLoading={isCheckingConnection}
           />
         ) : (
