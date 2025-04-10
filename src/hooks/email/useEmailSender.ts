@@ -40,6 +40,8 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
       setIsSending(true);
       setErrorMessage(null);
       console.log("Sending email to:", to);
+      console.log("Using subject:", subject);
+      console.log("Thread ID:", threadId || "New thread");
       
       // Always CC the recruitment team
       const cc = "recruitment@theitbc.com";

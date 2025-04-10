@@ -27,6 +27,7 @@ export const useCandidateThreads = () => {
       console.log("New thread ID created:", newThreadId);
       console.log("Saving thread ID for job:", jobId);
       
+      // Update the existing threadIds with the new one for this job
       const threadIdsUpdate = { ...(threadIds || {}), [jobId]: newThreadId };
       
       const { error: updateError } = await supabase
@@ -53,8 +54,34 @@ export const useCandidateThreads = () => {
       return false;
     }
   };
+  
+  const getThreadId = async (candidateId: string, jobId: string) => {
+    if (!candidateId || !jobId) {
+      return null;
+    }
+    
+    try {
+      const { data, error } = await supabase
+        .from('candidates')
+        .select('thread_ids')
+        .eq('id', candidateId)
+        .single();
+        
+      if (error || !data) {
+        console.error("Error getting thread IDs:", error);
+        return null;
+      }
+      
+      // Return the thread ID for this specific job if it exists
+      return data.thread_ids?.[jobId] || null;
+    } catch (err) {
+      console.error("Error retrieving thread ID:", err);
+      return null;
+    }
+  };
 
   return {
-    saveThreadId
+    saveThreadId,
+    getThreadId
   };
 };

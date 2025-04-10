@@ -51,17 +51,18 @@ serve(async (req) => {
       );
     }
 
-    // FIXED: Ensure the subject follows the correct format - explicitly set it here
-    // regardless of what's passed in from the client to ensure consistency
-    const formattedJobTitle = jobTitle ? jobTitle.trim() : '';
-    const emailSubject = `ITBC ${formattedJobTitle} ${candidateName}`.trim();
-    console.log(`Email subject (enforced format): "${emailSubject}"`);
+    // Ensure the subject follows the correct format for all emails
+    const formattedSubject = threadId 
+      ? subject // If threaded, use the existing subject from the thread
+      : `ITBC ${jobTitle ? jobTitle + ' ' : ''}${candidateName}`.trim();
+    
+    console.log(`Email subject: "${formattedSubject}"`);
 
     // Always CC the recruitment team
     const emailCC = cc || "recruitment@theitbc.com";
     console.log(`CC'ing: ${emailCC}`);
 
-    console.log(`Preparing to send email to ${to} with subject "${emailSubject}"`);
+    console.log(`Preparing to send email to ${to} with subject "${formattedSubject}"`);
     console.log(`Using thread ID: ${threadId || 'New thread'}`);
     
     // Get the user's Gmail access token
@@ -99,7 +100,7 @@ serve(async (req) => {
     let emailLines = [
       `To: ${to}`,
       `Cc: ${emailCC}`, // Always include recruitment CC
-      `Subject: ${emailSubject}`, // Using our enforced format
+      `Subject: ${formattedSubject}`, // Use our standardized subject format
       'MIME-Version: 1.0',
       'Content-Type: text/html; charset=utf-8',
     ];
@@ -110,7 +111,7 @@ serve(async (req) => {
       // RFC 2822 threading headers - These are essential for proper threading
       emailLines.push(`References: <${threadId}@mail.gmail.com>`);
       emailLines.push(`In-Reply-To: <${threadId}@mail.gmail.com>`);
-      emailLines.push(`Thread-Topic: ${emailSubject}`);
+      emailLines.push(`Thread-Topic: ${formattedSubject}`);
       
       console.log("Adding threading headers with thread ID:", threadId);
     }
@@ -186,7 +187,7 @@ serve(async (req) => {
         success: true, 
         message: `Email sent to ${candidateName} at ${to} with CC to ${emailCC}`,
         threadId: newThreadId,
-        subject: emailSubject // Return the enforced subject for confirmation
+        subject: formattedSubject // Return the subject format for confirmation
       }),
       { 
         status: 200, 

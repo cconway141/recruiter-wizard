@@ -1,8 +1,9 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useEmailContent } from "@/hooks/useEmailContent";
 import { useGmailConnection } from "@/hooks/gmail";
 import { useEmailSender } from "@/hooks/email/useEmailSender";
+import { useCandidateThreads } from "@/hooks/email/useCandidateThreads";
 import { useToast } from "@/hooks/use-toast";
 
 interface UseEmailDialogStateProps {
@@ -42,6 +43,9 @@ export const useEmailDialogState = ({
     showLoadingUI: false, // Never block UI with loading state
   });
 
+  // Use candidate threads hook for thread management
+  const { saveThreadId } = useCandidateThreads();
+
   // Use email content hook for template management
   const { emailTemplates, getEmailContent } = useEmailContent({
     candidateName,
@@ -64,10 +68,9 @@ export const useEmailDialogState = ({
 
   // Initialize content when dialog opens
   useEffect(() => {
-    // Set default subject based on job title or thread title
-    const defaultSubject = threadTitle || 
-      `${jobTitle ? `ITBC ${jobTitle} - ` : ''}${candidateName}`;
-    setSubject(defaultSubject);
+    // Set default subject following the standardized format
+    const standardizedSubject = `ITBC ${jobTitle ? jobTitle + ' ' : ''}${candidateName}`.trim();
+    setSubject(threadTitle || standardizedSubject);
 
     // Set default content from template
     const content = getEmailContent();
@@ -116,7 +119,8 @@ export const useEmailDialogState = ({
       setIsSending(true);
       setErrorMessage(null);
 
-      await sendEmailViaGmail(
+      // Send the email, passing the thread ID if available
+      const newThreadId = await sendEmailViaGmail(
         candidateEmail,
         subject,
         body,
@@ -124,6 +128,17 @@ export const useEmailDialogState = ({
         jobTitle,
         threadId
       );
+
+      // If this is a new thread and we have the candidate ID and job ID, save the thread ID
+      if (newThreadId && !threadId && candidateId && jobId) {
+        console.log("Saving new thread ID:", newThreadId);
+        await saveThreadId({
+          candidateId,
+          threadIds: {},
+          jobId,
+          newThreadId
+        });
+      }
     } catch (error) {
       console.error("Error sending email:", error);
       setErrorMessage(error instanceof Error ? error.message : "Failed to send email");
@@ -139,7 +154,7 @@ export const useEmailDialogState = ({
   };
 
   // Handle composing in Gmail
-  const handleComposeInGmail = () => {
+  const handleComposeInGmail = useCallback(() => {
     if (!candidateEmail) {
       toast({
         title: "Missing email address",
@@ -159,13 +174,13 @@ export const useEmailDialogState = ({
     );
 
     onClose();
-  };
+  }, [candidateEmail, subject, body, candidateName, jobTitle, threadId, composeEmailInGmail, onClose, toast]);
 
   // Handle opening thread in Gmail
-  const handleOpenThreadInGmail = () => {
+  const handleOpenThreadInGmail = useCallback(() => {
     const searchQuery = encodeURIComponent(`subject:(${subject})`);
     window.open(`https://mail.google.com/mail/u/0/#search/${searchQuery}`, "_blank");
-  };
+  }, [subject]);
 
   return {
     // State
