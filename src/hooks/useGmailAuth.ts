@@ -28,42 +28,53 @@ export const useGmailAuth = () => {
       
       console.log("Checking Gmail connection in useGmailAuth for user:", user.id);
       
-      const { data, error } = await supabase.functions.invoke('google-auth', {
-        body: {
-          action: 'check-connection',
-          userId: user.id
-        }
-      });
-      
-      if (error) {
-        console.error("Error checking Gmail connection:", error);
-        throw new Error("Failed to check Gmail connection");
-      }
-      
-      if (data?.error === 'Configuration error') {
-        throw new Error(data.message || 'Google OAuth is not properly configured');
-      }
-      
-      // Log connection status for debugging
-      console.log("Gmail connection status from API:", data);
-      
-      if (!data.connected || data.expired) {
-        console.log("Gmail not connected or expired");
-      } else {
-        console.log("Gmail is connected and valid");
-      }
-      
-      if (data.needsRefresh) {
-        console.log("Gmail token needs refresh, refreshing...");
-        await refreshGmailToken();
-        // Re-fetch after refresh
-        const { data: refreshedData } = await supabase.functions.invoke('google-auth', {
-          body: { action: 'check-connection', userId: user.id }
+      try {
+        const { data, error } = await supabase.functions.invoke('google-auth', {
+          body: {
+            action: 'check-connection',
+            userId: user.id
+          }
         });
-        return refreshedData;
+        
+        if (error) {
+          console.error("Error checking Gmail connection:", error);
+          throw new Error("Failed to check Gmail connection");
+        }
+        
+        if (data?.error === 'Configuration error') {
+          throw new Error(data.message || 'Google OAuth is not properly configured');
+        }
+        
+        // Log connection status for debugging
+        console.log("Gmail connection status from API:", data);
+        
+        if (!data.connected || data.expired) {
+          console.log("Gmail not connected or expired");
+        } else {
+          console.log("Gmail is connected and valid");
+        }
+        
+        if (data.needsRefresh) {
+          console.log("Gmail token needs refresh, refreshing...");
+          await refreshGmailToken();
+          // Re-fetch after refresh
+          const refreshResult = await supabase.functions.invoke('google-auth', {
+            body: { action: 'check-connection', userId: user.id }
+          });
+          
+          if (refreshResult.error) {
+            console.error("Error after refreshing token:", refreshResult.error);
+            throw new Error("Failed to verify refreshed connection");
+          }
+          
+          return refreshResult.data;
+        }
+        
+        return data;
+      } catch (error) {
+        console.error("Error in queryFn:", error);
+        throw error;
       }
-      
-      return data;
     },
     enabled: !!user,
     refetchOnWindowFocus: true,

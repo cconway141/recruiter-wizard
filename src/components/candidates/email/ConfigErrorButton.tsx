@@ -1,39 +1,44 @@
 
 import React from "react";
-import { Mail, CheckCircle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AlertCircle, CheckCircle, MailX } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface ConfigErrorButtonProps {
   className?: string;
+  isConnected: boolean;
   onClick?: () => void;
-  isConnected?: boolean;
   onDisconnect?: () => void;
 }
 
-export const ConfigErrorButton: React.FC<ConfigErrorButtonProps> = ({ 
-  className, 
+export const ConfigErrorButton: React.FC<ConfigErrorButtonProps> = ({
+  className = "",
+  isConnected,
   onClick,
-  isConnected = false,
   onDisconnect
 }) => {
   if (isConnected) {
     return (
-      <div className="flex items-center gap-2">
-        <span className="flex items-center text-green-500 font-medium">
-          <CheckCircle className="h-4 w-4 mr-2" />
-          Gmail Connected
-        </span>
+      <div className="flex flex-col gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          className={`flex items-center gap-2 bg-green-50 text-green-700 border-green-200 hover:bg-green-100 hover:text-green-800 ${className}`}
+          disabled={true}
+        >
+          <CheckCircle className="h-4 w-4" />
+          <span>Gmail Connected</span>
+        </Button>
         
         {onDisconnect && (
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
             size="sm"
-            className="ml-2 text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
+            className="text-xs text-muted-foreground"
             onClick={onDisconnect}
           >
-            <XCircle className="h-4 w-4 mr-1" />
-            Disconnect
+            Disconnect Gmail
           </Button>
         )}
       </div>
@@ -41,14 +46,23 @@ export const ConfigErrorButton: React.FC<ConfigErrorButtonProps> = ({
   }
   
   return (
-    <Button
-      type="button"
-      variant="outline"
-      className={`flex items-center gap-2 ${className}`}
-      onClick={onClick}
-    >
-      <Mail className="h-4 w-4" />
-      <span>Connect Gmail API</span>
-    </Button>
+    <Tooltip delayDuration={300}>
+      <TooltipTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          className={`flex items-center gap-2 bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 hover:text-amber-800 ${className}`}
+          onClick={onClick}
+        >
+          <AlertCircle className="h-4 w-4" />
+          <span>Gmail Setup Required</span>
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-xs">
+        <p>
+          Google API requires additional configuration. Click to connect your Gmail account.
+        </p>
+      </TooltipContent>
+    </Tooltip>
   );
 };

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -85,8 +84,8 @@ export const GmailCallback: React.FC = () => {
         
         while (retryCount < maxRetries && !success) {
           try {
-            const { data, error } = await supabase.functions.invoke('google-auth/exchange-code', {
-              body: { code, state }
+            const { data, error } = await supabase.functions.invoke('google-auth', {
+              body: { action: 'exchange-code', code, state }
             });
 
             if (error) {
@@ -124,9 +123,14 @@ export const GmailCallback: React.FC = () => {
             
             // Verify the tokens were saved by checking the connection
             console.log("Verifying connection after token exchange...");
-            const { data: checkData } = await supabase.functions.invoke('google-auth/check-connection', {
-              body: { userId: user.id }
+            const { data: checkData, error: checkError } = await supabase.functions.invoke('google-auth', {
+              body: { action: 'check-connection', userId: user.id }
             });
+            
+            if (checkError) {
+              console.error("Error verifying connection:", checkError);
+              throw new Error("Failed to verify connection after token exchange");
+            }
             
             console.log("Connection verification:", checkData);
             

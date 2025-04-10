@@ -22,7 +22,7 @@ export const GmailCard: React.FC = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [connectionAttemptTime, setConnectionAttemptTime] = useState<number | null>(null);
-  const { isGmailConnected, checkGmailConnection } = useGmailAuth();
+  const { isGmailConnected, isCheckingGmail, checkGmailConnection } = useGmailAuth();
   
   // Check for Gmail connection in progress when component mounts
   useEffect(() => {
@@ -120,8 +120,9 @@ export const GmailCard: React.FC = () => {
           variant="ghost" 
           onClick={forceRefreshGmailStatus}
           className="text-xs"
+          disabled={isCheckingGmail}
         >
-          Refresh Connection Status
+          {isCheckingGmail ? "Checking..." : "Refresh Connection Status"}
         </Button>
       </CardContent>
       <CardFooter className="text-xs text-muted-foreground">
