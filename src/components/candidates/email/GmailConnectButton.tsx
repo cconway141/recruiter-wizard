@@ -40,7 +40,7 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
     
     // Force a refresh on mount to ensure we have the latest connection status
     forceRefresh();
-  }, []);
+  }, [forceRefresh]);
   
   const handleConnectGmail = async () => {
     try {

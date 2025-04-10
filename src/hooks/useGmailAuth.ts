@@ -28,8 +28,11 @@ export const useGmailAuth = () => {
       
       console.log("Checking Gmail connection in useGmailAuth for user:", user.id);
       
-      const { data, error } = await supabase.functions.invoke('google-auth/check-connection', {
-        body: { userId: user.id }
+      const { data, error } = await supabase.functions.invoke('google-auth', {
+        body: {
+          action: 'check-connection',
+          userId: user.id
+        }
       });
       
       if (error) {
@@ -54,8 +57,8 @@ export const useGmailAuth = () => {
         console.log("Gmail token needs refresh, refreshing...");
         await refreshGmailToken();
         // Re-fetch after refresh
-        const { data: refreshedData } = await supabase.functions.invoke('google-auth/check-connection', {
-          body: { userId: user.id }
+        const { data: refreshedData } = await supabase.functions.invoke('google-auth', {
+          body: { action: 'check-connection', userId: user.id }
         });
         return refreshedData;
       }
@@ -88,8 +91,11 @@ export const useGmailAuth = () => {
     
     try {
       console.log("Refreshing Gmail token...");
-      const { data, error } = await supabase.functions.invoke('google-auth/refresh-token', {
-        body: { userId: user.id }
+      const { data, error } = await supabase.functions.invoke('google-auth', {
+        body: {
+          action: 'refresh-token',
+          userId: user.id
+        }
       });
       
       if (error) {
