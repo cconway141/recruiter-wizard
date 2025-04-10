@@ -1,109 +1,83 @@
 
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import { useState, useEffect, useCallback } from "react";
+import { useMessageTemplates } from "./useMessageTemplates";
+import { useAuth } from "@/contexts/AuthContext";
 
-interface UseEmailContentProps {
-  candidateName: string;
+interface EmailContentProps {
+  candidateName?: string;
   jobTitle?: string;
-  templates: any[];
-  selectedTemplate: string;
+  selectedTemplate?: string;
+  threadId?: string | null;
 }
 
-export const useEmailContent = ({ candidateName, jobTitle, templates, selectedTemplate }: UseEmailContentProps) => {
-  const [emailBody, setEmailBody] = useState('');
-  const [emailSignature, setEmailSignature] = useState('');
+export const useEmailContent = ({
+  candidateName = '',
+  jobTitle = '',
+  selectedTemplate = 'default'
+}: EmailContentProps) => {
   const { user } = useAuth();
+  const { templates, loading: templatesLoading } = useMessageTemplates();
+  const [emailContent, setEmailContent] = useState<{ subject: string; body: string }>({
+    subject: '',
+    body: '',
+  });
   
-  // Fetch the user's email signature from the profiles table
-  useEffect(() => {
-    const fetchSignature = async () => {
-      if (user?.id) {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('email_signature')
-          .eq('id', user.id)
-          .single();
-          
-        if (!error && data) {
-          // Safely access email_signature property if it exists
-          const signature = data.email_signature || '';
-          setEmailSignature(signature);
-        }
-      }
-    };
-    
-    fetchSignature();
-  }, [user]);
-
-  // Generate the email content based on the selected template and candidate info
-  useEffect(() => {
-    console.log("Generating email content:", { selectedTemplate, templates });
+  // Function to get the content for a specific template
+  const getEmailContent = useCallback((templateId?: string) => {
+    const templateToUse = templateId || selectedTemplate;
     
     if (!templates || templates.length === 0) {
-      console.log("No templates available");
-      return;
+      return { subject: '', body: '' };
     }
-
-    let content = '';
-    const firstName = candidateName.split(' ')[0];
-
-    // Get template content
-    if (selectedTemplate === 'custom') {
-      // For custom templates, use a generic greeting
-      content = `Hi ${firstName},\n\nI hope this email finds you well.\n\n`;
+    
+    const template = templates.find((t) => t.id === templateId) || templates[0];
+    
+    if (!template) {
+      return { subject: '', body: '' };
+    }
+    
+    const candidateName_placeholder = '{candidate_name}';
+    const jobTitle_placeholder = '{job_title}';
+    const userSignature_placeholder = '{user_signature}';
+    
+    let subject = template.subject || '';
+    let body = template.content || '';
+    
+    // Replace candidate name
+    if (candidateName) {
+      subject = subject.replace(new RegExp(candidateName_placeholder, 'g'), candidateName);
+      body = body.replace(new RegExp(candidateName_placeholder, 'g'), candidateName);
+    }
+    
+    // Replace job title
+    if (jobTitle) {
+      subject = subject.replace(new RegExp(jobTitle_placeholder, 'g'), jobTitle);
+      body = body.replace(new RegExp(jobTitle_placeholder, 'g'), jobTitle);
+    }
+    
+    // Add signature if the user has one
+    const userSignature = ''; // This would come from user profile
+    if (userSignature) {
+      body = body.replace(new RegExp(userSignature_placeholder, 'g'), userSignature);
     } else {
-      // Find the template
-      const template = templates.find(t => t.id === selectedTemplate);
-      
-      if (template && template.message) {
-        console.log("Found template:", template.id);
-        
-        // Replace placeholders
-        content = template.message
-          .replace(/\[First Name\]/g, firstName)
-          .replace(/\[Full Name\]/g, candidateName);
-          
-        // Replace job title if provided
-        if (jobTitle) {
-          content = content.replace(/\[Job Title\]/g, jobTitle);
-        }
-      } else {
-        console.log("Template not found, using default greeting");
-        content = `Hi ${firstName},\n\nI hope this email finds you well.\n\n`;
-      }
+      body = body.replace(new RegExp(userSignature_placeholder, 'g'), '');
     }
     
-    // Format content for HTML
-    const formattedContent = content
-      .replace(/\n/g, '<br>')
-      .replace(/\[Job Title\]/g, jobTitle || '[Job Title]');
-    
-    // Ensure there's a signature separator if a signature exists
-    const signature = emailSignature 
-      ? `<br><br>${emailSignature.replace(/\n/g, '<br>')}` 
-      : '';
-    
-    const htmlContent = `<div>${formattedContent}${signature}</div>`;
-    console.log("Generated HTML content:", htmlContent);
-    
-    setEmailBody(htmlContent);
-  }, [selectedTemplate, templates, candidateName, jobTitle, emailSignature]);
-
-  const getEmailContent = () => {
-    console.log("Returning email content:", { body: emailBody });
-    // FIXED: Always format the subject consistently - no spaces before or after ITBC
-    const formattedJobTitle = jobTitle ? jobTitle.trim() : '';
-    const subject = `ITBC ${formattedJobTitle} ${candidateName}`.trim();
-    console.log("Generated subject line:", subject);
-    
-    return {
-      body: emailBody,
-      subject: subject
-    };
-  };
-
+    return { subject, body };
+  }, [candidateName, jobTitle, selectedTemplate, templates]);
+  
+  // Update email content when template or related data changes
+  useEffect(() => {
+    if (!templatesLoading && templates && templates.length > 0) {
+      const content = getEmailContent(selectedTemplate);
+      setEmailContent(content);
+    }
+  }, [templates, templatesLoading, selectedTemplate, getEmailContent]);
+  
   return {
+    emailContent,
+    emailTemplates: templates,
     getEmailContent,
+    isLoading: templatesLoading
   };
 };

@@ -1,174 +1,116 @@
-import { useState } from "react";
-import { useEmailContent } from "@/hooks/useEmailContent";
+
+import { useState, useCallback, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import { useGmailConnection } from "@/hooks/gmail";
 import { useEmailSender } from "@/hooks/email/useEmailSender";
-import { useGmailComposer } from "@/hooks/email/useGmailComposer";
-import { useCandidateThreads } from "@/hooks/email/useCandidateThreads";
-import { useToast } from "@/hooks/use-toast";
+import { useEmailContent } from "@/hooks/useEmailContent";
 
 interface UseEmailActionsProps {
-  candidate: {
-    id: string;
-    name: string;
-    email?: string | null;
-    threadIds?: Record<string, string>;
-  };
+  candidateName?: string;
+  candidateEmail?: string;
   jobId?: string;
   jobTitle?: string;
-  templates: any[];
-  selectedTemplate: string;
-  onSuccess: () => void;
+  threadId?: string | null;
+  templates?: any[];
+  selectedTemplate?: string;
+  onSuccess?: () => void;
 }
 
 export const useEmailActions = ({
-  candidate,
+  candidateName = '',
+  candidateEmail = '',
   jobId,
   jobTitle,
-  templates,
-  selectedTemplate,
-  onSuccess
-}: UseEmailActionsProps) => {
-  const threadId = jobId && candidate.threadIds ? candidate.threadIds[jobId] || null : null;
+  threadId,
+  templates = [],
+  selectedTemplate = 'default',
+  onSuccess,
+}: UseEmailActionsProps = {}) => {
+  const { user } = useAuth();
   const { toast } = useToast();
+  const [isSending, setIsSending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isCheckingGmail, setIsCheckingGmail] = useState(false);
   
-  // Extracted hook imports
-  const { 
-    isConnected: isGmailConnected, 
-    isLoading: isCheckingGmail, 
-    configError: authErrorMessage, 
-    checkGmailConnection 
-  } = useGmailConnection();
+  const { isConnected: isGmailConnected, checkGmailConnection } = useGmailConnection();
   
-  const { getEmailContent } = useEmailContent({
-    candidateName: candidate.name,
+  const { sendEmailViaGmail: sendEmail, composeEmailInGmail } = useEmailSender({
+    onSuccess
+  });
+  
+  const { getEmailContent, emailTemplates } = useEmailContent({
+    candidateName,
     jobTitle,
-    templates,
     selectedTemplate
   });
   
-  const { sendEmailViaGmail, isSending } = useEmailSender({
-    onSuccessCallback: onSuccess
-  });
-  
-  const { composeEmailInGmail, openThreadInGmail } = useGmailComposer();
-  
-  const { saveThreadId } = useCandidateThreads();
-  
-  const sendEmail = async () => {
-    if (!candidate.email) {
-      toast({
-        title: "Cannot Send Email",
-        description: "This candidate doesn't have an email address.",
-        variant: "destructive"
+  // Check Gmail connection on mount
+  useEffect(() => {
+    if (user) {
+      setIsCheckingGmail(true);
+      checkGmailConnection().finally(() => {
+        setIsCheckingGmail(false);
       });
-      return;
+    }
+  }, [checkGmailConnection, user]);
+
+  const sendEmailViaGmail = useCallback(async () => {
+    if (!candidateEmail) {
+      setErrorMessage("No email address provided for this candidate");
+      return null;
     }
     
-    if (!templates || templates.length === 0) {
-      console.error("No templates available when trying to send email");
-      toast({
-        title: "Cannot Send Email",
-        description: "Email templates failed to load. Please try again.",
-        variant: "destructive"
-      });
-      return;
+    if (!isGmailConnected) {
+      setErrorMessage("Gmail is not connected. Please connect your Gmail account first.");
+      return null;
     }
     
     try {
+      setIsSending(true);
       setErrorMessage(null);
-      const { subject, body } = getEmailContent();
       
-      if (!body || body.trim() === '') {
-        toast({
-          title: "Cannot Send Email",
-          description: "The email body is empty. Please select a valid template.",
-          variant: "destructive"
-        });
-        return;
-      }
+      const { body, subject } = getEmailContent(selectedTemplate);
+      const finalSubject = threadId ? undefined : (subject || `${jobTitle || ''} - ${candidateName}`);
       
-      // FIXED: Format the email subject consistently - no spaces before or after ITBC
-      const formattedJobTitle = jobTitle ? jobTitle.trim() : '';
-      const formattedSubject = `ITBC ${formattedJobTitle} ${candidate.name}`.trim();
-      console.log("Sending email with subject:", formattedSubject);
-      
-      // Send the email
-      const newThreadId = await sendEmailViaGmail({
-        to: candidate.email,
-        subject: formattedSubject,
+      return await sendEmail(
+        candidateEmail,
+        finalSubject || `ITBC ${jobTitle || ''} - ${candidateName}`,
         body,
-        candidateName: candidate.name,
-        jobTitle: formattedJobTitle,
+        candidateName,
+        jobTitle,
         threadId
-      });
-      
-      // If we got a new thread ID and it's different from the current one, save it
-      if (jobId && newThreadId && (!threadId || newThreadId !== threadId)) {
-        await saveThreadId({
-          candidateId: candidate.id,
-          threadIds: candidate.threadIds || {},
-          jobId,
-          newThreadId
-        });
-      }
-    } catch (err: any) {
-      console.error("Error in sendEmail:", err);
-      setErrorMessage(err.message || "Failed to send email");
+      );
+    } catch (error) {
+      console.error("Error sending email:", error);
+      setErrorMessage(error instanceof Error ? error.message : "Failed to send email");
+      return null;
+    } finally {
+      setIsSending(false);
     }
-  };
-
-  const composeEmail = () => {
-    if (!candidate.email) {
-      toast({
-        title: "Cannot Compose Email",
-        description: "This candidate doesn't have an email address.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    const { subject, body } = getEmailContent();
-    
-    if (!body || body.trim() === '') {
-      toast({
-        title: "Cannot Compose Email",
-        description: "The email content is empty. Please select a valid template.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    // FIXED: Format the email subject consistently - no spaces before or after ITBC
-    const formattedJobTitle = jobTitle ? jobTitle.trim() : '';
-    const formattedSubject = `ITBC ${formattedJobTitle} ${candidate.name}`.trim();
-    
-    composeEmailInGmail({
-      to: candidate.email,
-      subject: formattedSubject,
-      body
-    });
-    
-    onSuccess();
-  };
-  
-  const openThreadInGmailSearch = () => {
-    // FIXED: Format the email subject consistently - no spaces before or after ITBC
-    const formattedJobTitle = jobTitle ? jobTitle.trim() : '';
-    const formattedSubject = `ITBC ${formattedJobTitle} ${candidate.name}`.trim();
-    openThreadInGmail(formattedSubject);
-  };
+  }, [
+    candidateEmail,
+    candidateName,
+    checkGmailConnection,
+    composeEmailInGmail,
+    getEmailContent,
+    isGmailConnected,
+    jobTitle,
+    onSuccess,
+    selectedTemplate,
+    sendEmail,
+    threadId
+  ]);
 
   return {
-    isSending,
-    errorMessage: errorMessage || authErrorMessage,
-    isCheckingGmail,
+    sendEmailViaGmail,
+    composeEmailInGmail,
     isGmailConnected,
-    sendEmailViaGmail: sendEmail,
-    composeEmail,
-    checkGmailConnection,
-    getEmailContent,
-    threadId,
-    openThreadInGmail: openThreadInGmailSearch
+    isLoading: isCheckingGmail,
+    isSending,
+    errorMessage, 
+    checkGmailConnection
   };
 };
+
+export default useEmailActions;

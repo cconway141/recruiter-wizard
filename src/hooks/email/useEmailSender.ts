@@ -3,62 +3,46 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-
-interface SendEmailOptions {
-  to: string;
-  cc?: string;
-  subject: string;
-  body: string;
-  candidateName: string;
-  jobTitle?: string;
-  threadId?: string | null;
-}
+import { useGmailConnection } from "@/hooks/gmail";
 
 interface UseEmailSenderProps {
-  onSuccessCallback?: () => void;
+  onSuccess?: () => void;
 }
 
-export const useEmailSender = ({ onSuccessCallback }: UseEmailSenderProps = {}) => {
+export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSending, setIsSending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { refreshGmailToken } = useGmailConnection();
 
-  const sendEmailViaGmail = async ({
-    to,
-    cc = "recruitment@theitbc.com",
-    subject,
-    body,
-    candidateName,
-    jobTitle,
-    threadId
-  }: SendEmailOptions) => {
+  const sendEmailViaGmail = async (
+    to: string,
+    subject: string,
+    body: string,
+    candidateName: string,
+    jobTitle?: string,
+    threadId?: string | null
+  ) => {
     if (!to || !user) {
-      toast({
-        title: "Cannot Send Email",
-        description: "Missing recipient email or user not authenticated.",
-        variant: "destructive"
-      });
-      return null;
+      const error = "Missing recipient email or user not logged in";
+      setErrorMessage(error);
+      throw new Error(error);
     }
     
-    if (body.trim() === '') {
-      toast({
-        title: "Cannot Send Email",
-        description: "The email body is empty. Please select a valid template.",
-        variant: "destructive"
-      });
-      return null;
+    if (!body.trim()) {
+      const error = "Email body cannot be empty";
+      setErrorMessage(error);
+      throw new Error(error);
     }
     
     try {
       setIsSending(true);
       setErrorMessage(null);
-      
       console.log("Sending email to:", to);
-      console.log("Subject:", subject);
-      console.log("Thread ID:", threadId);
-      console.log("Body length:", body.length);
+      
+      // Always CC the recruitment team
+      const cc = "recruitment@theitbc.com";
       
       const { data, error } = await supabase.functions.invoke('send-gmail', {
         body: {
@@ -67,42 +51,83 @@ export const useEmailSender = ({ onSuccessCallback }: UseEmailSenderProps = {}) 
           subject,
           body,
           candidateName,
-          jobTitle,
+          jobTitle: jobTitle || '',
           threadId,
           userId: user.id
         }
       });
       
       if (error) {
-        throw error;
+        console.error("Function error:", error);
+        throw new Error(error.message || "Failed to send email");
       }
       
-      toast({
-        title: "Email Sent",
-        description: `Your email to ${candidateName} was sent successfully.`,
-      });
+      if (data?.error) {
+        console.error("Email sending error:", data.error);
+        
+        // Handle token expiration
+        if (data.error.includes("token expired") || data.error.includes("not connected")) {
+          const refreshed = await refreshGmailToken();
+          if (refreshed) {
+            // Try again with refreshed token
+            return sendEmailViaGmail(to, subject, body, candidateName, jobTitle, threadId);
+          }
+        }
+        
+        throw new Error(data.error);
+      }
       
-      if (onSuccessCallback) {
-        onSuccessCallback();
+      console.log("Email sent successfully:", data);
+      
+      if (onSuccess) {
+        onSuccess();
       }
       
       return data?.threadId;
-    } catch (err: any) {
-      console.error("Error sending email:", err);
-      setErrorMessage(err.message || "Failed to send email");
-      toast({
-        title: "Failed to send email",
-        description: err.message || "An unexpected error occurred",
-        variant: "destructive"
-      });
-      return null;
+    } catch (error) {
+      console.error("Error sending email:", error);
+      const message = error instanceof Error ? error.message : "Failed to send email";
+      setErrorMessage(message);
+      throw new Error(message);
     } finally {
       setIsSending(false);
     }
   };
 
+  const composeEmailInGmail = (
+    to: string,
+    subject: string,
+    body: string,
+    candidateName: string,
+    jobTitle?: string,
+    threadId?: string | null
+  ) => {
+    try {
+      const cc = "recruitment@theitbc.com";
+      const bodyEncoded = encodeURIComponent(body);
+      const subjectEncoded = encodeURIComponent(subject);
+      const toEncoded = encodeURIComponent(to);
+      const ccEncoded = encodeURIComponent(cc);
+      
+      const gmailComposeUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${toEncoded}&cc=${ccEncoded}&su=${subjectEncoded}&body=${bodyEncoded}`;
+      
+      window.open(gmailComposeUrl, '_blank');
+      
+      return true;
+    } catch (error) {
+      console.error("Error opening Gmail compose:", error);
+      toast({
+        title: "Error",
+        description: "Could not open Gmail compose window",
+        variant: "destructive"
+      });
+      return false;
+    }
+  };
+
   return {
     sendEmailViaGmail,
+    composeEmailInGmail,
     isSending,
     errorMessage
   };
