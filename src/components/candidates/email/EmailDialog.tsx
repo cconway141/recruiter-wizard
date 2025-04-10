@@ -88,6 +88,17 @@ export function EmailDialog({
     navigate('/profile');
   };
 
+  const templateCategories = {
+    m1: "Initial Contact",
+    m2: "Follow-up",
+    m3: "Closing"
+  };
+
+  // Filter templates by category
+  const getTemplatesByCategory = (category: string) => {
+    return templates?.filter(t => t.category === category) || [];
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
@@ -131,21 +142,21 @@ export function EmailDialog({
             </TabsList>
             <TabsContent value="m1">
               <EmailTemplateSelector
-                templates={templates || []}
+                templates={getTemplatesByCategory("M1")}
                 selectedTemplate={selectedTemplate}
                 onSelectTemplate={setSelectedTemplate}
               />
             </TabsContent>
             <TabsContent value="m2">
               <EmailTemplateSelector
-                templates={templates || []}
+                templates={getTemplatesByCategory("M2")}
                 selectedTemplate={selectedTemplate}
                 onSelectTemplate={setSelectedTemplate}
               />
             </TabsContent>
             <TabsContent value="m3">
               <EmailTemplateSelector
-                templates={templates || []}
+                templates={getTemplatesByCategory("M3")}
                 selectedTemplate={selectedTemplate}
                 onSelectTemplate={setSelectedTemplate}
               />

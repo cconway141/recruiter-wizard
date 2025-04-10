@@ -1,5 +1,8 @@
+
 import React from "react";
 import { useEmailContent } from "@/hooks/useEmailContent";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 interface EmailContentProps {
   selectedTemplate: string;
   templates: any[];
@@ -11,6 +14,7 @@ interface EmailContentProps {
   threadTitle?: string;
   threadId?: string | null;
 }
+
 export const EmailContent: React.FC<EmailContentProps> = ({
   selectedTemplate,
   templates,
@@ -49,6 +53,7 @@ export const EmailContent: React.FC<EmailContentProps> = ({
     return '';
   };
   const templateContent = getTemplateContent();
+  
   return <div className="space-y-4 py-4">
       <div>
         <p className="mb-2"><strong>To:</strong> {candidateName} ({candidateEmail})</p>
@@ -69,7 +74,11 @@ export const EmailContent: React.FC<EmailContentProps> = ({
           </p>
         </div>}
       
-      {selectedTemplate === "custom"}
+      {selectedTemplate === "custom" && <div className="mt-2 p-3 bg-gray-100 rounded-md">
+          <p className="text-sm">
+            Custom message for {candidateName}
+          </p>
+        </div>}
       
       {/* Show actual email preview with full greeting and signature */}
       {emailContent.body && <div className="mt-4 p-3 bg-gray-100 rounded-md">
