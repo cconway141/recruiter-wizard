@@ -8,6 +8,8 @@ import { GoogleCallback } from '@/components/auth/GoogleCallback';
 import { useToast } from '@/hooks/use-toast';
 import { GmailCallback } from './components/candidates/email/GmailCallback';
 import Profile from '@/pages/Profile';
+import Index from '@/pages/Index';
+import ViewJob from '@/pages/ViewJob';
 
 function App() {
   const { user, loading } = useAuth();
@@ -24,7 +26,7 @@ function App() {
     // Redirect to /dashboard if logged in and on /auth
     else if (user && location.pathname === '/auth') {
       console.log('Authenticated, redirecting to /dashboard');
-      navigate('/dashboard');
+      navigate('/');
     }
   }, [user, loading, location, navigate]);
 
@@ -33,7 +35,7 @@ function App() {
     toast({
       title: "Signed Out",
       description: "You have been successfully signed out.",
-    })
+    });
     navigate('/auth');
   };
 
@@ -46,7 +48,8 @@ function App() {
           <Route path="/auth/gmail-callback" element={<GmailCallback />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/" element={<Dashboard />} />
+          <Route path="/jobs/:id" element={<ViewJob />} />
+          <Route path="/" element={<Index />} />
         </Routes>
       </main>
     </div>

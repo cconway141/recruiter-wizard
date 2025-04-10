@@ -6,6 +6,7 @@ import { BrowserRouter as Router } from 'react-router-dom';
 import App from './App.tsx';
 import './index.css';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { JobProvider } from '@/contexts/JobContext';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -29,7 +30,9 @@ root.render(
     <QueryClientProvider client={queryClient}>
       <Router>
         <AuthProvider>
-          <App />
+          <JobProvider>
+            <App />
+          </JobProvider>
         </AuthProvider>
       </Router>
     </QueryClientProvider>
