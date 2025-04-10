@@ -14,40 +14,32 @@ import { GmailDisconnectButton } from "./gmail/GmailDisconnectButton";
 import { useGmailCardState } from "./gmail/useGmailCardState";
 import { useGmailConnection } from "@/hooks/gmail";
 import { useAuth } from "@/contexts/AuthContext";
+import { LoadingIndicator } from "@/components/ui/loading-indicator";
 
 export const GmailCard: React.FC = () => {
   const { user } = useAuth();
-  // Using the hook with only state management, no automatic checks
+  // Using the hook with our new pattern that replaced skipLoading
   const { isGmailConnected, handleDisconnectGmail } = useGmailCardState();
   
-  // Get checkGmailConnection function for the one-time background check
-  const { checkGmailConnection } = useGmailConnection({ 
-    skipLoading: true // Critical: prevent loading states from affecting UI
+  // Get checkGmailConnection function for the background check
+  const { silentCheckConnection } = useGmailConnection({ 
+    showLoadingUI: false // Explicit setting replacing skipLoading
   });
   
   // Run a single background connection check on mount
-  // This will not affect the UI rendering since we use skipLoading
   useEffect(() => {
-    // Use setTimeout to ensure this happens after initial render
-    // and doesn't block the UI in any way
-    const timer = setTimeout(() => {
-      if (user?.id) {
-        // Run a silent background check that won't affect UI
-        checkGmailConnection().catch(() => {
-          // Silently handle errors - we'll just show "Connect" button by default
-          console.log("Background Gmail check failed - continuing silently");
-        });
-        
-        // Clear any stale connection flags
-        sessionStorage.removeItem('gmailConnectionInProgress');
-        sessionStorage.removeItem('gmailConnectionAttemptTime');
-      }
-    }, 100); // Small delay ensures UI renders first
-    
-    return () => clearTimeout(timer);
-  }, [user?.id, checkGmailConnection]);
+    if (user?.id) {
+      // Clear any stale connection flags
+      sessionStorage.removeItem('gmailConnectionInProgress');
+      sessionStorage.removeItem('gmailConnectionAttemptTime');
+      
+      // Run background check
+      silentCheckConnection().catch(() => {
+        console.log("Background Gmail check failed - continuing silently");
+      });
+    }
+  }, [user?.id, silentCheckConnection]);
   
-  // Always render immediately - don't show loading states
   return (
     <Card>
       <CardHeader>
@@ -61,7 +53,7 @@ export const GmailCard: React.FC = () => {
           Allow this application to send emails on your behalf through your Gmail account.
         </p>
         
-        {/* Connection status indicator - only shows when connected */}
+        {/* Connection status indicator */}
         {isGmailConnected && (
           <div className="p-3 bg-green-50 border border-green-200 rounded-md mb-4">
             <p className="text-green-700 font-medium flex items-center">
@@ -71,11 +63,18 @@ export const GmailCard: React.FC = () => {
           </div>
         )}
         
+        {/* Loading indicator for any Gmail operations */}
+        <LoadingIndicator 
+          id="gmail-connection-check" 
+          className="mb-2"
+          size="sm"
+          text="Checking connection status..."
+        />
+        
         {/* Show either connect or disconnect button based on connection status */}
         {isGmailConnected ? (
           <GmailDisconnectButton 
             onDisconnect={handleDisconnectGmail}
-            isLoading={false} // Never show loading state
           />
         ) : (
           <div className="mb-2">

@@ -1,42 +1,79 @@
 
+import { useCallback, useEffect } from "react";
 import { useGmailConnectionStatus } from "./useGmailConnectionStatus";
 import { useGmailAuthFlow } from "./useGmailAuth";
 import { useGmailDisconnect } from "./useGmailDisconnect";
+import { useLoadingOperation } from "@/hooks/useLoadingOperation";
 
 interface UseGmailConnectionProps {
   onConnectionChange?: (connected: boolean) => void;
-  skipLoading?: boolean; // Prop to skip loading states
+  showLoadingUI?: boolean; // Replaces skipLoading with more explicit naming
 }
 
 export const useGmailConnection = (props: UseGmailConnectionProps = {}) => {
-  const { onConnectionChange, skipLoading = false } = props;
+  const { onConnectionChange, showLoadingUI = true } = props;
   
-  // Pass skipLoading to prevent loading states from being exposed to UI
+  // Use our new loading operation hook instead of skipLoading
+  const { 
+    isLoading: isCheckingConnection,
+    executeOperation,
+    executeSilentOperation
+  } = useLoadingOperation({ 
+    id: "gmail-connection-check",
+    showLoadingUI: showLoadingUI,
+  });
+  
   const { 
     isConnected, 
-    isLoading, 
     configError, 
-    checkGmailConnection, 
+    checkGmailConnection: rawCheckConnection, 
     refreshGmailToken,
     forceRefresh
   } = useGmailConnectionStatus({ 
-    onConnectionChange, 
-    skipLoading // Critical flag: prevents loading state from affecting UI
+    onConnectionChange
   });
   
   const { connectGmail } = useGmailAuthFlow({ onConnectionChange });
+  const { disconnectGmail: rawDisconnectGmail } = useGmailDisconnect({ onConnectionChange });
+
+  // Wrap connection check with loading state management
+  const checkGmailConnection = useCallback(async () => {
+    return executeOperation(async () => {
+      return rawCheckConnection();
+    });
+  }, [executeOperation, rawCheckConnection]);
   
-  const { disconnectGmail } = useGmailDisconnect({ onConnectionChange });
+  // Silently check connection status in the background without UI loading indicator
+  const silentCheckConnection = useCallback(async () => {
+    return executeSilentOperation(async () => {
+      return rawCheckConnection();
+    });
+  }, [executeSilentOperation, rawCheckConnection]);
+  
+  // Wrap disconnect with loading state management
+  const disconnectGmail = useCallback(async () => {
+    return executeOperation(async () => {
+      return rawDisconnectGmail();
+    });
+  }, [executeOperation, rawDisconnectGmail]);
+
+  // Run a silent check on mount if enabled
+  useEffect(() => {
+    // Silently check connection in the background without UI indicators
+    silentCheckConnection().catch(error => {
+      console.error("Background Gmail connection check failed:", error);
+    });
+  }, [silentCheckConnection]);
   
   return {
-    // When skipLoading is true, always hide loading state from components
     isConnected,
-    isLoading: skipLoading ? false : isLoading,
+    isLoading: isCheckingConnection,
     configError,
     connectGmail,
     disconnectGmail,
     checkGmailConnection,
     refreshGmailToken,
-    forceRefresh
+    forceRefresh,
+    silentCheckConnection
   };
 };
