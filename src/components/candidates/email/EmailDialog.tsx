@@ -6,10 +6,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { EmailTemplateSelector } from "./EmailTemplateSelector";
 import { EmailContent } from "./EmailContent";
-import { EmailDialogFooter } from "./EmailDialogFooter";
 import { EmailErrorAlert } from "./EmailErrorAlert";
 import { useMessageTemplates } from "@/hooks/useMessageTemplates";
-import { useEmailActions } from "@/hooks/useEmailActions";
+import { useEmailActions } from "./useEmailActions";
 import { useGmailAuth } from "@/hooks/useGmailAuth";
 import { useNavigate } from "react-router-dom";
 import { GmailConnectButton } from "./GmailConnectButton";
@@ -41,16 +40,36 @@ export function EmailDialog({
   const [selectedTemplate, setSelectedTemplate] = useState("m1");
   const navigate = useNavigate();
   
-  const { isGmailConnected, isCheckingGmail, errorMessage: authErrorMessage, checkGmailConnection } = useGmailAuth();
-  const { sendEmail, isSending, error: sendError, resetState } = useEmailActions();
+  // Use the component-specific useEmailActions hook for improved functionality
+  const {
+    isSending,
+    errorMessage,
+    isCheckingGmail,
+    isGmailConnected,
+    sendEmailViaGmail,
+    composeEmail,
+    checkGmailConnection,
+    threadId: currentThreadId
+  } = useEmailActions({
+    candidate: {
+      id: candidateId || 'temp-id',
+      name: candidateName,
+      email: candidateEmail,
+      threadIds: threadId ? { [jobId || 'default']: threadId } : {}
+    },
+    jobId,
+    jobTitle,
+    templates: templates || [],
+    selectedTemplate,
+    onSuccess: onClose
+  });
 
   // Reset selected template when dialog reopens
   useEffect(() => {
     if (isOpen) {
       setSelectedTemplate(threadId ? "custom" : "m1");
-      resetState();
     }
-  }, [isOpen, threadId, resetState]);
+  }, [isOpen, threadId]);
 
   // Check Gmail connection when dialog opens
   useEffect(() => {
@@ -61,22 +80,7 @@ export function EmailDialog({
 
   const handleSendEmail = async () => {
     if (!candidateEmail || !candidateName) return;
-    
-    await sendEmail({
-      candidateName,
-      candidateEmail,
-      jobTitle,
-      selectedTemplate,
-      templates: templates || [],
-      jobId,
-      candidateId,
-      threadId,
-      threadTitle,
-    });
-    
-    if (!sendError) {
-      onClose();
-    }
+    await sendEmailViaGmail();
   };
   
   const navigateToProfile = () => {
@@ -111,9 +115,9 @@ export function EmailDialog({
           </div>
         )}
 
-        {sendError && (
+        {errorMessage && (
           <EmailErrorAlert 
-            errorMessage={sendError}
+            errorMessage={errorMessage}
             onGoToProfile={navigateToProfile}
           />
         )}
