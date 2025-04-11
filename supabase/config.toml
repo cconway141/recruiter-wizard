@@ -9,3 +9,7 @@ verify_jwt = false
 
 [functions.send-gmail]
 verify_jwt = false
+
+[functions.extract-skills]
+verify_jwt = false
+
