@@ -1,5 +1,5 @@
 
-import { Job } from "@/types/job";
+import { Job, JobStatus, Locale, Flavor } from "@/types/job";
 import { JobFormValues } from "@/components/forms/JobFormDetails";
 
 /**
@@ -7,15 +7,37 @@ import { JobFormValues } from "@/components/forms/JobFormDetails";
  * This ensures all fields match the expected types for the form
  */
 export const mapJobToFormDefaults = (job: Job): JobFormValues => {
-  if (!job) return {};
+  if (!job) {
+    return {
+      candidateFacingTitle: '',
+      client: '',
+      compDesc: '',
+      locale: '' as Locale,
+      flavor: '' as Flavor,
+      status: '' as JobStatus,
+      rate: 0,
+      jd: '',
+      skillsSought: '',
+      minSkills: '',
+      owner: '',
+      videoQuestions: '',
+      screeningQuestions: '',
+      workDetails: '',
+      payDetails: '',
+      other: '',
+      m1: '',
+      m2: '',
+      m3: '',
+    };
+  }
   
   return {
     candidateFacingTitle: job.candidateFacingTitle,
     client: job.client,
     compDesc: job.compDesc,
-    locale: job.locale,
-    flavor: job.flavor,
-    status: job.status,
+    locale: job.locale as Locale,
+    flavor: job.flavor as Flavor,
+    status: job.status as JobStatus,
     rate: job.rate,
     jd: job.jd,
     skillsSought: job.skillsSought,
