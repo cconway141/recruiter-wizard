@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { supabase } from "@/integrations/supabase/client";
 import { JobFormValues } from "../JobFormDetails";
@@ -7,12 +7,13 @@ import { toast } from "@/hooks/use-toast";
 
 export function useClientSelection(form: UseFormReturn<JobFormValues>) {
   const [lastSelectedClient, setLastSelectedClient] = useState<string | null>(null);
+  const processingRef = useRef(false); // Add a ref to track processing state
 
   const handleClientSelection = async (clientName: string) => {
     if (!clientName) return;
     
-    // Prevent duplicate API calls for the same client
-    if (clientName === lastSelectedClient) {
+    // Prevent duplicate API calls for the same client or if currently processing
+    if (clientName === lastSelectedClient || processingRef.current) {
       console.log("Skipping duplicate client selection:", clientName);
       return;
     }
@@ -20,6 +21,7 @@ export function useClientSelection(form: UseFormReturn<JobFormValues>) {
     try {
       console.log("Fetching client description for:", clientName);
       setLastSelectedClient(clientName);
+      processingRef.current = true; // Set processing flag
       
       // Fetch the client details from the database
       const { data, error } = await supabase
@@ -51,6 +53,8 @@ export function useClientSelection(form: UseFormReturn<JobFormValues>) {
         description: "An unexpected error occurred while loading client data",
         variant: "destructive",
       });
+    } finally {
+      processingRef.current = false; // Clear processing flag when complete
     }
   };
 

@@ -73,7 +73,7 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
   
   const handleSubmit = async (values: JobFormValues) => {
     try {
-      console.log("Form submitted with values:", values);
+      console.log("Form submission started with values:", values);
       
       // Prevent multiple submissions
       if (isSubmitting) {
@@ -83,13 +83,15 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
       
       // Validate required fields
       if (!validateRequiredFields(values)) {
+        console.log("Form validation failed - missing required fields");
         return;
       }
       
       setIsSubmitting(true);
       document.querySelector('button[type="submit"]')?.setAttribute('disabled', 'true');
       
-      const localeName = values.locale?.name as Locale;
+      // Handle both object and string types for locale
+      const localeName = typeof values.locale === 'object' ? values.locale.name : values.locale as Locale;
       console.log("Processing locale:", localeName);
       
       const workDetails = await getWorkDetails(localeName);
@@ -100,7 +102,7 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
       const internalTitle = await generateInternalTitle(
         values.client,
         values.candidateFacingTitle,
-        values.flavor?.name || '',
+        typeof values.flavor === 'object' ? values.flavor.name || '' : values.flavor || '',
         localeName
       );
       
@@ -115,11 +117,11 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
         updateJob({
           ...job,
           ...values,
-          localeId: values.locale?.id,
-          flavorId: values.flavor?.id,
+          localeId: typeof values.locale === 'object' ? values.locale.id : undefined,
+          flavorId: typeof values.flavor === 'object' ? values.flavor.id : undefined,
           locale: localeName,
-          flavor: values.flavor?.name,
-          status: values.status.name,
+          flavor: typeof values.flavor === 'object' ? values.flavor.name : values.flavor,
+          status: typeof values.status === 'object' ? values.status.name : values.status,
           internalTitle,
           highRate: high,
           mediumRate: medium,
@@ -140,8 +142,9 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
       } else if (addJob) {
         console.log("Adding new job with values:", {
           ...values,
-          localeId: values.locale?.id,
-          flavorId: values.flavor?.id,
+          localeId: typeof values.locale === 'object' ? values.locale.id : undefined,
+          flavorId: typeof values.flavor === 'object' ? values.flavor.id : undefined,
+          status: typeof values.status === 'object' ? values.status.name : values.status,
           internalTitle,
           highRate: high,
           mediumRate: medium,
@@ -157,15 +160,17 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
           const result = await addJob({
             jd: values.jd,
             candidateFacingTitle: values.candidateFacingTitle,
-            status: values.status.name,
+            status: typeof values.status === 'object' ? values.status.name : values.status,
             skillsSought: values.skillsSought,
             minSkills: values.minSkills, 
             lir: values.lir,
             client: values.client,
             compDesc: values.compDesc,
             rate: values.rate,
-            localeId: values.locale?.id,
-            flavorId: values.flavor?.id,
+            localeId: typeof values.locale === 'object' ? values.locale.id : undefined,
+            flavorId: typeof values.flavor === 'object' ? values.flavor.id : undefined,
+            locale: localeName,
+            flavor: typeof values.flavor === 'object' ? values.flavor.name : values.flavor,
             owner: values.owner,
             date: values.date,
             other: values.other || "",
