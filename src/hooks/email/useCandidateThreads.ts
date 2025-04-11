@@ -54,9 +54,14 @@ export const useCandidateThreads = () => {
       });
       
       // Add the new thread info
+      if (!newMessageId) {
+        console.error("Missing messageId when saving thread info — aborting to prevent threading issues.");
+        return false;
+      }
+
       convertedThreadIds[jobId] = {
         threadId: newThreadId,
-        messageId: newMessageId || newThreadId // Fallback to threadId if messageId not provided
+        messageId: newMessageId
       };
       
       const { error: updateError } = await supabase

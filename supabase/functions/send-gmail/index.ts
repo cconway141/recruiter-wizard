@@ -166,6 +166,12 @@ async function sendGmailMessage(
     }
     
     const data = await response.json();
+
+    if (!data.id) {
+      console.error("Gmail API returned no messageId");
+      return { error: "Gmail API response missing messageId", details: data };
+    }
+    
     console.log("Gmail API response success:", {
       messageId: data.id,
       threadId: data.threadId
