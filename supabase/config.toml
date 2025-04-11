@@ -13,3 +13,12 @@ verify_jwt = false
 [functions.extract-skills]
 verify_jwt = false
 
+[functions.generate-video-questions]
+verify_jwt = false
+
+[functions.generate-screening-questions]
+verify_jwt = false
+
+[functions.generate-other-info]
+verify_jwt = false
+
