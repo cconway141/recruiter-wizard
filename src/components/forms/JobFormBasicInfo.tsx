@@ -1,3 +1,4 @@
+
 import { useFormContext, Controller } from "react-hook-form";
 import {
   FormControl,
@@ -63,8 +64,11 @@ export function JobFormBasicInfo({ handleClientSelection }: JobFormBasicInfoProp
               <FormLabel>Client</FormLabel>
               <Select 
                 onValueChange={(value) => {
-                  field.onChange(value);
-                  handleClientSelection(value);
+                  // Only trigger handleClientSelection if the value actually changed
+                  if (value !== field.value) {
+                    field.onChange(value);
+                    handleClientSelection(value);
+                  }
                 }} 
                 defaultValue={field.value}
               >

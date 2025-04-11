@@ -1,3 +1,4 @@
+
 import { useNavigate } from "react-router-dom";
 import { Job, Locale } from "@/types/job";
 import { useJobs } from "@/contexts/JobContext";
@@ -6,8 +7,9 @@ import { calculateRates } from "@/utils/rateUtils";
 import { generateInternalTitle } from "@/utils/titleUtils";
 import { getWorkDetails, getPayDetails } from "@/utils/localeUtils";
 import { generateM1, generateM2, generateM3 } from "@/utils/messageUtils";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { useSupabaseData } from "@/hooks/useSupabaseData";
+import { useState } from "react";
 
 interface FormProcessorProps {
   onSubmit: (values: JobFormValues) => void;
@@ -16,7 +18,9 @@ interface FormProcessorProps {
 }
 
 export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEditing?: boolean }) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
   let jobContext;
+  
   try {
     jobContext = useJobs();
   } catch (error) {
@@ -29,7 +33,8 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
           description: "Unable to access job data. Please refresh the page.",
           variant: "destructive",
         });
-      }
+      },
+      isSubmitting
     };
   }
   
@@ -37,11 +42,56 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
   const navigate = useNavigate();
   const { loadFromSupabase } = useSupabaseData();
   
+  const validateRequiredFields = (values: JobFormValues): boolean => {
+    // Check for essential fields to avoid silent failures
+    const requiredFields = [
+      { name: 'candidateFacingTitle', label: 'Job Title' },
+      { name: 'client', label: 'Client' },
+      { name: 'rate', label: 'Rate' },
+      { name: 'jd', label: 'Job Description' },
+      { name: 'compDesc', label: 'Company Description' },
+      { name: 'skillsSought', label: 'Skills Sought' },
+    ];
+    
+    const missingFields = requiredFields.filter(field => {
+      const value = values[field.name as keyof JobFormValues];
+      return !value || (typeof value === 'string' && value.trim() === '');
+    });
+    
+    if (missingFields.length > 0) {
+      const fieldNames = missingFields.map(f => f.label).join(', ');
+      toast({
+        title: "Missing Required Fields",
+        description: `Please fill in the following required fields: ${fieldNames}`,
+        variant: "destructive",
+      });
+      return false;
+    }
+    
+    return true;
+  };
+  
   const handleSubmit = async (values: JobFormValues) => {
     try {
       console.log("Form submitted with values:", values);
       
+      // Prevent multiple submissions
+      if (isSubmitting) {
+        console.log("Form submission already in progress, ignoring duplicate submit");
+        return;
+      }
+      
+      // Validate required fields
+      if (!validateRequiredFields(values)) {
+        return;
+      }
+      
+      setIsSubmitting(true);
+      document.querySelector('button[type="submit"]')?.setAttribute('disabled', 'true');
+      
       const localeName = values.locale?.name as Locale;
+      console.log("Processing locale:", localeName);
+      
       const workDetails = await getWorkDetails(localeName);
       const payDetails = await getPayDetails(localeName);
       
@@ -53,6 +103,8 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
         values.flavor?.name || '',
         localeName
       );
+      
+      console.log("Generated internal title:", internalTitle);
       
       const m1 = generateM1("[First Name]", values.candidateFacingTitle, values.compDesc);
       const m2 = generateM2(values.candidateFacingTitle, payDetails, workDetails, values.skillsSought);
@@ -102,9 +154,7 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
         });
         
         try {
-          document.querySelector('button[type="submit"]')?.setAttribute('disabled', 'true');
-          
-          await addJob({
+          const result = await addJob({
             jd: values.jd,
             candidateFacingTitle: values.candidateFacingTitle,
             status: values.status.name,
@@ -123,16 +173,20 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
             screeningQuestions: values.screeningQuestions,
           });
           
-          toast({
-            title: "Job Created",
-            description: `${internalTitle} has been added successfully.`,
-            variant: "default",
-            className: "bg-green-500 text-white border-green-600",
-          });
-          
-          await loadFromSupabase();
-          
-          navigate("/");
+          if (result) {
+            toast({
+              title: "Job Created",
+              description: `${internalTitle} has been added successfully.`,
+              variant: "default",
+              className: "bg-green-500 text-white border-green-600",
+            });
+            
+            await loadFromSupabase();
+            
+            navigate("/");
+          } else {
+            throw new Error("Failed to create job - no result returned");
+          }
         } catch (addError) {
           console.error("Error in addJob:", addError);
           toast({
@@ -140,7 +194,6 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
             description: `Failed to create job: ${addError instanceof Error ? addError.message : String(addError)}`,
             variant: "destructive",
           });
-          document.querySelector('button[type="submit"]')?.removeAttribute('disabled');
         }
       } else {
         throw new Error("addJob function is not available");
@@ -152,10 +205,11 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
         description: `Failed to ${isEditing ? "update" : "create"} job: ${err instanceof Error ? err.message : String(err)}`,
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
       document.querySelector('button[type="submit"]')?.removeAttribute('disabled');
-      throw err;
     }
   };
 
-  return { handleSubmit };
+  return { handleSubmit, isSubmitting };
 }
