@@ -289,7 +289,7 @@ export type Database = {
           rate: number
           screening_questions: string
           skills_sought: string
-          status: string
+          status?: string
           status_id?: string | null
           updated_at?: string
           video_questions: string
