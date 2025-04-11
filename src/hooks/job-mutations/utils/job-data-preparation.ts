@@ -34,7 +34,7 @@ export const prepareJobForCreate = async (
   return {
     ...job,
     id: uuid(),
-    status: job.status || "open", // ✅ add this
+    status: job.status || "Active", // Default to "Active" status
     internalTitle,
     highRate,
     mediumRate,
