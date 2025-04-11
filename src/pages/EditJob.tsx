@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/layout/Navbar";
@@ -13,6 +12,7 @@ import { JobFormValues } from "@/components/forms/JobFormDetails";
 import { supabase } from "@/integrations/supabase/client";
 import { Job, JobStatus, Locale, Flavor } from "@/types/job";
 import { useToast } from "@/hooks/use-toast";
+import { mapJobToFormDefaults } from "@/utils/mapJobToFormDefaults";
 
 const EditJob = () => {
   const { id } = useParams<{ id: string }>();
@@ -31,27 +31,7 @@ const EditJob = () => {
 
   // Create form instance here to pass down to JobForm
   const form = useForm<JobFormValues>({
-    defaultValues: job ? {
-      candidateFacingTitle: job.candidateFacingTitle,
-      client: job.client,
-      compDesc: job.compDesc,
-      locale: { id: job.localeId, name: job.locale },
-      flavor: { id: job.flavorId, name: job.flavor },
-      status: { id: job.statusId, name: job.status },
-      rate: job.rate,
-      jd: job.jd,
-      skillsSought: job.skillsSought,
-      minSkills: job.minSkills,
-      owner: job.owner,
-      videoQuestions: job.videoQuestions,
-      screeningQuestions: job.screeningQuestions,
-      workDetails: job.workDetails,
-      payDetails: job.payDetails,
-      other: job.other,
-      m1: job.m1,
-      m2: job.m2,
-      m3: job.m3,
-    } : {},
+    defaultValues: job ? mapJobToFormDefaults(job) : {},
   });
 
   // Fetch job directly from Supabase if it's not in the context
