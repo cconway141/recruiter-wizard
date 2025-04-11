@@ -1,6 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.29.0";
 
 // Environment variables
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
@@ -121,33 +121,34 @@ async function sendGmailMessage(
   }
   
   try {
-    // Log request parameters
+    // Log request parameters for debugging
     console.log("Sending Gmail with params:", {
       to,
       cc: cc ? "Set" : "Not set",
-      subject: subject ? "Set" : "Not set",
+      subject: subject ? `"${subject}"` : "Reply",
       bodyLength: body?.length || 0,
-      threadId: threadId || "Not set",
-      messageId: messageId || "Not set",
+      threadId: threadId || "New thread",
+      messageId: messageId || "None",
     });
     
-    // Build email headers
+    // Build email headers with proper threading
     const headers = buildEmailHeaders(to, cc, subject, messageId);
     
-    // Build email content
-    let email: any = {
+    // Create email payload
+    const email: any = {
       raw: btoa(headers + body)
         .replace(/\+/g, '-')
         .replace(/\//g, '_')
         .replace(/=+$/, '')
     };
     
-    // Add thread ID if provided (for replies)
-    if (threadId) {
-      email.threadId = threadId;
+    // Only add threadId if it exists and is not empty
+    if (threadId && threadId.trim()) {
+      console.log("Adding threadId to request:", threadId);
+      email.threadId = threadId.trim();
     }
     
-    // Build API URL
+    // Gmail API endpoint
     const url = 'https://gmail.googleapis.com/gmail/v1/users/me/messages/send';
     
     // Make the request to Gmail API
@@ -165,7 +166,7 @@ async function sendGmailMessage(
     }
     
     const data = await response.json();
-    console.log("Gmail API response:", {
+    console.log("Gmail API response success:", {
       messageId: data.id,
       threadId: data.threadId
     });
@@ -188,8 +189,8 @@ function buildEmailHeaders(to: string, cc: string, subject: string, messageId?: 
   if (subject) headers += `Subject: ${subject}\r\n`;
   
   // Add threading headers if this is a reply
-  if (messageId) {
-    console.log("Adding threading headers with messageId:", messageId);
+  if (messageId && messageId.trim()) {
+    console.log("Adding In-Reply-To and References headers with messageId:", messageId);
     headers += `In-Reply-To: <${messageId}>\r\n`;
     headers += `References: <${messageId}>\r\n`;
   }
@@ -223,18 +224,18 @@ async function getGmailTokens(userId: string) {
     .single();
   
   if (tokenError || !tokenData) {
+    console.error("Error retrieving Gmail token:", tokenError);
     return { error: 'Gmail not connected' };
   }
   
   // Check if token is expired
   if (new Date(tokenData.expires_at) <= new Date()) {
-    console.log('Token expired, refresh needed');
+    console.log("Token expired, refresh needed");
     
     if (!tokenData.refresh_token) {
       return { error: 'No refresh token available. Please reconnect Gmail.' };
     }
     
-    // Refresh logic is handled by the google-auth function
     return { error: 'Gmail token expired' };
   }
   
@@ -268,7 +269,7 @@ serve(async (req) => {
     // Validate required fields
     if (!userId || !to || !emailBody) {
       return new Response(
-        JSON.stringify({ error: 'Missing required fields' }),
+        JSON.stringify({ error: 'Missing required fields', details: 'userId, to, and body are required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -296,7 +297,7 @@ serve(async (req) => {
     }
     
     // Send the email
-    console.log(`Sending email to ${to} with subject "${subject || 'Reply'}"`);
+    console.log(`Sending email to ${to}${threadId ? ' (reply)' : ' (new thread)'}`);
     console.log(`Thread ID: ${threadId || 'New thread'}, Message ID: ${messageId || 'None'}`);
     
     const sendResult = await sendGmailMessage(

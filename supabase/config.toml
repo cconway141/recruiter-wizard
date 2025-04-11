@@ -1,5 +1,5 @@
 
-project_id = "evggwokrvotnnkazteia"
+project_id = "evggwokrvotnnkazteiat"
 
 # This is a Supabase configuration file.
 # It is used to configure the edge functions in your project.
@@ -21,4 +21,3 @@ verify_jwt = false
 
 [functions.generate-other-info]
 verify_jwt = false
-

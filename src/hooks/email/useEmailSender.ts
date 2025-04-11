@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -53,11 +52,12 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
         body,
         length: body.length,
         firstChars: body.substring(0, 100),
-        threadId: threadId || 'new email'
+        threadId: threadId || 'new email',
+        messageId: messageId || 'none'  // Log messageId for debugging
       });
       
       // Create the payload object, conditionally including threadId and messageId
-      const payload = {
+      const payload: any = {
         to,
         cc,
         subject: finalSubject,
@@ -68,12 +68,15 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
       };
       
       // Only include threadId and messageId if they're defined
-      if (threadId) {
-        Object.assign(payload, { threadId: threadId.trim() });
+      // Important: Only include them if they are non-empty strings
+      if (threadId && threadId.trim()) {
+        payload.threadId = threadId.trim();
+        console.log("Including threadId in request:", threadId.trim());
       }
       
-      if (messageId) {
-        Object.assign(payload, { messageId: messageId.trim() });
+      if (messageId && messageId.trim()) {
+        payload.messageId = messageId.trim();
+        console.log("Including messageId in request:", messageId.trim());
       }
       
       // Proactively check Gmail token before sending
@@ -83,10 +86,11 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
           userId: user.id
         }
       });
+      
       if (connection.data?.expired && connection.data?.hasRefreshToken) {
         const refreshed = await refreshGmailToken();
         if (!refreshed) {
-          throw new Error("Gmail token is expired and could not be refreshed");
+          throw new Error("Gmail token expired and could not be refreshed");
         }
       }
       
@@ -95,10 +99,12 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
       });
       
       if (error) {
+        console.error("Error sending email via function:", error);
         throw new Error(error.message || "Failed to send email");
       }
       
       if (data?.error) {
+        console.error("Error from send-gmail function:", data.error);
         if (data.error.includes("token expired") || data.error.includes("not connected")) {
           const refreshed = await refreshGmailToken();
           if (refreshed) {
@@ -109,6 +115,11 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
         
         throw new Error(data.error);
       }
+      
+      console.log("Email sent successfully:", {
+        threadId: data?.threadId,
+        messageId: data?.messageId
+      });
       
       if (onSuccess) {
         onSuccess();
