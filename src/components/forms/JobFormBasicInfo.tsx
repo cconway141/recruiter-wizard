@@ -1,4 +1,3 @@
-
 import { useFormContext, Controller } from "react-hook-form";
 import {
   FormControl,
@@ -45,7 +44,6 @@ export function JobFormBasicInfo({ handleClientSelection }: JobFormBasicInfoProp
     console.log("Role options:", roleOptions);
   }, [userOptions, roleOptions]);
 
-  // If form context is not available, show a placeholder
   if (!form || !form.control) {
     return (
       <div className="p-4 border border-dashed rounded-md">
@@ -132,7 +130,6 @@ export function JobFormBasicInfo({ handleClientSelection }: JobFormBasicInfoProp
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Updated Flavor dropdown using Controller */}
         <Controller
           control={form.control}
           name="flavor"
@@ -164,7 +161,6 @@ export function JobFormBasicInfo({ handleClientSelection }: JobFormBasicInfoProp
           )}
         />
         
-        {/* Updated Locale dropdown using Controller */}
         <Controller
           control={form.control}
           name="locale"
@@ -174,9 +170,9 @@ export function JobFormBasicInfo({ handleClientSelection }: JobFormBasicInfoProp
               <Select 
                 onValueChange={(value) => {
                   const selectedLocale = localeOptions?.find(locale => locale.id === value);
-                  field.onChange(selectedLocale);
+                  field.onChange(selectedLocale ? selectedLocale.name : null);
                 }} 
-                value={field.value?.id}
+                value={field.value}
               >
                 <FormControl>
                   <SelectTrigger>
