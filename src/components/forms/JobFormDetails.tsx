@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { Locale } from "@/types/job";
@@ -14,7 +13,9 @@ import { JobFormOtherInfo } from "./job-details/JobFormOtherInfo";
 export interface JobFormValues {
   candidateFacingTitle: string;
   compDesc: string;
-  locale: string;
+  locale: { id: string; name: string };
+  flavor: { id: string; name: string };
+  status: { id: string; name: string };
   skillsSought: string;
   videoQuestions: string;
   workDetails: string;
