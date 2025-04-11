@@ -1,6 +1,6 @@
 
+import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { JobForm } from "@/components/forms/JobForm";
@@ -35,9 +35,9 @@ const EditJob = () => {
       candidateFacingTitle: job.candidateFacingTitle,
       client: job.client,
       compDesc: job.compDesc,
-      locale: job.locale as Locale, // Added type casting
-      flavor: job.flavor as Flavor, // Added type casting
-      status: job.status as JobStatus, // Added type casting
+      locale: { id: job.localeId, name: job.locale },
+      flavor: { id: job.flavorId, name: job.flavor },
+      status: { id: job.statusId, name: job.status },
       rate: job.rate,
       jd: job.jd,
       skillsSought: job.skillsSought,
