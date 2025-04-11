@@ -17,7 +17,7 @@ export function TableActions({ jobId, onDelete }: TableActionsProps) {
           <Eye className="h-4 w-4" />
         </Button>
       </Link>
-      <Link to={`/jobs/${jobId}/edit`}>
+      <Link to={`/jobs/edit/${jobId}`}>
         <Button variant="ghost" size="icon">
           <Pencil className="h-4 w-4" />
         </Button>

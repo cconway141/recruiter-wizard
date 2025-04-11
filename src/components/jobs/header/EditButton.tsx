@@ -11,7 +11,7 @@ export const EditButton = ({ jobId }: EditButtonProps) => {
   const navigate = useNavigate();
   
   return (
-    <Button onClick={() => navigate(`/jobs/${jobId}/edit`)}>
+    <Button onClick={() => navigate(`/jobs/edit/${jobId}`)}>
       <Pencil className="mr-2 h-4 w-4" /> Edit Job
     </Button>
   );
