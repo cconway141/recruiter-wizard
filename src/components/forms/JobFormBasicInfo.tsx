@@ -168,20 +168,19 @@ export function JobFormBasicInfo({ handleClientSelection }: JobFormBasicInfoProp
             <FormItem>
               <FormLabel>Locale</FormLabel>
               <Select 
-                onValueChange={(value) => {
-                  const selectedLocale = localeOptions?.find(locale => locale.id === value);
-                  field.onChange(selectedLocale ? selectedLocale.name : null);
-                }} 
+                onValueChange={field.onChange} 
                 value={field.value}
               >
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select locale" />
+                    <SelectValue placeholder="Select locale">
+                      {field.value}
+                    </SelectValue>
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
                   {localeOptions?.map((locale) => (
-                    <SelectItem key={locale.id} value={locale.id}>
+                    <SelectItem key={locale.id} value={locale.name}>
                       {locale.name}
                     </SelectItem>
                   ))}
