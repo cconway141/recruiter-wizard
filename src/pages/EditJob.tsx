@@ -11,7 +11,7 @@ import { Form } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { JobFormValues } from "@/components/forms/JobFormDetails";
 import { supabase } from "@/integrations/supabase/client";
-import { Job } from "@/types/job";
+import { Job, JobStatus, Locale, Flavor } from "@/types/job";
 import { useToast } from "@/hooks/use-toast";
 
 const EditJob = () => {
@@ -35,9 +35,9 @@ const EditJob = () => {
       candidateFacingTitle: job.candidateFacingTitle,
       client: job.client,
       compDesc: job.compDesc,
-      locale: job.locale,
-      flavor: job.flavor,
-      status: job.status,
+      locale: job.locale as Locale, // Added type casting
+      flavor: job.flavor as Flavor, // Added type casting
+      status: job.status as JobStatus, // Added type casting
       rate: job.rate,
       jd: job.jd,
       skillsSought: job.skillsSought,
