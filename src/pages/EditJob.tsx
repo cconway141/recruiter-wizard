@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/layout/Navbar";
@@ -10,7 +11,7 @@ import { Form } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { JobFormValues } from "@/components/forms/JobFormDetails";
 import { supabase } from "@/integrations/supabase/client";
-import { Job } from "@/types/job";
+import { Job, JobStatus, Locale, Flavor } from "@/types/job";
 import { useToast } from "@/hooks/use-toast";
 import { mapJobToFormDefaults } from "@/utils/mapJobToFormDefaults";
 
@@ -68,7 +69,7 @@ const EditJob = () => {
         internalTitle: data.internal_title,
         candidateFacingTitle: data.candidate_facing_title,
         jd: data.jd,
-        status: data.status,
+        status: data.status as JobStatus,
         m1: data.m1,
         m2: data.m2,
         m3: data.m3,
@@ -83,7 +84,7 @@ const EditJob = () => {
         highRate: Number(data.high_rate),
         mediumRate: Number(data.medium_rate),
         lowRate: Number(data.low_rate),
-        locale: data.locale,
+        locale: data.locale as Locale,
         localeId: data.locale_id,
         owner: data.owner,
         ownerId: data.owner_id,
@@ -93,7 +94,7 @@ const EditJob = () => {
         other: data.other || "",
         videoQuestions: data.video_questions,
         screeningQuestions: data.screening_questions,
-        flavor: data.flavor,
+        flavor: data.flavor as Flavor,
         flavorId: data.flavor_id,
         statusId: data.status_id
       };
@@ -234,3 +235,4 @@ const EditJob = () => {
 };
 
 export default EditJob;
+
