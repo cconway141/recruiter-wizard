@@ -1,4 +1,5 @@
-import { useFormContext } from "react-hook-form";
+
+import { useFormContext, Controller } from "react-hook-form";
 import {
   FormControl,
   FormField,
@@ -131,13 +132,20 @@ export function JobFormBasicInfo({ handleClientSelection }: JobFormBasicInfoProp
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <FormField
+        {/* Updated Flavor dropdown using Controller */}
+        <Controller
           control={form.control}
           name="flavor"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Flavor</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select 
+                onValueChange={(value) => {
+                  const selectedFlavor = flavorOptions?.find(flavor => flavor.id === value);
+                  field.onChange(selectedFlavor);
+                }} 
+                value={field.value?.id}
+              >
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Select flavor" />
@@ -145,7 +153,7 @@ export function JobFormBasicInfo({ handleClientSelection }: JobFormBasicInfoProp
                 </FormControl>
                 <SelectContent>
                   {flavorOptions?.map((flavor) => (
-                    <SelectItem key={flavor.id} value={flavor.name}>
+                    <SelectItem key={flavor.id} value={flavor.id}>
                       {flavor.name}
                     </SelectItem>
                   ))}
@@ -156,13 +164,20 @@ export function JobFormBasicInfo({ handleClientSelection }: JobFormBasicInfoProp
           )}
         />
         
-        <FormField
+        {/* Updated Locale dropdown using Controller */}
+        <Controller
           control={form.control}
           name="locale"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Locale</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select 
+                onValueChange={(value) => {
+                  const selectedLocale = localeOptions?.find(locale => locale.id === value);
+                  field.onChange(selectedLocale);
+                }} 
+                value={field.value?.id}
+              >
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Select locale" />
@@ -170,7 +185,7 @@ export function JobFormBasicInfo({ handleClientSelection }: JobFormBasicInfoProp
                 </FormControl>
                 <SelectContent>
                   {localeOptions?.map((locale) => (
-                    <SelectItem key={locale.id} value={locale.name}>
+                    <SelectItem key={locale.id} value={locale.id}>
                       {locale.name}
                     </SelectItem>
                   ))}
