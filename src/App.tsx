@@ -16,6 +16,7 @@ import Profile from "./pages/Profile";
 import { Toaster } from "./components/ui/toaster";
 import { GmailCallback } from "./components/candidates/email/GmailCallback";
 import { GoogleCallback } from "./components/auth/GoogleCallback";
+import TestLogin from "./pages/admin/TestLogin";
 
 function App() {
   return (
@@ -27,6 +28,9 @@ function App() {
               <Route path="/auth" element={<Auth />} />
               <Route path="/auth/callback" element={<GoogleCallback />} />
               <Route path="/auth/gmail-callback" element={<GmailCallback />} />
+              {process.env.NODE_ENV !== 'production' && (
+                <Route path="/admin/test-login" element={<TestLogin />} />
+              )}
               <Route
                 path="/"
                 element={
