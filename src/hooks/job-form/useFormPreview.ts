@@ -10,7 +10,9 @@ import { generateM1, generateM2, generateM3 } from "@/utils/messageUtils";
 interface JobFormValues {
   candidateFacingTitle: string;
   compDesc: string;
-  locale: string;
+  locale: { id: string; name: string };
+  flavor: { id: string; name: string };
+  status: { id: string; name: string };
   skillsSought: string;
   videoQuestions: string;
   workDetails: string;
@@ -24,7 +26,6 @@ interface JobFormValues {
   m3: string;
   owner: string;
   client: string;
-  flavor: string;
   rate: number;
   previewName?: string;
   [key: string]: any;
@@ -64,8 +65,8 @@ export function useFormPreview(form: UseFormReturn<JobFormValues>) {
           const newTitle = await generateInternalTitle(
             watchedFields.client,
             watchedFields.candidateFacingTitle,
-            watchedFields.flavor,
-            watchedFields.locale as Locale
+            watchedFields.flavor.name,
+            watchedFields.locale.name as Locale
           );
           setPreviewTitle(newTitle);
         } catch (err) {

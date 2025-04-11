@@ -39,8 +39,8 @@ export function useFormPreview(form: UseFormReturn<JobFormValues>) {
           const newTitle = await generateInternalTitle(
             watchedFields.client,
             watchedFields.candidateFacingTitle,
-            watchedFields.flavor,
-            watchedFields.locale as Locale
+            watchedFields.flavor.name,
+            watchedFields.locale.name as Locale
           );
           setPreviewTitle(newTitle);
         } catch (err) {

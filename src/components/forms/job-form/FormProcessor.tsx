@@ -1,3 +1,4 @@
+
 import { useNavigate } from "react-router-dom";
 import { Job, Locale } from "@/types/job";
 import { useJobs } from "@/contexts/JobContext";
@@ -48,9 +49,10 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
         throw new Error("Job context functions not available");
       }
       
-      const locale = values.locale as Locale;
-      const workDetails = await getWorkDetails(locale);
-      const payDetails = await getPayDetails(locale);
+      // Extract the locale name from the locale object
+      const localeName = values.locale.name as Locale;
+      const workDetails = await getWorkDetails(localeName);
+      const payDetails = await getPayDetails(localeName);
       
       const { high, medium, low } = calculateRates(values.rate);
       
@@ -58,8 +60,8 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
       const internalTitle = await generateInternalTitle(
         values.client,
         values.candidateFacingTitle,
-        values.flavor,
-        locale
+        values.flavor.name,
+        localeName
       );
       
       // Generate message templates
@@ -72,7 +74,9 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
         updateJob({
           ...job,
           ...values,
-          locale: locale,
+          locale: localeName,
+          flavor: values.flavor.name,
+          status: values.status.name,
           internalTitle,
           highRate: high,
           mediumRate: medium,
@@ -112,20 +116,20 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
           await addJob({
             jd: values.jd,
             candidateFacingTitle: values.candidateFacingTitle,
-            status: values.status,
+            status: values.status.name,
             skillsSought: values.skillsSought,
             minSkills: values.minSkills, 
             lir: values.lir,
             client: values.client,
             compDesc: values.compDesc,
             rate: values.rate,
-            locale: locale,
+            locale: localeName,
             owner: values.owner,
             date: values.date,
             other: values.other || "",
             videoQuestions: values.videoQuestions,
             screeningQuestions: values.screeningQuestions,
-            flavor: values.flavor,
+            flavor: values.flavor.name,
           });
           
           // Show success toast
