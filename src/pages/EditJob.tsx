@@ -10,7 +10,7 @@ import { Form } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { JobFormValues } from "@/components/forms/JobFormDetails";
 import { supabase } from "@/integrations/supabase/client";
-import { Job, JobStatus, Locale, Flavor } from "@/types/job";
+import { Job } from "@/types/job";
 import { useToast } from "@/hooks/use-toast";
 import { mapJobToFormDefaults } from "@/utils/mapJobToFormDefaults";
 
