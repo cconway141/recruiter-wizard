@@ -67,15 +67,19 @@ export const useEmailSending = ({
       setIsSending(true);
       setErrorMessage(null);
       
+      // Determine if this is a new thread
+      const isNewThread = !threadId;
+      
       console.log("Sending email with:", {
         candidateEmail,
-        subject: threadId ? "" : subject,
-        threadId,
-        messageId
+        subject: isNewThread ? subject : "",
+        threadId: isNewThread ? undefined : threadId,
+        messageId: isNewThread ? undefined : messageId,
+        isNewThread
       });
 
       // For replies, don't pass subject - Gmail will use the thread's subject
-      const emailSubject = threadId ? "" : subject;
+      const emailSubject = isNewThread ? subject : "";
       
       const result = await sendEmailViaGmail(
         candidateEmail,
@@ -83,8 +87,8 @@ export const useEmailSending = ({
         body,
         candidateName,
         candidateFacingTitle || "",
-        threadId,
-        messageId
+        isNewThread ? undefined : threadId,
+        isNewThread ? undefined : messageId
       );
 
       if (result?.threadId && candidateId && jobId) {

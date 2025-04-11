@@ -98,14 +98,15 @@ export const useEmailDialogState = ({
     threadId
   });
 
+  // Pass the cleaned threadId and messageId to the email sending hook
   const { isSending, errorMessage, handleSendEmail, handleComposeInGmail } = useEmailSending({
     candidateId,
     candidateName,
     candidateEmail,
     jobId,
     candidateFacingTitle,
-    threadId,
-    messageId,
+    threadId,  // This is already cleaned in useEmailDialog
+    messageId, // This comes from useGmailThread which handles fetching the proper messageId
     onClose
   });
 

@@ -37,6 +37,9 @@ export const useEmailDialog = ({
     threadTitle
   });
   
+  // Filter out "new email" placeholder from threadId
+  const cleanedThreadId = threadId && threadId !== "new email" ? threadId : null;
+  
   // Validate that we have a job title
   if (!candidateFacingTitle) {
     console.error("ERROR: No job title provided to useEmailDialog. This should never happen.");
@@ -65,7 +68,7 @@ export const useEmailDialog = ({
     jobId,
     candidateFacingTitle, // Pass the job title directly
     candidateId,
-    threadId,
+    threadId: cleanedThreadId, // Pass cleaned threadId instead of raw value
     threadTitle,
     onClose,
   });

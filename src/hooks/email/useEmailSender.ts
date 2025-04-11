@@ -56,18 +56,28 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
         threadId: threadId || 'new email'
       });
       
+      // Create the payload object, conditionally including threadId and messageId
+      const payload = {
+        to,
+        cc,
+        subject: finalSubject,
+        body,
+        candidateName,
+        jobTitle,
+        userId: user.id
+      };
+      
+      // Only include threadId and messageId if they're defined
+      if (threadId) {
+        Object.assign(payload, { threadId: threadId.trim() });
+      }
+      
+      if (messageId) {
+        Object.assign(payload, { messageId: messageId.trim() });
+      }
+      
       const { data, error } = await supabase.functions.invoke('send-gmail', {
-        body: {
-          to,
-          cc,
-          subject: finalSubject,
-          body,
-          candidateName,
-          jobTitle,
-          threadId: threadId?.trim() || undefined,
-          messageId: messageId?.trim() || undefined,
-          userId: user.id
-        }
+        body: payload
       });
       
       if (error) {
