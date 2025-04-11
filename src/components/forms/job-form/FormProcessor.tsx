@@ -1,4 +1,3 @@
-
 import { useNavigate } from "react-router-dom";
 import { Job, Locale } from "@/types/job";
 import { useJobs } from "@/contexts/JobContext";
@@ -17,13 +16,11 @@ interface FormProcessorProps {
 }
 
 export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEditing?: boolean }) {
-  // Check if useJobs() is returning null
   let jobContext;
   try {
     jobContext = useJobs();
   } catch (error) {
     console.error("Error accessing JobContext:", error);
-    // Return a default object to prevent null errors
     return {
       handleSubmit: () => {
         console.error("Job context not available. Cannot submit form.");
@@ -44,27 +41,19 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
     try {
       console.log("Form submitted with values:", values);
       
-      // Check if we have necessary functions from context
-      if (!addJob && !updateJob) {
-        throw new Error("Job context functions not available");
-      }
-      
-      // Extract the locale name from the locale object
-      const localeName = values.locale.name as Locale;
+      const localeName = values.locale?.name as Locale;
       const workDetails = await getWorkDetails(localeName);
       const payDetails = await getPayDetails(localeName);
       
       const { high, medium, low } = calculateRates(values.rate);
       
-      // Generate the internal title using the correct format
       const internalTitle = await generateInternalTitle(
         values.client,
         values.candidateFacingTitle,
-        values.flavor.name,
+        values.flavor?.name || '',
         localeName
       );
       
-      // Generate message templates
       const m1 = generateM1("[First Name]", values.candidateFacingTitle, values.compDesc);
       const m2 = generateM2(values.candidateFacingTitle, payDetails, workDetails, values.skillsSought);
       const m3 = generateM3(values.videoQuestions);
@@ -74,8 +63,10 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
         updateJob({
           ...job,
           ...values,
+          localeId: values.locale?.id,
+          flavorId: values.flavor?.id,
           locale: localeName,
-          flavor: values.flavor.name,
+          flavor: values.flavor?.name,
           status: values.status.name,
           internalTitle,
           highRate: high,
@@ -93,11 +84,12 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
           description: `${internalTitle} has been updated successfully.`,
         });
         
-        // Navigate after successful update
         navigate("/");
       } else if (addJob) {
         console.log("Adding new job with values:", {
           ...values,
+          localeId: values.locale?.id,
+          flavorId: values.flavor?.id,
           internalTitle,
           highRate: high,
           mediumRate: medium,
@@ -110,7 +102,6 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
         });
         
         try {
-          // Disable the submit button while processing
           document.querySelector('button[type="submit"]')?.setAttribute('disabled', 'true');
           
           await addJob({
@@ -123,16 +114,15 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
             client: values.client,
             compDesc: values.compDesc,
             rate: values.rate,
-            locale: localeName,
+            localeId: values.locale?.id,
+            flavorId: values.flavor?.id,
             owner: values.owner,
             date: values.date,
             other: values.other || "",
             videoQuestions: values.videoQuestions,
             screeningQuestions: values.screeningQuestions,
-            flavor: values.flavor.name,
           });
           
-          // Show success toast
           toast({
             title: "Job Created",
             description: `${internalTitle} has been added successfully.`,
@@ -140,10 +130,8 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
             className: "bg-green-500 text-white border-green-600",
           });
           
-          // Refresh data from Supabase before navigating
           await loadFromSupabase();
           
-          // Navigate to home page after successful creation
           navigate("/");
         } catch (addError) {
           console.error("Error in addJob:", addError);
@@ -152,7 +140,6 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
             description: `Failed to create job: ${addError instanceof Error ? addError.message : String(addError)}`,
             variant: "destructive",
           });
-          // Re-enable submit button on error
           document.querySelector('button[type="submit"]')?.removeAttribute('disabled');
         }
       } else {
@@ -165,9 +152,8 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
         description: `Failed to ${isEditing ? "update" : "create"} job: ${err instanceof Error ? err.message : String(err)}`,
         variant: "destructive",
       });
-      // Re-enable submit button on error
       document.querySelector('button[type="submit"]')?.removeAttribute('disabled');
-      throw err; // Re-throw to prevent navigation
+      throw err;
     }
   };
 
