@@ -76,6 +76,20 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
         Object.assign(payload, { messageId: messageId.trim() });
       }
       
+      // Proactively check Gmail token before sending
+      const connection = await supabase.functions.invoke('google-auth', {
+        body: {
+          action: 'check-token',
+          userId: user.id
+        }
+      });
+      if (connection.data?.expired && connection.data?.hasRefreshToken) {
+        const refreshed = await refreshGmailToken();
+        if (!refreshed) {
+          throw new Error("Gmail token is expired and could not be refreshed");
+        }
+      }
+      
       const { data, error } = await supabase.functions.invoke('send-gmail', {
         body: payload
       });
