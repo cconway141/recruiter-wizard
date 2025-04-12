@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { Locale } from "@/types/job";
+import { Locale, DEFAULT_WORK_DETAILS, DEFAULT_PAY_DETAILS } from "@/types/job";
 
 /**
  * Get work details based on locale
@@ -15,13 +15,13 @@ export async function getWorkDetails(locale: Locale): Promise<string> {
     
     if (error || !data) {
       console.error("Error fetching work details:", error);
-      return "";
+      return DEFAULT_WORK_DETAILS[locale] || "";
     }
     
-    return data.work_details || "";
+    return data.work_details || DEFAULT_WORK_DETAILS[locale] || "";
   } catch (err) {
     console.error("Error in getWorkDetails:", err);
-    return "";
+    return DEFAULT_WORK_DETAILS[locale] || "";
   }
 }
 
@@ -38,12 +38,12 @@ export async function getPayDetails(locale: Locale): Promise<string> {
     
     if (error || !data) {
       console.error("Error fetching pay details:", error);
-      return "";
+      return DEFAULT_PAY_DETAILS[locale] || "";
     }
     
-    return data.pay_details || "";
+    return data.pay_details || DEFAULT_PAY_DETAILS[locale] || "";
   } catch (err) {
     console.error("Error in getPayDetails:", err);
-    return "";
+    return DEFAULT_PAY_DETAILS[locale] || "";
   }
 }
