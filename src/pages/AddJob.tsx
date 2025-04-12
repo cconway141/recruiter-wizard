@@ -1,11 +1,15 @@
 
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/layout/Navbar";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { JobForm } from "@/components/forms/JobForm";
 import { FormProvider, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { JobProvider } from "@/contexts/JobContext";
-import { useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
+import { Form } from "@/components/ui/form";
 import { Toaster } from "@/components/ui/toaster";
 import { z } from "zod";
 import { Flavor, JobStatus, Locale } from "@/types/job";
@@ -47,6 +51,9 @@ const formSchema = z.object({
 });
 
 const AddJob = () => {
+  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
+  
   const methods = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -75,26 +82,29 @@ const AddJob = () => {
     mode: "onSubmit" // Explicitly set to onSubmit to ensure validation runs at submission time
   });
 
-  // For debugging
-  useEffect(() => {
-    console.log("Form state:", methods.formState);
-    const subscription = methods.watch((_, { name }) => {
-      if (name) console.log(`Form value changed: ${name}`);
-    });
-    return () => subscription.unsubscribe();
-  }, [methods]);
-
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
       <main className="flex-1 container py-10">
-        <PageHeader 
-          title="Add New Job" 
-          description="Create a new job posting with automated message templates."
-        />
+        <div className="mb-6">
+          <Button 
+            variant="ghost" 
+            onClick={() => navigate(-1)}
+            className="mb-4"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" /> Back
+          </Button>
+          <PageHeader 
+            title="Add New Job" 
+            description="Create a new job posting with automated message templates."
+          />
+        </div>
+        
         <JobProvider>
           <FormProvider {...methods}>
-            <JobForm />
+            <Form {...methods}>
+              <JobForm isEditing={false} />
+            </Form>
           </FormProvider>
         </JobProvider>
       </main>
