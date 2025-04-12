@@ -16,7 +16,7 @@ interface StatusBadgeProps {
 }
 
 export function StatusBadge({ status }: StatusBadgeProps) {
-  // Safely extract the status value using the utility function
+  // Always use displayFormValue to get consistent string output
   const statusValue = displayFormValue(status);
   
   return (

@@ -16,7 +16,7 @@ export function JobFormWorkDetails() {
   const form = useFormContext();
   const locale = form.watch("locale");
   
-  // Display a proper string value for locale
+  // Ensure we're always displaying a string value
   const localeDisplay = displayFormValue(locale);
 
   return (

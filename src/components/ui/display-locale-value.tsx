@@ -6,5 +6,7 @@ interface DisplayLocaleValueProps {
 }
 
 export function DisplayLocaleValue({ value }: DisplayLocaleValueProps) {
-  return <>{displayFormValue(value)}</>;
+  // Always ensure we return a string representation of the value
+  const displayValue = displayFormValue(value);
+  return <>{displayValue}</>;
 }
