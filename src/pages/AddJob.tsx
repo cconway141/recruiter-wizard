@@ -8,6 +8,7 @@ import { JobProvider } from "@/contexts/JobContext";
 import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { z } from "zod";
+import { Flavor, JobStatus, Locale } from "@/types/job";
 
 // Define the form schema for the job
 const formSchema = z.object({
@@ -51,20 +52,20 @@ const AddJob = () => {
     defaultValues: {
       candidateFacingTitle: "",
       jd: "",
-      status: { id: "", name: "Active" },
+      status: { id: "", name: "Active" } as { id: string; name: JobStatus },
       skillsSought: "",
       minSkills: "",
       lir: "",
       client: "",
       compDesc: "",
       rate: 0,
-      locale: { id: "", name: "Onshore" },
+      locale: { id: "", name: "Onshore" } as { id: string; name: Locale },
       owner: "",
       date: new Date().toISOString().split("T")[0],
       other: "",
       videoQuestions: "",
       screeningQuestions: "",
-      flavor: { id: "", name: "FE" },
+      flavor: { id: "", name: "FE" } as { id: string; name: Flavor },
       m1: "",
       m2: "",
       m3: "",

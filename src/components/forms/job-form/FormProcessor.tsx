@@ -134,15 +134,15 @@ export function useFormProcessor({ job, isEditing, setSubmittingState }: FormPro
           };
           
           console.log("Calling updateJob with data:", updatedJobData);
-          const result = await updateJob(updatedJobData);
+          await updateJob(updatedJobData);
           
-          if (result) {
-            toast({
-              title: "Job Updated",
-              description: `Job "${result.internalTitle || 'Untitled'}" has been updated successfully.`,
-            });
-            navigate(`/jobs/${result.id}`);
-          }
+          // Success handling after update
+          toast({
+            title: "Job Updated",
+            description: `Job "${updatedJobData.internalTitle || 'Untitled'}" has been updated successfully.`,
+          });
+          navigate(`/jobs/${updatedJobData.id}`);
+          
         } else {
           // Handle creating new job
           // Convert form data to the structure expected by addJob
@@ -178,6 +178,7 @@ export function useFormProcessor({ job, isEditing, setSubmittingState }: FormPro
           
           console.log("Calling addJob with data:", newJobData);
           const result = await addJob(newJobData);
+          console.log("Result from addJob:", result);
           
           if (result) {
             toast({
@@ -185,6 +186,13 @@ export function useFormProcessor({ job, isEditing, setSubmittingState }: FormPro
               description: `Job "${result.internalTitle || 'Untitled'}" has been created successfully.`,
             });
             navigate(`/jobs/${result.id}`);
+          } else {
+            // Handle case where addJob returns null (error occurred)
+            toast({
+              title: "Error",
+              description: "Failed to add job. Please try again.",
+              variant: "destructive",
+            });
           }
         }
       } catch (error) {
