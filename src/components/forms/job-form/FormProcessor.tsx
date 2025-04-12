@@ -1,3 +1,4 @@
+
 import { useNavigate } from "react-router-dom";
 import { Job, Locale } from "@/types/job";
 import { useJobs } from "@/contexts/JobContext";
@@ -73,11 +74,21 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
     try {
       console.log("Form submission started with values:", values);
       
+      // Prevent multiple submissions
+      if (isSubmitting) {
+        console.log("Form submission already in progress, ignoring duplicate submit");
+        return;
+      }
+      
       // Validate required fields
       if (!validateRequiredFields(values)) {
         console.log("Form validation failed - missing required fields");
         return;
       }
+      
+      // Set submission state to prevent duplicate submissions
+      setIsSubmitting(true);
+      document.querySelector('button[type="submit"]')?.setAttribute('disabled', 'true');
 
       // Type guard for locale validation
       const isValidLocale = (locale: string): locale is Locale =>
@@ -94,6 +105,8 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
           description: "Invalid locale selected. Please choose a valid locale.",
           variant: "destructive",
         });
+        setIsSubmitting(false);
+        document.querySelector('button[type="submit"]')?.removeAttribute('disabled');
         return;
       }
 

@@ -1,8 +1,10 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
+import { useFormContext } from "react-hook-form";
+import { useFormProcessor } from "./FormProcessor";
 
 interface FormActionsProps {
   isEditing: boolean;
@@ -10,7 +12,8 @@ interface FormActionsProps {
 
 export function FormActions({ isEditing }: FormActionsProps) {
   const navigate = useNavigate();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const form = useFormContext();
+  const { isSubmitting } = useFormProcessor({ isEditing }) || { isSubmitting: false };
   
   return (
     <div className="flex justify-end gap-4">
