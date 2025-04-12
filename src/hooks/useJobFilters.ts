@@ -37,8 +37,8 @@ export function useJobFilters(jobs: Job[]) {
     // Apply status filter - compare with status.name
     if (filters.status !== "All") {
       result = result.filter((job) => {
-        const jobStatus = typeof job.status === 'object' ? job.status.name : job.status;
-        return jobStatus === filters.status;
+        // Ensure job.status is an object with name property
+        return job.status && job.status.name === filters.status;
       });
     }
 

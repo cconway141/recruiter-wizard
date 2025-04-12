@@ -1,5 +1,5 @@
 
-import { Job } from "@/types/job";
+import { Job, StatusObject } from "@/types/job";
 import { JobFormValues } from "@/components/forms/JobFormDetails";
 
 /**
@@ -22,7 +22,7 @@ export const mapJobToFormDefaults = (job: Job): JobFormValues => {
       },
       status: {
         id: '',
-        name: ''
+        name: 'Active'
       },
       rate: 0,
       jd: '',
@@ -40,15 +40,10 @@ export const mapJobToFormDefaults = (job: Job): JobFormValues => {
     };
   }
   
-  // Handle status whether it's an object or string
-  const status = typeof job.status === 'object' 
-    ? job.status 
-    : { id: '', name: job.status };
-  
   // Handle flavor whether it's an object or string
   const flavor = typeof job.flavor === 'object'
     ? job.flavor
-    : { id: job.flavor, name: job.flavor };
+    : { id: job.flavor || '', name: job.flavor || '' };
   
   return {
     candidateFacingTitle: job.candidateFacingTitle,
@@ -56,7 +51,7 @@ export const mapJobToFormDefaults = (job: Job): JobFormValues => {
     compDesc: job.compDesc,
     locale: job.locale,
     flavor: flavor,
-    status: status,
+    status: job.status,
     rate: job.rate,
     jd: job.jd,
     skillsSought: job.skillsSought,

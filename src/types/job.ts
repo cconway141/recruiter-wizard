@@ -22,7 +22,7 @@ export interface FlavorObject {
 // Define updated interface for status objects
 export interface StatusObject {
   id: string;
-  name: string;
+  name: JobStatus | string;
 }
 
 export interface Job {
@@ -30,8 +30,8 @@ export interface Job {
   internalTitle: string;
   candidateFacingTitle: string;
   jd: string;
-  status: string;
-  statusId: string;
+  status: StatusObject;
+  statusId?: string;
   m1: string;
   m2: string;
   m3: string;
@@ -56,7 +56,7 @@ export interface Job {
   other: string;
   videoQuestions: string;
   screeningQuestions: string;
-  flavor: string; // Changed from Flavor object to string
+  flavor: FlavorObject | string; // Keeping for transition
   flavorId: string;
 }
 

@@ -10,12 +10,11 @@ const StatusBadgeColor: Record<string, string> = {
 };
 
 interface StatusBadgeProps {
-  status: { id: string; name: string } | string;
+  status: { id: string; name: string };
 }
 
 export function StatusBadge({ status }: StatusBadgeProps) {
-  // Handle both object and string formats for backward compatibility
-  const statusName = typeof status === 'object' ? status.name : status;
+  const statusName = status.name;
   
   return (
     <Badge 

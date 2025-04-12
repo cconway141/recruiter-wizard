@@ -1,6 +1,6 @@
 
 import { uuid } from "@/utils/uuid";
-import { Job, LocaleObject } from "@/types/job";
+import { Job, LocaleObject, StatusObject } from "@/types/job";
 import { calculateRates } from "@/utils/rateUtils";
 import { generateInternalTitle } from "@/utils/titleUtils";
 
@@ -31,15 +31,15 @@ export const prepareJobForCreate = async (
   const rate = Number(job.rate) || 0;
   const { high: highRate, medium: mediumRate, low: lowRate = 0 } = calculateRates(rate);
 
-  // Ensure status is an object
-  const status = typeof job.status === 'object' 
+  // Ensure status is a valid object
+  const status: StatusObject = (job.status && typeof job.status === 'object') 
     ? job.status 
-    : { id: "", name: job.status || "Active" };
+    : { id: "", name: typeof job.status === 'string' ? job.status : "Active" };
 
   return {
     ...job,
     id: uuid(),
-    status: status, // Use standardized status object
+    status, // Use standardized status object
     internalTitle,
     highRate,
     mediumRate,
@@ -53,11 +53,12 @@ export const prepareJobForCreate = async (
  * Map job data to the format expected by Supabase
  */
 export const mapJobToDatabase = (job: Job) => {
-  // Extract status name for database
-  const statusName = typeof job.status === 'object' ? job.status.name : job.status;
+  // Ensure job.status is an object
+  const jobStatus = job.status || { id: '', name: 'Active' };
   
-  // Extract status ID for database
-  const statusId = typeof job.status === 'object' ? job.status.id : job.statusId || '';
+  // Extract status name and ID for database
+  const statusName = jobStatus.name;
+  const statusId = jobStatus.id || '';
   
   return {
     id: job.id,
@@ -87,7 +88,7 @@ export const mapJobToDatabase = (job: Job) => {
     other: job.other || "",
     video_questions: job.videoQuestions || "",
     screening_questions: job.screeningQuestions || "",
-    flavor: job.flavor,
+    flavor: typeof job.flavor === 'object' ? job.flavor.id : job.flavor,
     flavor_id: job.flavorId,
     m1: job.m1 || "",
     m2: job.m2 || "",
@@ -109,7 +110,7 @@ export const mapDatabaseToJob = (dbJob: any): Job => {
   };
 
   // Create standardized status object
-  const statusObject = {
+  const statusObject: StatusObject = {
     id: dbJob.status_id || '',
     name: dbJob.status || 'Active'
   };
