@@ -9,7 +9,7 @@ import { getWorkDetails, getPayDetails } from "@/utils/localeUtils";
 import { generateM1, generateM2, generateM3 } from "@/utils/messageUtils";
 import { toast } from "@/hooks/use-toast";
 import { useSupabaseData } from "@/hooks/useSupabaseData";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 
 interface FormProcessorProps {
   onSubmit: (values: JobFormValues) => void;
@@ -70,7 +70,7 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
     return true;
   };
   
-  const handleSubmit = async (values: JobFormValues) => {
+  const handleSubmit = useCallback(async (values: JobFormValues) => {
     try {
       console.log("Form submission started with values:", values);
       
@@ -88,6 +88,8 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
       
       // Set submission state to prevent duplicate submissions
       setIsSubmitting(true);
+      console.log("Setting isSubmitting to true, values:", values);
+      
       document.querySelector('button[type="submit"]')?.setAttribute('disabled', 'true');
 
       // Type guard for locale validation
@@ -183,7 +185,7 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
         });
         
         try {
-          const result = await addJob({
+          const jobValues = {
             jd: values.jd,
             candidateFacingTitle: values.candidateFacingTitle,
             status: typeof values.status === 'object' ? values.status.name : values.status,
@@ -202,7 +204,10 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
             other: values.other || "",
             videoQuestions: values.videoQuestions,
             screeningQuestions: values.screeningQuestions,
-          });
+          };
+          
+          console.log("Calling addJob with values:", jobValues);
+          const result = await addJob(jobValues);
           
           if (result) {
             toast({
@@ -225,6 +230,8 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
             description: `Failed to create job: ${addError instanceof Error ? addError.message : String(addError)}`,
             variant: "destructive",
           });
+          setIsSubmitting(false);
+          document.querySelector('button[type="submit"]')?.removeAttribute('disabled');
         }
       } else {
         throw new Error("addJob function is not available");
@@ -236,11 +243,14 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
         description: `Failed to ${isEditing ? "update" : "create"} job: ${err instanceof Error ? err.message : String(err)}`,
         variant: "destructive",
       });
+      setIsSubmitting(false);
+      document.querySelector('button[type="submit"]')?.removeAttribute('disabled');
     } finally {
+      console.log("Form submission completed, setting isSubmitting to false");
       setIsSubmitting(false);
       document.querySelector('button[type="submit"]')?.removeAttribute('disabled');
     }
-  };
+  }, [isSubmitting, navigate, addJob, updateJob, job, isEditing, loadFromSupabase]);
 
   return { handleSubmit, isSubmitting };
 }
