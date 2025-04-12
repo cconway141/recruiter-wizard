@@ -6,6 +6,9 @@ import { JobFormValues } from "../JobFormDetails";
 
 interface FormPreviewProps {
   previewTitle: string;
+  previewHighRate: number;
+  previewMediumRate: number;
+  previewLowRate: number;
   watchedFields: Partial<JobFormValues>;
   messages: {
     m1: string;
@@ -14,7 +17,14 @@ interface FormPreviewProps {
   };
 }
 
-export function FormPreview({ previewTitle, watchedFields, messages }: FormPreviewProps) {
+export function FormPreview({ 
+  previewTitle, 
+  previewHighRate,
+  previewMediumRate,
+  previewLowRate,
+  watchedFields, 
+  messages 
+}: FormPreviewProps) {
   // Extract values properly, handling both string and object types
   const candidateFacingTitle = watchedFields.candidateFacingTitle;
   const compDesc = watchedFields.compDesc;
@@ -45,7 +55,12 @@ export function FormPreview({ previewTitle, watchedFields, messages }: FormPrevi
           </div>
         )}
         
-        <FormRatePreview rate={watchedFields.rate || 0} />
+        <FormRatePreview 
+          rate={watchedFields.rate || 0} 
+          highRate={previewHighRate}
+          mediumRate={previewMediumRate}
+          lowRate={previewLowRate}
+        />
         
         {canShowMessages ? (
           <div className="mt-6">

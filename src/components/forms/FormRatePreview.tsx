@@ -1,18 +1,23 @@
 
 import React from "react";
 import { cn } from "@/lib/utils";
-import { calculateRates } from "@/utils/rateUtils";
 
 interface FormRatePreviewProps {
   rate: number;
+  highRate?: number;
+  mediumRate?: number;
+  lowRate?: number;
 }
 
-export function FormRatePreview({ rate }: FormRatePreviewProps) {
+export function FormRatePreview({ rate, highRate, mediumRate, lowRate }: FormRatePreviewProps) {
   if (!rate || rate <= 0) {
     return null;
   }
 
-  const { high, medium, low } = calculateRates(rate);
+  // Use the passed in rates if available, otherwise they will be calculated elsewhere
+  const high = highRate || 0;
+  const medium = mediumRate || 0;
+  const low = lowRate || 0;
 
   return (
     <div className="mb-2 flex items-center space-x-2">
