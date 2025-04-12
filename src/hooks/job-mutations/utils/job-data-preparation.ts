@@ -19,15 +19,12 @@ export const prepareJobForCreate = async (
   const now = new Date();
   const date = now.toISOString().split("T")[0]; // YYYY-MM-DD
 
-  // Ensure we have a valid locale object with an id property
-  const localeId = typeof job.locale === 'object' ? job.locale.id : job.locale;
-
   // Generate the internal title using the correct format: ClientAbbr RoleAbbr - Flavor LocaleAbbr
   const internalTitle = await generateInternalTitle(
     job.client,
     job.candidateFacingTitle,
     job.flavor,
-    localeId
+    job.locale
   );
   
   // Calculate rates based on the main rate using our utility function
@@ -51,9 +48,6 @@ export const prepareJobForCreate = async (
  * Map job data to the format expected by Supabase
  */
 export const mapJobToDatabase = (job: Job) => {
-  // Get locale ID depending on if it's a string or object
-  const localeId = typeof job.locale === 'object' ? job.locale.id : job.locale;
-  
   return {
     id: job.id,
     internal_title: job.internalTitle,
@@ -72,13 +66,13 @@ export const mapJobToDatabase = (job: Job) => {
     high_rate: job.highRate,
     medium_rate: job.mediumRate,
     low_rate: job.lowRate,
-    locale: localeId, // Store locale ID as string
+    locale: job.locale.id, // Store locale ID as string
     locale_id: job.localeId, // This should be the UUID from locales table
     owner: job.owner,
     owner_id: job.ownerId,
     date: job.date,
-    work_details: typeof job.locale === 'object' ? job.locale.workDetails || "" : "",
-    pay_details: typeof job.locale === 'object' ? job.locale.payDetails || "" : "",
+    work_details: job.locale.workDetails || job.workDetails || "",
+    pay_details: job.locale.payDetails || job.payDetails || "",
     other: job.other || "",
     video_questions: job.videoQuestions || "",
     screening_questions: job.screeningQuestions || "",

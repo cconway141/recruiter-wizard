@@ -42,11 +42,8 @@ export function useJobFilters(jobs: Job[]) {
     // Apply locale filter - checking if locale is an object with id or a string
     if (filters.locale !== "All") {
       result = result.filter((job) => {
-        if (typeof job.locale === 'object' && job.locale.id) {
-          return job.locale.id === filters.locale;
-        }
-        // Fallback for backward compatibility
-        return job.locale === filters.locale;
+        // Check if job.locale.id matches the filter value
+        return job.locale.id === filters.locale;
       });
     }
 

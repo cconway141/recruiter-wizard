@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Job } from "@/types/job";
+import { Job, LocaleObject } from "@/types/job";
 import { JobsState } from "@/types/contextTypes";
 import { Candidate } from "@/components/candidates/types";
 
@@ -57,6 +57,7 @@ export function useSupabaseData() {
         localesData.forEach(locale => {
           localesMap.set(locale.name, {
             id: locale.id,
+            name: locale.name,
             abbreviation: locale.abbreviation || '',
             workDetails: locale.work_details || '',
             payDetails: locale.pay_details || ''
@@ -71,6 +72,7 @@ export function useSupabaseData() {
           // Find locale details from the locales map
           const localeData = localesMap.get(job.locale) || {
             id: job.locale,
+            name: job.locale,
             abbreviation: '',
             workDetails: job.work_details || '',
             payDetails: job.pay_details || ''
@@ -99,6 +101,7 @@ export function useSupabaseData() {
             lowRate: Number(job.low_rate),
             locale: {
               id: job.locale,
+              name: job.locale,
               abbreviation: localeData.abbreviation,
               workDetails: job.work_details,
               payDetails: job.pay_details

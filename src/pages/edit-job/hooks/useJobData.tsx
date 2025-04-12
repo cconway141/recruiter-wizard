@@ -96,6 +96,7 @@ export function useJobData(id?: string) {
         lowRate: Number(jobData.low_rate),
         locale: {
           id: jobData.locale,
+          name: jobData.locale,
           abbreviation: localeData?.abbreviation || '',
           workDetails: jobData.work_details || '',
           payDetails: jobData.pay_details || ''

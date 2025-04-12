@@ -14,9 +14,7 @@ export const mapJobToFormDefaults = (job: Job): JobFormValues => {
       compDesc: '',
       locale: {
         id: '',
-        name: '',
-        workDetails: '',
-        payDetails: ''
+        name: ''
       },
       flavor: '',
       status: '',
