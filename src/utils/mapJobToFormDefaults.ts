@@ -34,11 +34,17 @@ export const mapJobToFormDefaults = (job: Job): JobFormValues => {
     };
   }
   
+  // Create a properly structured locale object
+  const localeObject = {
+    id: typeof job.locale === 'string' ? job.locale : job.locale.id,
+    name: typeof job.locale === 'string' ? job.locale : job.locale.name,
+  };
+  
   return {
     candidateFacingTitle: job.candidateFacingTitle,
     client: job.client,
     compDesc: job.compDesc,
-    locale: job.locale,
+    locale: localeObject,
     flavor: job.flavor,
     status: job.status,
     rate: job.rate,
