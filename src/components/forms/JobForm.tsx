@@ -5,7 +5,7 @@ import { Loader2 } from "lucide-react";
 import { Job } from "@/types/job";
 
 // Import the component files
-import { JobFormBasicInfo } from "./JobFormBasicInfo";
+import { JobFormBasicInfo } from "./basic-info";
 import { JobFormCompanyDesc } from "./JobFormCompanyDesc";
 import { JobFormDetails, JobFormValues } from "./JobFormDetails";
 import { JobFormLinks } from "./JobFormLinks";
