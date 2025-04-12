@@ -12,10 +12,19 @@ export function JobFormCompanyDesc() {
   const selectedClient = form && form.watch ? form.watch("client") : null;
   
   // Find the selected client to display information about it
-  const clientInfo = clientOptions?.find(client => client.name === selectedClient);
+  const clientInfo = clientOptions?.find(client => 
+    client.name === (typeof selectedClient === 'object' ? selectedClient?.name : selectedClient)
+  );
   
   // Ensure we're displaying a string, not an object
   const displayClient = displayFormValue(selectedClient);
+  
+  // For debugging
+  console.log("JobFormCompanyDesc rendering with client:", {
+    selectedClient,
+    displayClient,
+    clientInfo
+  });
   
   return (
     <Card className="bg-muted/50">

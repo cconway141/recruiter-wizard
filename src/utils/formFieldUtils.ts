@@ -54,3 +54,15 @@ export function displayFormValue(value: any): string {
   
   return String(value);
 }
+
+/**
+ * Debug helper to log values safely
+ */
+export function debugFormValue(label: string, value: any): void {
+  console.log(`DEBUG ${label}:`, {
+    original: value,
+    type: typeof value,
+    isObject: isNamedObject(value),
+    display: displayFormValue(value)
+  });
+}

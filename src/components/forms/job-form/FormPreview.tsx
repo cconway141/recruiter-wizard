@@ -26,15 +26,20 @@ export function FormPreview({
   watchedFields, 
   messages 
 }: FormPreviewProps) {
-  // Extract values properly, handling both string and object types
-  const candidateFacingTitle = displayFormValue(watchedFields.candidateFacingTitle || '');
-  const compDesc = displayFormValue(watchedFields.compDesc || '');
+  // Extract values properly, handling both string and object types safely
+  const candidateFacingTitle = displayFormValue(watchedFields.candidateFacingTitle);
+  const compDesc = displayFormValue(watchedFields.compDesc);
+  const locale = displayFormValue(watchedFields.locale);
+  const skillsSought = displayFormValue(watchedFields.skillsSought);
   
-  // Extract locale name properly
-  const locale = displayFormValue(watchedFields.locale || '');
+  // For debugging
+  console.log("FormPreview rendering with values:", {
+    candidateFacingTitle,
+    compDesc,
+    locale,
+    skillsSought
+  });
     
-  const skillsSought = displayFormValue(watchedFields.skillsSought || '');
-  
   // Check if all required fields for message preview are filled
   const canShowMessages = 
     Boolean(candidateFacingTitle) && 

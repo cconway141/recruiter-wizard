@@ -4,7 +4,7 @@ import { UseFormReturn } from "react-hook-form";
 import { Locale } from "@/types/job";
 import { JobFormValues } from "@/components/forms/JobFormDetails";
 import { generateInternalTitle, calculateRates, generateM1, generateM2, generateM3 } from "@/utils/jobUtils";
-import { extractName } from "@/utils/formFieldUtils";
+import { extractName, extractId } from "@/utils/formFieldUtils";
 
 export function useFormPreview(form: UseFormReturn<JobFormValues>) {
   const [previewTitle, setPreviewTitle] = useState("");
@@ -32,6 +32,11 @@ export function useFormPreview(form: UseFormReturn<JobFormValues>) {
     owner: form.watch("owner")
   };
 
+  // For debugging
+  useEffect(() => {
+    console.log("Preview watched fields:", watchedFields);
+  }, [watchedFields]);
+
   useEffect(() => {
     // Update internal title preview
     if (watchedFields.client && watchedFields.candidateFacingTitle && watchedFields.flavor && watchedFields.locale) {
@@ -40,6 +45,8 @@ export function useFormPreview(form: UseFormReturn<JobFormValues>) {
           // Extract the flavor name and locale name consistently
           const flavorName = extractName(watchedFields.flavor);
           const localeName = extractName(watchedFields.locale);
+          const clientName = extractName(watchedFields.client);
+          const jobTitle = extractName(watchedFields.candidateFacingTitle);
           
           if (!flavorName || !localeName) {
             console.log("Missing flavor or locale for title generation");
@@ -47,8 +54,8 @@ export function useFormPreview(form: UseFormReturn<JobFormValues>) {
           }
           
           const newTitle = await generateInternalTitle(
-            extractName(watchedFields.client),
-            extractName(watchedFields.candidateFacingTitle),
+            clientName,
+            jobTitle,
             flavorName,
             localeName as Locale
           );
