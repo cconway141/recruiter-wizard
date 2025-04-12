@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useJobs } from "@/contexts/JobContext";
@@ -32,7 +33,7 @@ export function useFormProcessor({ job, isEditing, setSubmittingState }: FormPro
       const owner = formValues.owner || '';
       
       if (!formValues.workDetails || !formValues.payDetails) {
-        const localeName = formValues.locale?.name;
+        const localeName = typeof formValues.locale === 'object' ? formValues.locale.name : formValues.locale;
         if (localeName) {
           if (!formValues.workDetails) {
             formValues.workDetails = await getWorkDetails(localeName as Locale);
@@ -76,34 +77,34 @@ export function useFormProcessor({ job, isEditing, setSubmittingState }: FormPro
   const processJobForm = useCallback(
     async (formData: JobFormValues) => {
       try {
-        console.log(`Processing form data for ${isEditing ? "edit" : "add"} job`);
+        console.log(`Processing form data for ${isEditing ? "edit" : "add"} job:`, formData);
         
         setSubmittingState(true);
         
         const completedFormData = await generateMessages(formData);
-        
-        let result;
+        console.log("Form data after message generation:", completedFormData);
         
         if (isEditing && job) {
+          // Handle updating existing job
           const updatedJobData: Job = {
             ...job,
             candidateFacingTitle: completedFormData.candidateFacingTitle,
             compDesc: completedFormData.compDesc,
             locale: typeof completedFormData.locale === 'object' 
               ? completedFormData.locale.name as Locale 
-              : job.locale,
+              : (completedFormData.locale as Locale || job.locale),
             localeId: typeof completedFormData.locale === 'object' 
               ? completedFormData.locale.id 
               : job.localeId,
             flavor: typeof completedFormData.flavor === 'object' 
               ? completedFormData.flavor.name as Flavor 
-              : job.flavor,
+              : (completedFormData.flavor as Flavor || job.flavor),
             flavorId: typeof completedFormData.flavor === 'object' 
               ? completedFormData.flavor.id 
               : job.flavorId,
             status: typeof completedFormData.status === 'object' 
               ? completedFormData.status.name as JobStatus 
-              : job.status,
+              : (completedFormData.status as JobStatus || job.status),
             statusId: typeof completedFormData.status === 'object' 
               ? completedFormData.status.id 
               : job.statusId,
@@ -132,7 +133,8 @@ export function useFormProcessor({ job, isEditing, setSubmittingState }: FormPro
             lowRate: job.lowRate
           };
           
-          result = await updateJob(updatedJobData);
+          console.log("Calling updateJob with data:", updatedJobData);
+          const result = await updateJob(updatedJobData);
           
           if (result) {
             toast({
@@ -142,7 +144,40 @@ export function useFormProcessor({ job, isEditing, setSubmittingState }: FormPro
             navigate(`/jobs/${result.id}`);
           }
         } else {
-          result = await addJob(completedFormData);
+          // Handle creating new job
+          // Convert form data to the structure expected by addJob
+          const newJobData = {
+            candidateFacingTitle: completedFormData.candidateFacingTitle,
+            compDesc: completedFormData.compDesc,
+            locale: typeof completedFormData.locale === 'object' ? completedFormData.locale.name as Locale : completedFormData.locale as Locale,
+            localeId: typeof completedFormData.locale === 'object' ? completedFormData.locale.id : "",
+            flavor: typeof completedFormData.flavor === 'object' ? completedFormData.flavor.name as Flavor : completedFormData.flavor as Flavor,
+            flavorId: typeof completedFormData.flavor === 'object' ? completedFormData.flavor.id : "",
+            status: typeof completedFormData.status === 'object' ? completedFormData.status.name as JobStatus : completedFormData.status as JobStatus,
+            statusId: typeof completedFormData.status === 'object' ? completedFormData.status.id : "",
+            jd: completedFormData.jd || "",
+            skillsSought: completedFormData.skillsSought || "",
+            minSkills: completedFormData.minSkills || "",
+            owner: completedFormData.owner || "",
+            ownerId: "",
+            rate: Number(completedFormData.rate) || 0,
+            videoQuestions: completedFormData.videoQuestions || "",
+            screeningQuestions: completedFormData.screeningQuestions || "",
+            workDetails: completedFormData.workDetails || "",
+            payDetails: completedFormData.payDetails || "",
+            other: completedFormData.other || "",
+            client: completedFormData.client || "",
+            clientId: "",
+            m1: completedFormData.m1 || "",
+            m2: completedFormData.m2 || "",
+            m3: completedFormData.m3 || "",
+            lir: completedFormData.lir || "",
+            date: new Date().toISOString().split("T")[0],
+            linkedinSearch: ""
+          };
+          
+          console.log("Calling addJob with data:", newJobData);
+          const result = await addJob(newJobData);
           
           if (result) {
             toast({
