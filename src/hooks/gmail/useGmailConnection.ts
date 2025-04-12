@@ -10,7 +10,7 @@ interface UseGmailConnectionProps {
 }
 
 /**
- * Simplified hook for Gmail connection management
+ * Optimized hook for Gmail connection management
  * Uses React Query for caching and state management with improved performance
  */
 export const useGmailConnection = ({
@@ -21,7 +21,9 @@ export const useGmailConnection = ({
   const queryClient = useQueryClient();
   const [connectionStatus, setConnectionStatus] = useState<boolean | null>(null);
   const [lastCheckTime, setLastCheckTime] = useState<number>(0);
-  const minimumCheckInterval = 30000; // 30 seconds between connection checks
+  
+  // Increased throttle time to reduce excessive checks
+  const minimumCheckInterval = 60000; // 60 seconds between connection checks (up from 30s)
   
   // Use our unified Gmail API hook
   const {
@@ -41,29 +43,55 @@ export const useGmailConnection = ({
     }
   });
   
-  // Throttled connection check to prevent excessive API calls
+  // Efficient connection check with improved caching
   const throttledCheckConnection = useCallback(async () => {
     const now = Date.now();
-    if (now - lastCheckTime < minimumCheckInterval) {
-      console.log(`Throttled Gmail connection check (${Math.round((now - lastCheckTime)/1000)}s < ${minimumCheckInterval/1000}s)`);
-      return connectionStatus ?? false;
+    
+    // Check local connectionStatus first to avoid unnecessary checks
+    if (connectionStatus !== null && now - lastCheckTime < minimumCheckInterval) {
+      console.log(`Using cached Gmail connection status (${Math.round((now - lastCheckTime)/1000)}s < ${minimumCheckInterval/1000}s)`);
+      return connectionStatus;
     }
     
-    console.log("Performing actual Gmail connection check");
+    // Cache connection check timestamp
     setLastCheckTime(now);
-    return await silentCheckConnection();
-  }, [connectionStatus, lastCheckTime, silentCheckConnection]);
+    
+    try {
+      // Get status from localStorage if available
+      const cachedStatus = localStorage.getItem('gmail_connection_status');
+      const cachedTimestamp = localStorage.getItem('gmail_connection_timestamp');
+      
+      if (cachedStatus && cachedTimestamp) {
+        const timestamp = parseInt(cachedTimestamp, 10);
+        if (now - timestamp < minimumCheckInterval) {
+          console.log('Using localStorage cached Gmail connection status');
+          return cachedStatus === 'true';
+        }
+      }
+      
+      // Only if no valid cache exists, perform actual check
+      console.log("Performing actual Gmail connection check");
+      const status = await silentCheckConnection();
+      
+      // Cache the result in localStorage
+      localStorage.setItem('gmail_connection_status', status.toString());
+      localStorage.setItem('gmail_connection_timestamp', now.toString());
+      
+      return status;
+    } catch (error) {
+      console.error("Error in throttledCheck:", error);
+      return connectionStatus ?? false;
+    }
+  }, [connectionStatus, lastCheckTime, silentCheckConnection, minimumCheckInterval]);
   
-  // Critical fix: simplifying the connectGmail function with better error handling
+  // Wrapper for connectGmail with better error handling
   const connectGmail = useCallback(async () => {
-    console.debug("useGmailConnection: connectGmail called");
     if (!user) {
       console.error("Cannot connect Gmail: No user logged in");
       return null;
     }
     
     try {
-      console.debug("Directly calling apiConnectGmail from useGmailConnection");
       return await apiConnectGmail();
     } catch (error) {
       console.error("Error in connectGmail:", error);
@@ -71,9 +99,8 @@ export const useGmailConnection = ({
     }
   }, [user, apiConnectGmail]);
   
-  // Create wrapper function for disconnectGmail
+  // Wrapper for disconnectGmail
   const disconnectGmail = useCallback(async () => {
-    console.debug("useGmailConnection: disconnectGmail called");
     try {
       return await apiDisconnectGmail();
     } catch (error) {
@@ -82,22 +109,24 @@ export const useGmailConnection = ({
     }
   }, [apiDisconnectGmail]);
   
-  // Use React Query for connection state caching with improved performance settings
+  // Use React Query with optimized cache settings
   const { data: connectionInfo } = useQuery({
     queryKey: ['gmail-connection', user?.id],
     queryFn: throttledCheckConnection,
     enabled: !!user,
-    staleTime: 5 * 60 * 1000, // 5 minutes (increased from 10 minutes)
-    refetchInterval: 15 * 60 * 1000, // 15 minutes (increased from 30 minutes)
-    refetchOnWindowFocus: false,
+    // Greatly improved caching parameters to reduce API calls
+    staleTime: 10 * 60 * 1000, // 10 minutes (increased from 5 minutes)
+    refetchInterval: 30 * 60 * 1000, // 30 minutes (increased from 15 minutes)
+    refetchOnWindowFocus: false, // Prevents checks on tab focus
     retry: 0, // No retries to avoid cascading failures
     gcTime: 60 * 60 * 1000, // 1 hour
+    refetchOnMount: false, // Prevent automatic refetch on mount
   });
   
-  // Use connection info from query when available
+  // Update connection status from query cache
   useEffect(() => {
     if (connectionInfo !== undefined) {
-      // Only update if there's an actual change to avoid re-renders
+      // Only update if needed to avoid re-renders
       if (connectionStatus !== connectionInfo) {
         setConnectionStatus(connectionInfo);
         if (onConnectionChange) onConnectionChange(connectionInfo);
@@ -105,7 +134,22 @@ export const useGmailConnection = ({
     }
   }, [connectionInfo, connectionStatus, onConnectionChange]);
   
-  // Force refresh connection status - with added throttling
+  // Only check connection once on mount - not on every render
+  useEffect(() => {
+    if (user?.id) {
+      const now = Date.now();
+      const lastCheck = parseInt(localStorage.getItem('gmail_connection_timestamp') || '0', 10);
+      
+      // Only check if sufficient time has passed since last check
+      if (now - lastCheck >= minimumCheckInterval) {
+        silentCheckConnection().catch(err => {
+          console.error("Background connection check failed:", err);
+        });
+      }
+    }
+  }, [user?.id, silentCheckConnection, minimumCheckInterval]);
+  
+  // Force refresh with throttling
   const forceRefresh = useCallback(async () => {
     if (!user) return false;
     
@@ -118,7 +162,7 @@ export const useGmailConnection = ({
     setLastCheckTime(now);
     
     try {
-      // Don't immediately invalidate - use a small timeout
+      // Use small timeout to prevent UI flicker
       setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ['gmail-connection', user.id] });
       }, 100);
@@ -128,29 +172,15 @@ export const useGmailConnection = ({
       console.error("Error in forceRefresh:", error);
       return connectionStatus ?? false;
     }
-  }, [user, queryClient, checkConnection, connectionStatus, lastCheckTime]);
-  
-  // Only check connection once on mount - not on every render
-  useEffect(() => {
-    if (user?.id) {
-      // Use throttled check to prevent excessive API calls
-      const now = Date.now();
-      if (now - lastCheckTime >= minimumCheckInterval) {
-        setLastCheckTime(now);
-        silentCheckConnection().catch(err => {
-          console.error("Background connection check failed:", err);
-        });
-      }
-    }
-  }, [user?.id, silentCheckConnection, lastCheckTime]);
-  
+  }, [user, queryClient, checkConnection, connectionStatus, lastCheckTime, minimumCheckInterval]);
+
   return {
     isConnected: connectionStatus ?? false,
     isLoading,
     configError: apiError?.message,
     connectGmail,
     disconnectGmail, 
-    checkGmailConnection: throttledCheckConnection, // Use throttled version
+    checkGmailConnection: throttledCheckConnection,
     silentCheckConnection,
     refreshGmailToken,
     forceRefresh,

@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -19,6 +20,11 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
   const [isSending, setIsSending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { refreshGmailToken } = useGmailConnection();
+  
+  // Add connection status cache to prevent repeated checks
+  const connectionCheckedRef = useRef<boolean>(false);
+  const lastConnectionCheckTimeRef = useRef<number>(0);
+  const connectionStatusRef = useRef<boolean>(false);
 
   const sendEmailViaGmail = async (
     to: string,
@@ -61,12 +67,6 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
         jobTitle,
         threadId: threadId ? `THREAD: ${threadId.trim()}` : "NEW THREAD",
         messageId: messageId ? `MESSAGE: ${messageId.trim()}` : "NO MESSAGE ID",
-        threadingDetails: {
-          hasThreadId: !!threadId,
-          hasMessageId: !!messageId,
-          threadIdLength: threadId ? threadId.trim().length : 0,
-          messageIdLength: messageId ? messageId.trim().length : 0
-        }
       });
       
       // Create the payload object with ALL threading information
@@ -92,19 +92,35 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
         console.log("Including messageId in request:", messageId.trim());
       }
       
-      // Proactively check Gmail token before sending
-      const connection = await supabase.functions.invoke('google-auth', {
-        body: {
-          action: 'check-token',
-          userId: user.id
-        }
-      });
+      // Optimized token check with caching to avoid repeated checks
+      const now = Date.now();
+      const shouldCheckToken = !connectionCheckedRef.current || 
+                             (now - lastConnectionCheckTimeRef.current) > 60000; // 1 minute cache
       
-      if (connection.data?.expired && connection.data?.hasRefreshToken) {
-        const refreshed = await refreshGmailToken();
-        if (!refreshed) {
-          throw new Error("Gmail token expired and could not be refreshed");
+      if (shouldCheckToken) {
+        console.log("Checking Gmail token before sending (not cached)");
+        const connection = await supabase.functions.invoke('google-auth', {
+          body: {
+            action: 'check-token',
+            userId: user.id
+          }
+        });
+        
+        // Cache the connection check results
+        connectionCheckedRef.current = true;
+        lastConnectionCheckTimeRef.current = now;
+        connectionStatusRef.current = !connection.data?.expired;
+        
+        if (connection.data?.expired && connection.data?.hasRefreshToken) {
+          console.log("Token expired, refreshing...");
+          const refreshed = await refreshGmailToken();
+          if (!refreshed) {
+            throw new Error("Gmail token expired and could not be refreshed");
+          }
+          connectionStatusRef.current = true;
         }
+      } else {
+        console.log("Using cached Gmail token status - skipping redundant check");
       }
       
       const { data, error } = await supabase.functions.invoke('send-gmail', {
@@ -119,6 +135,9 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
       if (data?.error) {
         console.error("Error from send-gmail function:", data.error);
         if (data.error.includes("token expired") || data.error.includes("not connected")) {
+          // Invalidate cache on token error
+          connectionCheckedRef.current = false;
+          
           const refreshed = await refreshGmailToken();
           if (refreshed) {
             // Try again with refreshed token

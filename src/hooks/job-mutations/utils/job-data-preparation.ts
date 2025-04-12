@@ -35,11 +35,17 @@ export const prepareJobForCreate = async (
   const status: StatusObject = (job.status && typeof job.status === 'object') 
     ? job.status 
     : { id: "", name: typeof job.status === 'string' ? job.status : "Active" };
+  
+  // Generate a UUID for status.id if it's empty
+  if (!status.id) {
+    status.id = uuid();
+    console.log("Generated UUID for missing status.id:", status.id);
+  }
 
   return {
     ...job,
     id: uuid(),
-    status, // Use standardized status object
+    status, // Use standardized status object with valid UUID
     internalTitle,
     highRate,
     mediumRate,
@@ -56,9 +62,13 @@ export const mapJobToDatabase = (job: Job) => {
   // Ensure job.status is an object
   const jobStatus = job.status || { id: '', name: 'Active' };
   
-  // Extract status name and ID for database
+  // Extract status name and ID for database, ensure ID is never empty string
   const statusName = jobStatus.name;
-  const statusId = jobStatus.id || '';
+  const statusId = jobStatus.id || null; // Convert empty string to null
+  
+  // Clean foreign key references - null is better than empty string for UUID fields
+  const cleanForeignKey = (id: string | undefined | null) => 
+    (id && id.trim() !== '') ? id : null;
   
   return {
     id: job.id,
@@ -72,16 +82,16 @@ export const mapJobToDatabase = (job: Job) => {
     linkedin_search: job.linkedinSearch || "",
     lir: job.lir || "",
     client: job.client,
-    client_id: job.clientId,
+    client_id: cleanForeignKey(job.clientId),
     comp_desc: job.compDesc || "",
     rate: job.rate,
     high_rate: job.highRate,
     medium_rate: job.mediumRate,
     low_rate: job.lowRate,
     locale: job.locale.id,
-    locale_id: job.localeId,
+    locale_id: cleanForeignKey(job.localeId),
     owner: job.owner,
-    owner_id: job.ownerId,
+    owner_id: cleanForeignKey(job.ownerId),
     date: job.date,
     work_details: job.locale.workDetails || job.workDetails || "",
     pay_details: job.locale.payDetails || job.payDetails || "",
@@ -89,7 +99,7 @@ export const mapJobToDatabase = (job: Job) => {
     video_questions: job.videoQuestions || "",
     screening_questions: job.screeningQuestions || "",
     flavor: typeof job.flavor === 'object' ? job.flavor.id : job.flavor,
-    flavor_id: job.flavorId,
+    flavor_id: cleanForeignKey(job.flavorId),
     m1: job.m1 || "",
     m2: job.m2 || "",
     m3: job.m3 || "",
