@@ -24,7 +24,6 @@ export function FormProcessorProvider({
   job, 
   isEditing = false 
 }: FormProcessorProviderProps) {
-  // Use a local isSubmitting state that's easier to debug
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { processJobForm } = useFormProcessor({ 
     job, 
@@ -32,13 +31,18 @@ export function FormProcessorProvider({
     setSubmittingState: setIsSubmitting 
   });
 
-  console.log("FormProcessorProvider - isSubmitting:", isSubmitting);
-
-  // The handleSubmit function is now a simple wrapper around processJobForm
+  // The handleSubmit function is a simple wrapper around processJobForm
   const handleSubmit = (values: JobFormValues) => {
     console.log("FormProcessorContext handleSubmit called with values", values);
+    
+    // Update submission state immediately
+    setIsSubmitting(true);
+    
+    // Process the form (this function will handle the API call and updating isSubmitting when done)
     processJobForm(values);
   };
+
+  console.log("FormProcessorProvider - isSubmitting state:", isSubmitting);
 
   return (
     <FormProcessorContext.Provider 
