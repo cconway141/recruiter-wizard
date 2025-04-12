@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Trash } from "lucide-react";
-import { Candidate } from "./types";
+import { Candidate, EmailThreadInfo } from "./types";
 import { StatusCheckbox } from "./status/StatusCheckbox";
 import { EmailButton } from "./email/EmailButton";
 import { LinkedinButton } from "./social/LinkedinButton";
@@ -23,7 +23,7 @@ interface CandidateListItemProps {
   candidate: Candidate;
   onRemove: (candidateId: string) => void;
   onStatusChange: (candidateId: string, statusKey: keyof Candidate['status']) => void;
-  jobId: string; // Now we explicitly require the job ID
+  jobId: string;
 }
 
 export const CandidateListItem: React.FC<CandidateListItemProps> = ({ 
@@ -39,24 +39,12 @@ export const CandidateListItem: React.FC<CandidateListItemProps> = ({
     setEmailDialogOpen(true);
   };
 
-  // Replace getFirstThreadId with getThreadIdForJob
+  // Get thread ID for the current job using standardized format
   const getThreadIdForJob = (): string | null => {
     if (!candidate.threadIds || !jobId) return null;
     
-    // Check if we have a thread ID for this job
-    const threadEntry = candidate.threadIds[jobId];
-    if (!threadEntry) return null;
-    
-    // Handle both legacy (string) and new format (object with threadId property)
-    if (typeof threadEntry === 'string') {
-      return threadEntry;
-    } else if (typeof threadEntry === 'object' && threadEntry !== null) {
-      // Type assertion to prevent 'never' type error
-      const threadObject = threadEntry as { threadId?: string };
-      return threadObject.threadId || null;
-    }
-    
-    return null;
+    const threadInfo = candidate.threadIds[jobId] as EmailThreadInfo | undefined;
+    return threadInfo?.threadId || null;
   };
 
   return (
@@ -127,9 +115,9 @@ export const CandidateListItem: React.FC<CandidateListItemProps> = ({
         onClose={() => setEmailDialogOpen(false)}
         candidateName={candidate.name}
         candidateEmail={candidate.email}
-        jobId={jobId} // Pass the job ID to the EmailDialog
+        jobId={jobId}
         candidateId={candidate.id}
-        threadId={getThreadIdForJob()} // Use the job-specific thread ID
+        threadId={getThreadIdForJob()}
       />
     </>
   );

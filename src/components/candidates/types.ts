@@ -7,10 +7,10 @@ export type CandidateStatus = {
   offered: boolean;
 };
 
-// Define the thread info structure
-export interface ThreadInfo {
-  threadId: string;
-  messageId: string;
+// Define the standard thread info structure
+export interface EmailThreadInfo {
+  threadId: string;  // always required
+  messageId: string; // always required (can be "" if unknown)
 }
 
 export type Candidate = {
@@ -20,5 +20,5 @@ export type Candidate = {
   linkedinUrl?: string;
   status: CandidateStatus;
   applicationId?: string;
-  threadIds?: Record<string, ThreadInfo | string>; // Support both new and legacy formats
+  threadIds?: Record<string, EmailThreadInfo>; // Only use the standardized format
 };

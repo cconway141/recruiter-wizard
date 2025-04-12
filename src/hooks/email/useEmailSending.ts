@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useEmailSender } from "@/hooks/email/useEmailSender";
 import { useCandidateThreads } from "@/hooks/email/useCandidateThreads";
 import { useToast } from "@/hooks/use-toast";
+import { EmailThreadInfo } from "@/components/candidates/types";
 
 interface UseEmailSendingProps {
   candidateId?: string;
@@ -90,8 +91,8 @@ export const useEmailSending = ({
         body,
         candidateName,
         candidateFacingTitle || "",
-        threadId,  // Pass threadId directly, without conditional
-        messageId  // Pass messageId directly, without conditional
+        threadId,
+        messageId
       );
 
       if (result?.threadId && candidateId && jobId) {

@@ -2,15 +2,11 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Json } from "@/integrations/supabase/types";
-
-interface ThreadInfo {
-  threadId: string;
-  messageId: string;
-}
+import { EmailThreadInfo } from "@/components/candidates/types";
 
 interface CandidateThreadData {
   candidateId: string;
-  threadIds: Record<string, ThreadInfo | string>; // Support legacy format
+  threadIds: Record<string, any>; // Allow any type for conversion
   jobId?: string;
   newThreadId?: string;
   newMessageId?: string;
@@ -39,24 +35,31 @@ export const useCandidateThreads = () => {
         newMessageId
       });
       
-      // Convert legacy format if needed
-      const convertedThreadIds: Record<string, ThreadInfo> = {};
+      // Convert any format to the standardized EmailThreadInfo format
+      const convertedThreadIds: Record<string, EmailThreadInfo> = {};
       
       // Copy existing threads with conversion from legacy format
       Object.entries(threadIds || {}).forEach(([key, value]) => {
         if (typeof value === 'string') {
-          // Legacy format, just threadId as string
+          // Legacy format, use the threadId as both threadId and messageId
           convertedThreadIds[key] = { threadId: value, messageId: value };
+        } else if (value && typeof value === 'object') {
+          // Partial object format, ensure both properties exist
+          const threadInfo = value as Partial<EmailThreadInfo>;
+          convertedThreadIds[key] = { 
+            threadId: threadInfo.threadId || '', 
+            messageId: threadInfo.messageId || threadInfo.threadId || ''
+          };
         } else {
-          // Already in new format
-          convertedThreadIds[key] = value as ThreadInfo;
+          // Handle null or undefined case
+          convertedThreadIds[key] = { threadId: '', messageId: '' };
         }
       });
       
       // Add the new thread info
       if (!newMessageId) {
-        console.error("Missing messageId when saving thread info — aborting to prevent threading issues.");
-        return false;
+        console.error("Missing messageId when saving thread info — using threadId as fallback to prevent threading issues.");
+        newMessageId = newThreadId;
       }
 
       convertedThreadIds[jobId] = {
@@ -89,7 +92,7 @@ export const useCandidateThreads = () => {
     }
   };
   
-  const getThreadInfo = async (candidateId: string, jobId: string): Promise<ThreadInfo | null> => {
+  const getThreadInfo = async (candidateId: string, jobId: string): Promise<EmailThreadInfo | null> => {
     if (!candidateId || !jobId) {
       return null;
     }
@@ -99,7 +102,7 @@ export const useCandidateThreads = () => {
         .from('candidates')
         .select('thread_ids')
         .eq('id', candidateId)
-        .single();
+        .maybeSingle();
         
       if (error || !data) {
         console.error("Error retrieving thread data:", error);
@@ -121,20 +124,28 @@ export const useCandidateThreads = () => {
         return null;
       }
       
-      // Handle both legacy format and new format
+      // Get thread info for this job
       const threadInfo = threadIds[jobId];
       
       if (!threadInfo) {
         return null;
       }
       
+      // Standardize the format
       if (typeof threadInfo === 'string') {
-        // Legacy format - convert on the fly
+        // Legacy format - convert to standardized format
         return { threadId: threadInfo, messageId: threadInfo };
+      } else if (threadInfo && typeof threadInfo === 'object') {
+        // Already an object, ensure it has both properties
+        const threadData = threadInfo as Partial<EmailThreadInfo>;
+        return {
+          threadId: threadData.threadId || '',
+          messageId: threadData.messageId || threadData.threadId || ''
+        };
       }
       
-      // New format
-      return threadInfo as ThreadInfo;
+      // Unknown format
+      return null;
     } catch (err) {
       console.error("Error retrieving thread info:", err);
       return null;

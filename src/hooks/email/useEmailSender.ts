@@ -9,6 +9,11 @@ interface UseEmailSenderProps {
   onSuccess?: () => void;
 }
 
+interface EmailResult {
+  threadId: string;
+  messageId: string;
+}
+
 export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -24,7 +29,7 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
     jobTitle: string = "", 
     threadId?: string | null,
     messageId?: string | null
-  ) => {
+  ): Promise<EmailResult | null> => {
     if (!to || !user) {
       const error = "Missing recipient email or user not logged in";
       setErrorMessage(error);
@@ -121,20 +126,18 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
         throw new Error(data.error);
       }
       
-      console.log("Email sent successfully:", {
-        threadId: data?.threadId,
-        messageId: data?.messageId
-      });
+      const result: EmailResult = {
+        threadId: data?.threadId || '',
+        messageId: data?.messageId || ''
+      };
+      
+      console.log("Email sent successfully:", result);
       
       if (onSuccess) {
         onSuccess();
       }
       
-      // Return both thread ID and message ID
-      return {
-        threadId: data?.threadId,
-        messageId: data?.messageId
-      };
+      return result;
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to send email";
       setErrorMessage(message);
