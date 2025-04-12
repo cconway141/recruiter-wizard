@@ -15,8 +15,13 @@ interface FormActionsProps {
 export function FormActions({ isEditing, job }: FormActionsProps) {
   const navigate = useNavigate();
   const form = useFormContext();
-  const formProcessor = useFormProcessor({ job, isEditing });
-  const isSubmitting = formProcessor?.isSubmitting || false;
+  const { handleSubmit, isSubmitting } = useFormProcessor({ job, isEditing });
+  
+  // Only disable the submit button if we're actually submitting
+  const isDisabled = isSubmitting === true;
+  
+  // Explicitly log the submission state
+  console.log("FormActions - isSubmitting:", isSubmitting);
   
   return (
     <div className="flex justify-end gap-4">
@@ -24,13 +29,13 @@ export function FormActions({ isEditing, job }: FormActionsProps) {
         type="button" 
         variant="outline" 
         onClick={() => navigate("/")}
-        disabled={isSubmitting}
+        disabled={isDisabled}
       >
         Cancel
       </Button>
       <Button 
         type="submit"
-        disabled={isSubmitting}
+        disabled={isDisabled}
         className="min-w-[120px]"
       >
         {isSubmitting ? (

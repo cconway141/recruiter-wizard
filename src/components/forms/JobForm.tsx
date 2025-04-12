@@ -28,8 +28,7 @@ interface JobFormProps {
 
 export function JobForm({ job, isEditing = false }: JobFormProps) {
   const form = useFormContext<JobFormValues>();
-  const formProcessor = useFormProcessor({ job, isEditing });
-  const { handleSubmit } = formProcessor || { handleSubmit: () => console.error("Form processor not available") };
+  const { handleSubmit, isSubmitting } = useFormProcessor({ job, isEditing });
   const { handleClientSelection } = useClientSelection(form);
 
   const { isLoading: clientsLoading } = useClientOptions();
@@ -80,11 +79,7 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
   // Now we can safely use form methods
   const onSubmitForm = form.handleSubmit((values) => {
     console.log("Form submitted with values:", values);
-    if (handleSubmit) {
-      handleSubmit(values);
-    } else {
-      console.error("handleSubmit function is not available");
-    }
+    handleSubmit(values);
   });
 
   return (
