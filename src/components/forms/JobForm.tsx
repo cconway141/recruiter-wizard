@@ -108,7 +108,7 @@ function JobFormContent({ form, handleClientSelection, job, isEditing }: JobForm
       <form onSubmit={onSubmitForm} className="space-y-6">
         <JobFormBasicInfo handleClientSelection={handleClientSelection} />
         <JobFormCompanyDesc />
-        <JobFormDetails form={form} />
+        <JobFormDetails />
         <JobFormLinks />
         <FormActions isEditing={isEditing} job={job} />
       </form>

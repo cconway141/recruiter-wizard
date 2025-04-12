@@ -5,9 +5,10 @@ import { useFormContext } from "react-hook-form";
 import { Loader2, Check, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useFieldsGenerator } from "@/hooks/job-form/useFieldsGenerator";
+import { JobFormValues } from "../JobFormDetails";
 
 export function JobFormQuestionDetails() {
-  const form = useFormContext();
+  const form = useFormContext<JobFormValues>();
   const { 
     generateVideoQuestions, 
     generateScreeningQuestions,

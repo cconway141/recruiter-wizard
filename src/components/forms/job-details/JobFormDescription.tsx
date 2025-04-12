@@ -7,9 +7,10 @@ import { Loader2, Check, RefreshCw, AlertTriangle, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useFieldsGenerator } from "@/hooks/job-form/useFieldsGenerator";
+import { JobFormValues } from "../JobFormDetails";
 
 export function JobFormDescription() {
-  const form = useFormContext();
+  const form = useFormContext<JobFormValues>();
   const { 
     generateSkills, 
     generateMinSkills, 

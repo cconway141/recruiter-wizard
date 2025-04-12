@@ -2,7 +2,7 @@
 import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useJobs } from "@/contexts/JobContext";
-import { Job } from "@/types/job";
+import { Job, Locale } from "@/types/job";
 import { JobFormValues } from "../JobFormDetails";
 import { useToast } from "@/components/ui/use-toast";
 import { generateM1, generateM2, generateM3 } from "@/utils/messageUtils";
@@ -37,13 +37,13 @@ export function useFormProcessor({ job, isEditing, setSubmittingState }: FormPro
       
       // Generate work and pay details based on locale if not already set
       if (!formValues.workDetails || !formValues.payDetails) {
-        const locale = formValues.locale?.name;
-        if (locale) {
+        const localeName = formValues.locale?.name;
+        if (localeName) {
           if (!formValues.workDetails) {
-            formValues.workDetails = await getWorkDetails(locale);
+            formValues.workDetails = await getWorkDetails(localeName as Locale);
           }
           if (!formValues.payDetails) {
-            formValues.payDetails = await getPayDetails(locale);
+            formValues.payDetails = await getPayDetails(localeName as Locale);
           }
         }
       }

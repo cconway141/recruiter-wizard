@@ -3,6 +3,7 @@ import { JobFormDescription } from "./job-details/JobFormDescription";
 import { JobFormWorkDetails } from "./job-details/JobFormWorkDetails";
 import { JobFormQuestionDetails } from "./job-details/JobFormQuestionDetails";
 import { JobFormOtherInfo } from "./job-details/JobFormOtherInfo";
+import { UseFormReturn } from "react-hook-form";
 
 export interface JobFormValues {
   candidateFacingTitle: string;
@@ -28,10 +29,7 @@ export interface JobFormValues {
   [key: string]: any;
 }
 
-interface JobFormDetailsProps {
-  form: UseFormReturn<JobFormValues>;
-}
-
+// We don't actually need this interface as we're not passing the form down
 export function JobFormDetails() {
   return (
     <div className="space-y-6">
