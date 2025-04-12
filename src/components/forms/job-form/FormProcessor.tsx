@@ -95,7 +95,15 @@ export function useFormProcessor({ job, isEditing, setSubmittingState }: FormPro
         
         if (isEditing && job) {
           // Handle job update
-          result = await updateJob(job.id, completedFormData);
+          // First create a full job object by merging the existing job with the form data
+          const updatedJobData = {
+            ...job,
+            ...completedFormData,
+            id: job.id // Ensure ID is preserved
+          };
+          
+          // Now call updateJob with the single full job object
+          result = await updateJob(updatedJobData);
           
           if (result) {
             toast({
