@@ -1,7 +1,17 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Json } from "@/integrations/supabase/types";
 import { EmailThreadInfo } from "@/components/candidates/types";
+
+// Define the interface for thread data used in saveThreadId
+interface CandidateThreadData {
+  candidateId: string;
+  threadIds: Record<string, EmailThreadInfo>;
+  jobId: string;
+  newThreadId: string;
+  newMessageId?: string;
+}
 
 export const useCandidateThreads = () => {
   const { toast } = useToast();
