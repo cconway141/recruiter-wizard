@@ -89,6 +89,7 @@ export function useFieldsGenerator(form: UseFormReturn<JobFormValues>) {
         throw new Error(data.error);
       }
 
+      // Always check if skills are defined and have content
       if (data.skills) {
         console.log("Skills extracted successfully");
         form.setValue('skillsSought', data.skills, { 
@@ -105,7 +106,21 @@ export function useFieldsGenerator(form: UseFormReturn<JobFormValues>) {
         });
         return true;
       } else {
-        throw new Error("No skills returned in the response");
+        // Return empty skills and mark as successful but show a different message
+        form.setValue('skillsSought', '', { 
+          shouldDirty: true,
+          shouldTouch: true,
+          shouldValidate: true 
+        });
+        
+        markFieldAsGenerated('skills');
+        
+        toast({
+          title: "No skills found",
+          description: "No specific skills were detected in the job description. Please add them manually.",
+          variant: "warning",
+        });
+        return true;
       }
     } catch (error) {
       console.error("Error extracting skills:", error);
@@ -116,7 +131,10 @@ export function useFieldsGenerator(form: UseFormReturn<JobFormValues>) {
         description: errorMessage,
         variant: "destructive",
       });
+      setGenerationState(prev => ({ ...prev, isGenerating: false }));
       return false;
+    } finally {
+      setGenerationState(prev => ({ ...prev, isGenerating: false }));
     }
   };
 
@@ -125,14 +143,25 @@ export function useFieldsGenerator(form: UseFormReturn<JobFormValues>) {
     const skillsSought = form.getValues('skillsSought');
     const jobDescription = form.getValues('jd');
     
-    if (!skillsSought?.trim() || !jobDescription?.trim()) {
+    if (!skillsSought?.trim()) {
       toast({
-        title: "Missing information",
+        title: "Missing skills",
+        description: "Please extract or enter skills first before generating minimum skills.",
+        variant: "destructive",
+      });
+      return false;
+    }
+    
+    if (!jobDescription?.trim()) {
+      toast({
+        title: "Missing job description",
         description: "Both job description and skills are required to generate minimum skills.",
         variant: "destructive",
       });
       return false;
     }
+    
+    setGenerationState(prev => ({ ...prev, isGenerating: true }));
     
     try {
       const { data, error } = await supabase.functions.invoke('extract-minimum-skills', {
@@ -156,7 +185,21 @@ export function useFieldsGenerator(form: UseFormReturn<JobFormValues>) {
         });
         return true;
       } else {
-        throw new Error("No minimum skills returned in the response");
+        // Handle empty response
+        form.setValue('minSkills', '', { 
+          shouldDirty: true,
+          shouldTouch: true,
+          shouldValidate: true 
+        });
+        
+        markFieldAsGenerated('minSkills');
+        
+        toast({
+          title: "No minimum skills generated",
+          description: "Could not generate minimum skills from the provided information. Please add them manually.",
+          variant: "warning",
+        });
+        return true;
       }
     } catch (error) {
       console.error("Error extracting minimum skills:", error);
@@ -166,6 +209,8 @@ export function useFieldsGenerator(form: UseFormReturn<JobFormValues>) {
         variant: "destructive",
       });
       return false;
+    } finally {
+      setGenerationState(prev => ({ ...prev, isGenerating: false }));
     }
   };
 
@@ -181,6 +226,8 @@ export function useFieldsGenerator(form: UseFormReturn<JobFormValues>) {
       });
       return false;
     }
+    
+    setGenerationState(prev => ({ ...prev, isGenerating: true }));
     
     try {
       const { data, error } = await supabase.functions.invoke('generate-video-questions', {
@@ -204,7 +251,13 @@ export function useFieldsGenerator(form: UseFormReturn<JobFormValues>) {
         });
         return true;
       } else {
-        throw new Error("No video questions returned in the response");
+        // Handle empty response
+        toast({
+          title: "No video questions generated",
+          description: "Could not generate video questions from the minimum skills. Please add them manually.",
+          variant: "warning",
+        });
+        return false;
       }
     } catch (error) {
       console.error("Error generating video questions:", error);
@@ -214,6 +267,8 @@ export function useFieldsGenerator(form: UseFormReturn<JobFormValues>) {
         variant: "destructive",
       });
       return false;
+    } finally {
+      setGenerationState(prev => ({ ...prev, isGenerating: false }));
     }
   };
 
@@ -229,6 +284,8 @@ export function useFieldsGenerator(form: UseFormReturn<JobFormValues>) {
       });
       return false;
     }
+    
+    setGenerationState(prev => ({ ...prev, isGenerating: true }));
     
     try {
       const { data, error } = await supabase.functions.invoke('generate-screening-questions', {
@@ -252,7 +309,13 @@ export function useFieldsGenerator(form: UseFormReturn<JobFormValues>) {
         });
         return true;
       } else {
-        throw new Error("No screening questions returned in the response");
+        // Handle empty response
+        toast({
+          title: "No screening questions generated",
+          description: "Could not generate screening questions from the minimum skills. Please add them manually.",
+          variant: "warning",
+        });
+        return false;
       }
     } catch (error) {
       console.error("Error generating screening questions:", error);
@@ -262,6 +325,8 @@ export function useFieldsGenerator(form: UseFormReturn<JobFormValues>) {
         variant: "destructive",
       });
       return false;
+    } finally {
+      setGenerationState(prev => ({ ...prev, isGenerating: false }));
     }
   };
 

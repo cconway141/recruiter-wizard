@@ -18,10 +18,10 @@ serve(async (req) => {
   try {
     const { jobDescription } = await req.json();
 
-    if (!jobDescription) {
+    if (!jobDescription || jobDescription.trim() === '') {
       console.error('Error: Job description is empty or missing');
       return new Response(
-        JSON.stringify({ error: 'Job description is required' }),
+        JSON.stringify({ error: 'Job description is required and cannot be empty', skills: '' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -83,7 +83,10 @@ ${jobDescription}`
     });
   } catch (error) {
     console.error('Error in extract-skills function:', error);
-    return new Response(JSON.stringify({ error: error.message || 'Failed to extract skills from job description' }), {
+    return new Response(JSON.stringify({ 
+      error: error.message || 'Failed to extract skills from job description', 
+      skills: '' // Return empty skills on error to prevent null errors
+    }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
