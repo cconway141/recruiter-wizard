@@ -10,6 +10,16 @@ export function useUpdateJob(jobs: Job[], setJobs: (jobs: Job[]) => void) {
       // Extract locale ID from locale object
       const localeId = updatedJob.locale.id;
       
+      // Extract status name for database
+      const statusName = typeof updatedJob.status === 'object' 
+        ? updatedJob.status.name 
+        : updatedJob.status;
+      
+      // Extract status ID for database
+      const statusId = typeof updatedJob.status === 'object' 
+        ? updatedJob.status.id 
+        : updatedJob.statusId || '';
+      
       // Regenerate the internal title to ensure it uses the latest format
       const newInternalTitle = await generateInternalTitle(
         updatedJob.client,
@@ -32,7 +42,8 @@ export function useUpdateJob(jobs: Job[], setJobs: (jobs: Job[]) => void) {
           internal_title: updatedJob.internalTitle,
           candidate_facing_title: updatedJob.candidateFacingTitle,
           jd: updatedJob.jd,
-          status: updatedJob.status,
+          status: statusName,
+          status_id: statusId,
           m1: updatedJob.m1,
           m2: updatedJob.m2,
           m3: updatedJob.m3,
@@ -58,7 +69,7 @@ export function useUpdateJob(jobs: Job[], setJobs: (jobs: Job[]) => void) {
           screening_questions: updatedJob.screeningQuestions,
           flavor: updatedJob.flavor,
           flavor_id: updatedJob.flavorId,
-          status_id: updatedJob.statusId,
+          status_id: statusId,
           linkedin_search: updatedJob.linkedinSearch
         })
         .eq('id', updatedJob.id);

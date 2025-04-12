@@ -34,9 +34,12 @@ export function useJobFilters(jobs: Job[]) {
       );
     }
 
-    // Apply status filter
+    // Apply status filter - compare with status.name
     if (filters.status !== "All") {
-      result = result.filter((job) => job.status === filters.status);
+      result = result.filter((job) => {
+        const jobStatus = typeof job.status === 'object' ? job.status.name : job.status;
+        return jobStatus === filters.status;
+      });
     }
 
     // Apply locale filter
@@ -46,7 +49,10 @@ export function useJobFilters(jobs: Job[]) {
 
     // Apply flavor filter
     if (filters.flavor !== "All") {
-      result = result.filter((job) => job.flavor === filters.flavor);
+      result = result.filter((job) => {
+        const jobFlavor = typeof job.flavor === 'object' ? job.flavor.id : job.flavor;
+        return jobFlavor === filters.flavor;
+      });
     }
 
     return result;

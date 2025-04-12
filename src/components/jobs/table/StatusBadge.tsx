@@ -1,6 +1,5 @@
 
 import { Badge } from "@/components/ui/badge";
-import { displayFormValue } from "@/utils/formFieldUtils";
 
 // Map status to badge color
 const StatusBadgeColor: Record<string, string> = {
@@ -11,16 +10,19 @@ const StatusBadgeColor: Record<string, string> = {
 };
 
 interface StatusBadgeProps {
-  status: string;
+  status: { id: string; name: string } | string;
 }
 
 export function StatusBadge({ status }: StatusBadgeProps) {
+  // Handle both object and string formats for backward compatibility
+  const statusName = typeof status === 'object' ? status.name : status;
+  
   return (
     <Badge 
-      className={StatusBadgeColor[status] || StatusBadgeColor.Active} 
+      className={StatusBadgeColor[statusName] || StatusBadgeColor.Active} 
       variant="outline"
     >
-      {status}
+      {statusName}
     </Badge>
   );
 }

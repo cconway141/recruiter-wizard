@@ -31,10 +31,15 @@ export const prepareJobForCreate = async (
   const rate = Number(job.rate) || 0;
   const { high: highRate, medium: mediumRate, low: lowRate = 0 } = calculateRates(rate);
 
+  // Ensure status is an object
+  const status = typeof job.status === 'object' 
+    ? job.status 
+    : { id: "", name: job.status || "Active" };
+
   return {
     ...job,
     id: uuid(),
-    status: job.status || "Active", // Default to "Active" status
+    status: status, // Use standardized status object
     internalTitle,
     highRate,
     mediumRate,
@@ -48,13 +53,19 @@ export const prepareJobForCreate = async (
  * Map job data to the format expected by Supabase
  */
 export const mapJobToDatabase = (job: Job) => {
+  // Extract status name for database
+  const statusName = typeof job.status === 'object' ? job.status.name : job.status;
+  
+  // Extract status ID for database
+  const statusId = typeof job.status === 'object' ? job.status.id : job.statusId || '';
+  
   return {
     id: job.id,
     internal_title: job.internalTitle,
     candidate_facing_title: job.candidateFacingTitle,
     jd: job.jd || "",
-    status: job.status,
-    status_id: job.statusId,
+    status: statusName,
+    status_id: statusId,
     skills_sought: job.skillsSought || "",
     min_skills: job.minSkills || "",
     linkedin_search: job.linkedinSearch || "",
@@ -97,12 +108,18 @@ export const mapDatabaseToJob = (dbJob: any): Job => {
     payDetails: dbJob.pay_details || ''
   };
 
+  // Create standardized status object
+  const statusObject = {
+    id: dbJob.status_id || '',
+    name: dbJob.status || 'Active'
+  };
+
   return {
     id: dbJob.id,
     internalTitle: dbJob.internal_title,
     candidateFacingTitle: dbJob.candidate_facing_title,
     jd: dbJob.jd,
-    status: dbJob.status,
+    status: statusObject, // Use the standardized status object
     statusId: dbJob.status_id,
     m1: dbJob.m1,
     m2: dbJob.m2,
