@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.29.0";
 
@@ -121,20 +120,22 @@ async function sendGmailMessage(
   }
   
   try {
-    // Log request parameters for debugging
-    console.log("Sending Gmail with params:", {
+    // Enhanced logging with threading details
+    console.log("Sending Gmail with threading details:", {
       to,
       cc: cc ? "Set" : "Not set",
-      subject: subject ? `"${subject}"` : "Reply",
+      subject: subject ? `"${subject}"` : "Reply to existing thread",
       bodyLength: body?.length || 0,
+      isReply: !!threadId,
       threadId: threadId || "New thread",
       messageId: messageId || "None",
+      hasThreadingHeaders: !!(messageId && messageId.trim())
     });
     
-    // Build email headers with proper threading
+    // Build email headers with proper threading info
     const headers = buildEmailHeaders(to, cc, subject, messageId);
     
-    // Create email payload
+    // Create email payload with raw email
     const email: any = {
       raw: btoa(headers + body)
         .replace(/\+/g, '-')
@@ -142,9 +143,9 @@ async function sendGmailMessage(
         .replace(/=+$/, '')
     };
     
-    // Only add threadId if it exists and is not empty
+    // Add threadId to group the message in the correct conversation
     if (threadId && threadId.trim()) {
-      console.log("Adding threadId to request:", threadId);
+      console.log("Adding threadId to Gmail API request:", threadId);
       email.threadId = threadId.trim();
     }
     
@@ -174,7 +175,9 @@ async function sendGmailMessage(
     
     console.log("Gmail API response success:", {
       messageId: data.id,
-      threadId: data.threadId
+      threadId: data.threadId,
+      wasReply: !!threadId,
+      hadMessageIdHeader: !!(messageId && messageId.trim())
     });
     
     return {
@@ -190,15 +193,19 @@ async function sendGmailMessage(
 
 // Build email headers including threading headers if applicable
 function buildEmailHeaders(to: string, cc: string, subject: string, messageId?: string): string {
+  // Start with basic headers
   let headers = `To: ${to}\r\n`;
   if (cc) headers += `Cc: ${cc}\r\n`;
   if (subject) headers += `Subject: ${subject}\r\n`;
   
-  // Add threading headers if this is a reply
+  // Add threading headers if this is a reply (messageId is provided)
+  // These headers are CRITICAL for threading to work properly
   if (messageId && messageId.trim()) {
-    console.log("Adding In-Reply-To and References headers with messageId:", messageId);
+    console.log("Adding threading headers with messageId:", messageId);
     headers += `In-Reply-To: <${messageId}>\r\n`;
     headers += `References: <${messageId}>\r\n`;
+  } else {
+    console.log("No messageId provided, creating new thread (no threading headers)");
   }
   
   headers += 'Content-Type: text/html; charset=utf-8\r\n\r\n';
@@ -272,6 +279,18 @@ serve(async (req) => {
     const body = await req.json();
     const { userId, to, cc, subject, body: emailBody, candidateName, jobTitle, threadId, messageId } = body;
     
+    // Enhanced request validation logging
+    console.log("Email request received:", {
+      to: to || "MISSING",
+      hasCC: !!cc,
+      hasSubject: !!subject,
+      bodyLength: emailBody?.length || 0,
+      isReply: !!threadId,
+      threadId: threadId || "New thread",
+      messageId: messageId || "None",
+      candidateName: candidateName || "Not provided"
+    });
+    
     // Validate required fields
     if (!userId || !to || !emailBody) {
       return new Response(
@@ -302,9 +321,9 @@ serve(async (req) => {
       );
     }
     
-    // Send the email
-    console.log(`Sending email to ${to}${threadId ? ' (reply)' : ' (new thread)'}`);
-    console.log(`Thread ID: ${threadId || 'New thread'}, Message ID: ${messageId || 'None'}`);
+    // Send the email with threading information
+    console.log(`Sending email to ${to}${threadId ? ' (reply using threadId)' : ' (new thread)'}`);
+    console.log(`Threading details: threadId=${threadId || 'New'}, messageId=${messageId || 'None'}`);
     
     const sendResult = await sendGmailMessage(
       to,

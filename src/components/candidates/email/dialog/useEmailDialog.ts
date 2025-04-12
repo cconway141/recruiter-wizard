@@ -38,6 +38,7 @@ export const useEmailDialog = ({
   });
   
   // Filter out "new email" placeholder from threadId
+  // This is important for proper thread handling
   const cleanedThreadId = threadId && threadId !== "new email" ? threadId : null;
   
   // Validate that we have a job title

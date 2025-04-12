@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -47,16 +48,20 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
       // Gmail will use the existing thread subject
       const finalSubject = threadId ? "" : subject;
       
-      // Add console log to verify email body content
-      console.log("Email body before send:", {
-        body,
-        length: body.length,
+      // Add console log to verify email body content and threading details
+      console.log("Email sending details:", {
+        to,
+        subject: finalSubject || "(reply - using thread subject)",
+        bodyLength: body.length,
         firstChars: body.substring(0, 100),
+        isReply: !!threadId,
         threadId: threadId || 'new email',
-        messageId: messageId || 'none'  // Log messageId for debugging
+        messageId: messageId || 'none',
+        candidateName,
+        jobTitle
       });
       
-      // Create the payload object, conditionally including threadId and messageId
+      // Create the payload object with ALL threading information
       const payload: any = {
         to,
         cc,
@@ -67,14 +72,14 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
         userId: user.id
       };
       
-      // Only include threadId and messageId if they're defined
-      // Important: Only include them if they are non-empty strings
-      if (threadId && threadId.trim()) {
+      // Always include threadId and messageId in the payload if they exist
+      // This is critical for proper threading
+      if (threadId) {
         payload.threadId = threadId.trim();
         console.log("Including threadId in request:", threadId.trim());
       }
       
-      if (messageId && messageId.trim()) {
+      if (messageId) {
         payload.messageId = messageId.trim();
         console.log("Including messageId in request:", messageId.trim());
       }
