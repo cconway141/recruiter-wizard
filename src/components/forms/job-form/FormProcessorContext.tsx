@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, ReactNode } from "react";
+import React, { createContext, useContext, ReactNode, useState } from "react";
 import { Job } from "@/types/job";
 import { JobFormValues } from "../JobFormDetails";
 import { useFormProcessor } from "./FormProcessor";
@@ -24,10 +24,21 @@ export function FormProcessorProvider({
   job, 
   isEditing = false 
 }: FormProcessorProviderProps) {
-  // Single instance of form processor in the entire form tree
-  const { handleSubmit, isSubmitting } = useFormProcessor({ job, isEditing });
+  // Use a local isSubmitting state that's easier to debug
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { processJobForm } = useFormProcessor({ 
+    job, 
+    isEditing,
+    setSubmittingState: setIsSubmitting 
+  });
 
   console.log("FormProcessorProvider - isSubmitting:", isSubmitting);
+
+  // The handleSubmit function is now a simple wrapper around processJobForm
+  const handleSubmit = (values: JobFormValues) => {
+    console.log("FormProcessorContext handleSubmit called with values", values);
+    processJobForm(values);
+  };
 
   return (
     <FormProcessorContext.Provider 
