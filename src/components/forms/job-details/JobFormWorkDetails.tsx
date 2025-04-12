@@ -1,32 +1,69 @@
 
 import { useFormContext } from "react-hook-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { DisplayLocaleValue } from "@/components/ui/display-locale-value";
 import { displayFormValue } from "@/utils/formFieldUtils";
 
 export function JobFormWorkDetails() {
   const form = useFormContext();
+  const locale = form.watch("locale");
   
-  // Only access these values if the form is available
-  const localeValue = form?.watch ? form.watch("locale") : null;
-  
-  // Use the utility function to get safe display values
-  const displayLocale = displayFormValue(localeValue);
-  
-  // Register the fields but don't display them as they're generated fields
-  if (form?.register) {
-    form.register("workDetails");
-    form.register("payDetails");
-  }
+  // Display a proper string value for locale
+  const localeDisplay = displayFormValue(locale);
 
   return (
-    <Card className="bg-muted/50">
+    <Card>
       <CardHeader className="pb-3">
         <CardTitle className="text-md">Work & Pay Details</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-6">
         <p className="text-sm text-muted-foreground mb-4">
-          Work and pay details are generated automatically based on the locale: <span className="font-medium">{displayLocale || "None selected"}</span>
+          Please provide details about the work arrangement and payment details for this {localeDisplay} role.
         </p>
+
+        <FormField
+          control={form.control}
+          name="workDetails"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Work Details</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Enter work details..."
+                  className="min-h-[100px]"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="payDetails"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Pay Details</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Enter payment details..."
+                  className="min-h-[100px]"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
       </CardContent>
     </Card>
   );
