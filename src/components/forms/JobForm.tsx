@@ -38,7 +38,7 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
   const { isLoading: usersLoading } = useUserOptions();
 
   const isLoading = clientsLoading || flavorsLoading || localesLoading || statusesLoading || usersLoading;
-
+  
   // Effect to handle form value updates for message generation
   useEffect(() => {
     if (!form || !form.getValues) {
@@ -57,23 +57,6 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
       console.error("Error accessing form values:", err);
     }
   }, [form]);
-
-  // Handle initial client selection for company description
-  useEffect(() => {
-    if (!form || !form.getValues) {
-      console.warn("Form context is not properly initialized for client selection");
-      return;
-    }
-    
-    try {
-      const clientValue = form.getValues("client");
-      if (clientValue) {
-        handleClientSelection(clientValue);
-      }
-    } catch (err) {
-      console.error("Error handling client selection:", err);
-    }
-  }, [form, handleClientSelection]);
 
   if (isLoading) {
     return (

@@ -1,4 +1,3 @@
-
 import { useFormContext, Controller } from "react-hook-form";
 import {
   FormControl,
@@ -24,7 +23,6 @@ import {
 import { useUserOptions } from "@/hooks/useUserOptions";
 import { useRoleAbbreviations } from "@/hooks/useRoleAbbreviations";
 import { useEffect } from "react";
-import { useState } from "react";
 
 interface JobFormBasicInfoProps {
   handleClientSelection: (clientName: string) => void;
@@ -39,15 +37,6 @@ export function JobFormBasicInfo({ handleClientSelection }: JobFormBasicInfoProp
   const { data: statusOptions } = useStatusOptions();
   const { data: userOptions, isLoading: usersLoading } = useUserOptions();
   const { data: roleOptions, isLoading: rolesLoading } = useRoleAbbreviations();
-
-  // Only trigger client selection once on initial load for the current value
-  useEffect(() => {
-    const currentClient = form?.getValues?.("client");
-    if (currentClient) {
-      console.log("Initial client selection:", currentClient);
-      handleClientSelection(currentClient);
-    }
-  }, [form, handleClientSelection]);
 
   if (!form || !form.control) {
     return (
@@ -70,7 +59,6 @@ export function JobFormBasicInfo({ handleClientSelection }: JobFormBasicInfoProp
                 onValueChange={(value) => {
                   // Only trigger handleClientSelection for actual user-driven changes
                   if (value !== field.value) {
-                    console.log("User selected new client:", value);
                     field.onChange(value);
                     handleClientSelection(value);
                   }
