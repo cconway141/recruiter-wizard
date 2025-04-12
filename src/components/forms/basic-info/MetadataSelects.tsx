@@ -34,10 +34,24 @@ export function MetadataSelects() {
         render={({ field }) => {
           // Get the value to display and the ID for selection
           const displayValue = displayFormValue(field.value);
-          const idValue = typeof field.value === 'object' && field.value ? 
-            field.value.id : 
-            extractId(field.value);
-            
+          
+          // Extract the ID value from the field value (either from object or string)
+          let idValue = '';
+          if (typeof field.value === 'object' && field.value) {
+            idValue = field.value.id;
+          } else if (field.value && typeof field.value === 'string') {
+            try {
+              // Try to parse it in case it's a stringified JSON
+              const parsed = JSON.parse(field.value);
+              if (parsed && parsed.id) {
+                idValue = parsed.id;
+              }
+            } catch (e) {
+              // If it's not a valid JSON string, use the extractId utility
+              idValue = extractId(field.value);
+            }
+          }
+          
           return (
             <FormItem>
               <FormLabel>Flavor</FormLabel>
@@ -47,6 +61,7 @@ export function MetadataSelects() {
                   field.onChange(selectedFlavor);
                 }} 
                 value={idValue || ''}
+                defaultValue={idValue || ''}
               >
                 <FormControl>
                   <SelectTrigger>
@@ -73,12 +88,26 @@ export function MetadataSelects() {
         control={form.control}
         name="locale"
         render={({ field }) => {
-          // Get the value to display and the name for selection
+          // Get the value to display and extract the name for selection
           const displayValue = displayFormValue(field.value);
-          const nameValue = typeof field.value === 'object' && field.value ? 
-            field.value.name : 
-            field.value;
-            
+          
+          // Extract the name value for matching in the dropdown
+          let nameValue = '';
+          if (typeof field.value === 'object' && field.value) {
+            nameValue = field.value.name;
+          } else if (field.value && typeof field.value === 'string') {
+            try {
+              // Try to parse it in case it's a stringified JSON
+              const parsed = JSON.parse(field.value);
+              if (parsed && parsed.name) {
+                nameValue = parsed.name;
+              }
+            } catch (e) {
+              // If not a JSON string, use the value directly
+              nameValue = field.value;
+            }
+          }
+          
           return (
             <FormItem>
               <FormLabel>Locale</FormLabel>
@@ -88,6 +117,7 @@ export function MetadataSelects() {
                   field.onChange(selectedLocale || value);
                 }} 
                 value={nameValue || ''}
+                defaultValue={nameValue || ''}
               >
                 <FormControl>
                   <SelectTrigger>
@@ -114,12 +144,26 @@ export function MetadataSelects() {
         control={form.control}
         name="status"
         render={({ field }) => {
-          // Get the value to display and the name for selection
+          // Get the value to display and extract the name for selection
           const displayValue = displayFormValue(field.value);
-          const nameValue = typeof field.value === 'object' && field.value ? 
-            field.value.name : 
-            field.value;
-            
+          
+          // Extract the name value for matching in the dropdown
+          let nameValue = '';
+          if (typeof field.value === 'object' && field.value) {
+            nameValue = field.value.name;
+          } else if (field.value && typeof field.value === 'string') {
+            try {
+              // Try to parse it in case it's a stringified JSON
+              const parsed = JSON.parse(field.value);
+              if (parsed && parsed.name) {
+                nameValue = parsed.name;
+              }
+            } catch (e) {
+              // If not a JSON string, use the value directly
+              nameValue = field.value;
+            }
+          }
+          
           return (
             <FormItem>
               <FormLabel>Status</FormLabel>
@@ -129,6 +173,7 @@ export function MetadataSelects() {
                   field.onChange(selectedStatus || value);
                 }} 
                 value={nameValue || ''}
+                defaultValue={nameValue || ''}
               >
                 <FormControl>
                   <SelectTrigger>

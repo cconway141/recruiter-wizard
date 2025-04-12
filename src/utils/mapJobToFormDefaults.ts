@@ -31,13 +31,35 @@ export const mapJobToFormDefaults = (job: Job): JobFormValues => {
     };
   }
   
+  // Prepare proper objects for select fields
+  let flavorObj;
+  if (typeof job.flavor === 'object' && job.flavor) {
+    flavorObj = job.flavor;
+  } else {
+    flavorObj = { id: job.flavorId || '', name: job.flavor || '' };
+  }
+  
+  let localeObj;
+  if (typeof job.locale === 'object' && job.locale) {
+    localeObj = job.locale;
+  } else {
+    localeObj = { id: job.localeId || '', name: job.locale || '' };
+  }
+  
+  let statusObj;
+  if (typeof job.status === 'object' && job.status) {
+    statusObj = job.status;
+  } else {
+    statusObj = { id: job.statusId || '', name: job.status || '' };
+  }
+  
   return {
     candidateFacingTitle: job.candidateFacingTitle,
     client: job.client,
     compDesc: job.compDesc,
-    locale: { id: job.localeId, name: job.locale },
-    flavor: { id: job.flavorId, name: job.flavor },
-    status: { id: job.statusId, name: job.status },
+    locale: localeObj,
+    flavor: flavorObj,
+    status: statusObj,
     rate: job.rate,
     jd: job.jd,
     skillsSought: job.skillsSought,

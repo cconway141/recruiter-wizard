@@ -7,9 +7,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Check, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
+import { useFormProcessorContext } from "../job-form/FormProcessorContext";
 
 export function JobFormOtherInfo() {
   const form = useFormContext();
+  const { isEditing } = useFormProcessorContext();
   const [isGeneratingOtherInfo, setIsGeneratingOtherInfo] = useState(false);
   const [otherInfoGenerated, setOtherInfoGenerated] = useState(false);
   const otherInfoGeneratedRef = useRef(false);
@@ -17,6 +19,14 @@ export function JobFormOtherInfo() {
   
   const jdValue = form.watch("jd");
   const screeningQuestionsValue = form.watch("screeningQuestions");
+  const otherInfoValue = form.watch("other");
+
+  // Mark as already generated if we have other info when editing
+  useEffect(() => {
+    if (isEditing && otherInfoValue && otherInfoValue.trim() !== '' && !otherInfoGeneratedRef.current) {
+      otherInfoGeneratedRef.current = true;
+    }
+  }, [isEditing, otherInfoValue]);
 
   // Function to generate other information from job description
   const generateOtherInfo = async () => {
@@ -90,14 +100,15 @@ export function JobFormOtherInfo() {
     }
   };
 
-  // Generate other info when screening questions are populated (first time only)
+  // Generate other info when screening questions are populated (first time only, for new jobs)
   useEffect(() => {
     const autoGenerateOtherInfo = async () => {
       if (
         screeningQuestionsValue && 
         screeningQuestionsValue.trim().length > 0 && 
         !otherInfoGeneratedRef.current && 
-        !isGeneratingOtherInfo
+        !isGeneratingOtherInfo &&
+        !isEditing // Only auto-generate for new jobs, not when editing
       ) {
         // Add a small delay to ensure this happens after the screening questions are complete
         setTimeout(() => {
@@ -114,7 +125,7 @@ export function JobFormOtherInfo() {
         clearTimeout(otherInfoTimeoutRef.current);
       }
     };
-  }, [screeningQuestionsValue, isGeneratingOtherInfo]);
+  }, [screeningQuestionsValue, isGeneratingOtherInfo, isEditing]);
 
   return (
     <FormField
@@ -142,7 +153,7 @@ export function JobFormOtherInfo() {
                 onClick={generateOtherInfo}
               >
                 <RefreshCw className="h-3 w-3" />
-                Regenerate
+                {isEditing ? "Generate" : "Regenerate"}
               </Button>
             )}
           </FormLabel>
