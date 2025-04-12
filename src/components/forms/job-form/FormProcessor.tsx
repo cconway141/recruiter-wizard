@@ -32,8 +32,10 @@ export function useFormProcessor({ job, isEditing, setSubmittingState }: FormPro
       const firstName = formValues.previewName || "[First Name]";
       const owner = formValues.owner || '';
       
+      // Extract locale name properly
+      const localeName = typeof formValues.locale === 'object' ? formValues.locale.name : formValues.locale;
+      
       if (!formValues.workDetails || !formValues.payDetails) {
-        const localeName = typeof formValues.locale === 'object' ? formValues.locale.name : formValues.locale;
         if (localeName) {
           if (!formValues.workDetails) {
             formValues.workDetails = await getWorkDetails(localeName as Locale);
@@ -149,12 +151,24 @@ export function useFormProcessor({ job, isEditing, setSubmittingState }: FormPro
           const newJobData = {
             candidateFacingTitle: completedFormData.candidateFacingTitle,
             compDesc: completedFormData.compDesc,
-            locale: typeof completedFormData.locale === 'object' ? completedFormData.locale.name as Locale : completedFormData.locale as Locale,
-            localeId: typeof completedFormData.locale === 'object' ? completedFormData.locale.id : "",
-            flavor: typeof completedFormData.flavor === 'object' ? completedFormData.flavor.name as Flavor : completedFormData.flavor as Flavor,
-            flavorId: typeof completedFormData.flavor === 'object' ? completedFormData.flavor.id : "",
-            status: typeof completedFormData.status === 'object' ? completedFormData.status.name as JobStatus : completedFormData.status as JobStatus,
-            statusId: typeof completedFormData.status === 'object' ? completedFormData.status.id : "",
+            locale: typeof completedFormData.locale === 'object' 
+              ? completedFormData.locale.name as Locale 
+              : completedFormData.locale as Locale,
+            localeId: typeof completedFormData.locale === 'object' 
+              ? completedFormData.locale.id 
+              : "",
+            flavor: typeof completedFormData.flavor === 'object' 
+              ? completedFormData.flavor.name as Flavor 
+              : completedFormData.flavor as Flavor,
+            flavorId: typeof completedFormData.flavor === 'object' 
+              ? completedFormData.flavor.id 
+              : "",
+            status: typeof completedFormData.status === 'object' 
+              ? completedFormData.status.name as JobStatus 
+              : completedFormData.status as JobStatus,
+            statusId: typeof completedFormData.status === 'object' 
+              ? completedFormData.status.id 
+              : "",
             jd: completedFormData.jd || "",
             skillsSought: completedFormData.skillsSought || "",
             minSkills: completedFormData.minSkills || "",

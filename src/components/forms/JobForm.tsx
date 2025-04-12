@@ -10,7 +10,7 @@ import { JobFormCompanyDesc } from "./JobFormCompanyDesc";
 import { JobFormDetails, JobFormValues } from "./JobFormDetails";
 import { JobFormLinks } from "./JobFormLinks";
 import { FormActions } from "./job-form/FormActions";
-import { FormProcessorProvider } from "./job-form/FormProcessorContext";
+import { FormProcessorProvider, useFormProcessorContext } from "./job-form/FormProcessorContext";
 import { useClientSelection } from "./job-form/useClientSelection";
 
 import { 
@@ -115,6 +115,3 @@ function JobFormContent({ form, handleClientSelection, job, isEditing }: JobForm
     </div>
   );
 }
-
-// Need to import this at the bottom to avoid circular dependencies
-import { useFormProcessorContext } from "./job-form/FormProcessorContext";

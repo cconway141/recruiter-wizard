@@ -36,11 +36,15 @@ export function useFormPreview(form: UseFormReturn<JobFormValues>) {
     if (watchedFields.client && watchedFields.candidateFacingTitle && watchedFields.flavor && watchedFields.locale) {
       const updateTitle = async () => {
         try {
+          // Extract the flavor name and locale name from objects if needed
+          const flavorName = typeof watchedFields.flavor === 'object' ? watchedFields.flavor.name : watchedFields.flavor;
+          const localeName = typeof watchedFields.locale === 'object' ? watchedFields.locale.name : watchedFields.locale;
+          
           const newTitle = await generateInternalTitle(
             watchedFields.client,
             watchedFields.candidateFacingTitle,
-            watchedFields.flavor.name,
-            watchedFields.locale.name as Locale
+            flavorName,
+            localeName as Locale
           );
           setPreviewTitle(newTitle);
         } catch (err) {
@@ -69,25 +73,26 @@ export function useFormPreview(form: UseFormReturn<JobFormValues>) {
   // Update message previews
   useEffect(() => {
     const updateMessages = async () => {
+      // Extract proper values, handling both object and string types
+      const candidateFacingTitle = watchedFields.candidateFacingTitle;
+      const compDesc = watchedFields.compDesc;
+      const localeName = typeof watchedFields.locale === 'object' ? watchedFields.locale.name : watchedFields.locale;
+      const skillsSought = watchedFields.skillsSought;
+      
       // Only update if we have all required fields
-      if (
-        watchedFields.candidateFacingTitle &&
-        watchedFields.compDesc &&
-        watchedFields.locale &&
-        watchedFields.skillsSought
-      ) {
+      if (candidateFacingTitle && compDesc && localeName && skillsSought) {
         try {
           // Generate preview messages
           const firstName = form.watch("previewName") || "[First Name]";
           const owner = watchedFields.owner || "";
           
           // Fix: Await the promises to resolve, then update state
-          const m1 = await generateM1(firstName, watchedFields.candidateFacingTitle, watchedFields.compDesc, owner);
+          const m1 = await generateM1(firstName, candidateFacingTitle, compDesc, owner);
           const m2 = await generateM2(
-            watchedFields.candidateFacingTitle,
+            candidateFacingTitle,
             watchedFields.payDetails || "",
             watchedFields.workDetails || "",
-            watchedFields.skillsSought
+            skillsSought
           );
           
           let m3 = "";

@@ -1,3 +1,4 @@
+
 import { useFormContext, Controller } from "react-hook-form";
 import {
   FormControl,
@@ -22,7 +23,6 @@ import {
 } from "@/hooks/use-dropdown-options";
 import { useUserOptions } from "@/hooks/useUserOptions";
 import { useRoleAbbreviations } from "@/hooks/useRoleAbbreviations";
-import { useEffect } from "react";
 
 interface JobFormBasicInfoProps {
   handleClientSelection: (clientName: string) => void;
@@ -139,11 +139,13 @@ export function JobFormBasicInfo({ handleClientSelection }: JobFormBasicInfoProp
                   const selectedFlavor = flavorOptions?.find(flavor => flavor.id === value);
                   field.onChange(selectedFlavor);
                 }} 
-                value={field.value?.id}
+                value={typeof field.value === 'object' ? field.value.id : field.value}
               >
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select flavor" />
+                    <SelectValue placeholder="Select flavor">
+                      {typeof field.value === 'object' ? field.value.name : field.value}
+                    </SelectValue>
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
@@ -166,13 +168,16 @@ export function JobFormBasicInfo({ handleClientSelection }: JobFormBasicInfoProp
             <FormItem>
               <FormLabel>Locale</FormLabel>
               <Select 
-                onValueChange={field.onChange} 
-                value={field.value}
+                onValueChange={(value) => {
+                  const selectedLocale = localeOptions?.find(locale => locale.name === value);
+                  field.onChange(selectedLocale || value);
+                }} 
+                value={typeof field.value === 'object' ? field.value.name : field.value}
               >
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Select locale">
-                      {field.value}
+                      {typeof field.value === 'object' ? field.value.name : field.value}
                     </SelectValue>
                   </SelectTrigger>
                 </FormControl>
@@ -189,16 +194,24 @@ export function JobFormBasicInfo({ handleClientSelection }: JobFormBasicInfoProp
           )}
         />
         
-        <FormField
+        <Controller
           control={form.control}
           name="status"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Status</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select 
+                onValueChange={(value) => {
+                  const selectedStatus = statusOptions?.find(status => status.name === value);
+                  field.onChange(selectedStatus || value);
+                }} 
+                value={typeof field.value === 'object' ? field.value.name : field.value}
+              >
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
+                    <SelectValue placeholder="Select status">
+                      {typeof field.value === 'object' ? field.value.name : field.value}
+                    </SelectValue>
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>

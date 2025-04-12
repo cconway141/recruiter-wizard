@@ -15,12 +15,18 @@ interface FormPreviewProps {
 }
 
 export function FormPreview({ previewTitle, watchedFields, messages }: FormPreviewProps) {
+  // Extract values properly, handling both string and object types
+  const candidateFacingTitle = watchedFields.candidateFacingTitle;
+  const compDesc = watchedFields.compDesc;
+  const locale = typeof watchedFields.locale === 'object' ? watchedFields.locale.name : watchedFields.locale;
+  const skillsSought = watchedFields.skillsSought;
+  
   // Check if all required fields for message preview are filled
   const canShowMessages = 
-    watchedFields.candidateFacingTitle && 
-    watchedFields.compDesc && 
-    watchedFields.locale && 
-    watchedFields.skillsSought;
+    candidateFacingTitle && 
+    compDesc && 
+    locale && 
+    skillsSought;
 
   return (
     <div className="border-l pl-8">
