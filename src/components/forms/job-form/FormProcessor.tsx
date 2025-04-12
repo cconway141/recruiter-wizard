@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useJobs } from "@/contexts/JobContext";
 import { Job } from "@/types/job";
 import { JobFormValues } from "../JobFormDetails";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { useMessageGenerator } from "./processors/useMessageGenerator";
 import { useFormSubmission } from "./processors/useFormSubmission";
 
