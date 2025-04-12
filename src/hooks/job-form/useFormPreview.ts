@@ -4,23 +4,7 @@ import { UseFormReturn } from "react-hook-form";
 import { Locale } from "@/types/job";
 import { JobFormValues } from "@/components/forms/JobFormDetails";
 import { generateInternalTitle, calculateRates, generateM1, generateM2, generateM3 } from "@/utils/jobUtils";
-
-/**
- * Type guard to check if a value is a named object with id and name properties
- */
-function isNamedObject(value: any): value is { id: string; name: string } {
-  return value && typeof value === 'object' && 'name' in value;
-}
-
-/**
- * Safely extracts the name property from an object or returns the value itself if it's a string
- */
-function extractName(value: any): string {
-  if (isNamedObject(value)) {
-    return value.name;
-  }
-  return typeof value === 'string' ? value : '';
-}
+import { extractName } from "@/utils/formFieldUtils";
 
 export function useFormPreview(form: UseFormReturn<JobFormValues>) {
   const [previewTitle, setPreviewTitle] = useState("");

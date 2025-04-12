@@ -3,6 +3,7 @@ import React from "react";
 import { FormRatePreview } from "../FormRatePreview";
 import { MessagePreviewSection } from "../MessagePreviewSection";
 import { JobFormValues } from "../JobFormDetails";
+import { displayFormValue, extractName } from "@/utils/formFieldUtils";
 
 interface FormPreviewProps {
   previewTitle: string;
@@ -26,15 +27,13 @@ export function FormPreview({
   messages 
 }: FormPreviewProps) {
   // Extract values properly, handling both string and object types
-  const candidateFacingTitle = watchedFields.candidateFacingTitle || '';
-  const compDesc = watchedFields.compDesc || '';
+  const candidateFacingTitle = displayFormValue(watchedFields.candidateFacingTitle || '');
+  const compDesc = displayFormValue(watchedFields.compDesc || '');
   
   // Extract locale name properly
-  const locale = typeof watchedFields.locale === 'object' && watchedFields.locale 
-    ? watchedFields.locale.name 
-    : (typeof watchedFields.locale === 'string' ? watchedFields.locale : '');
+  const locale = extractName(watchedFields.locale);
     
-  const skillsSought = watchedFields.skillsSought || '';
+  const skillsSought = displayFormValue(watchedFields.skillsSought || '');
   
   // Check if all required fields for message preview are filled
   const canShowMessages = 
