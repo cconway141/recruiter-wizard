@@ -80,17 +80,17 @@ export function useFormPreview(form: UseFormReturn<JobFormValues>) {
   useEffect(() => {
     const updateMessages = async () => {
       // Extract values properly, handling both string and object types
-      const candidateFacingTitle = watchedFields.candidateFacingTitle;
-      const compDesc = watchedFields.compDesc;
+      const candidateFacingTitle = extractName(watchedFields.candidateFacingTitle);
+      const compDesc = extractName(watchedFields.compDesc);
       const localeName = extractName(watchedFields.locale);
-      const skillsSought = watchedFields.skillsSought;
+      const skillsSought = extractName(watchedFields.skillsSought);
       
       // Only update if we have all required fields
       if (candidateFacingTitle && compDesc && localeName && skillsSought) {
         try {
           // Generate preview messages
           const firstName = form.watch("previewName") || "[First Name]";
-          const owner = watchedFields.owner || '';
+          const owner = extractName(watchedFields.owner) || '';
           
           // Fix: Await the promises to resolve, then update state
           const m1 = await generateM1(firstName, candidateFacingTitle, compDesc, owner);
