@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -53,17 +52,21 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
       // Gmail will use the existing thread subject
       const finalSubject = threadId ? "" : subject;
       
-      // Add console log to verify email body content and threading details
-      console.log("Email sending details:", {
-        to,
-        subject: finalSubject || "(reply - using thread subject)",
+      // Add comprehensive logging before sending
+      console.log("EMAIL SENDING PAYLOAD DEBUG:", {
+        recipient: to,
+        subject: subject || "(reply - using thread subject)",
         bodyLength: body.length,
-        firstChars: body.substring(0, 100),
-        isReply: !!threadId,
-        threadId: threadId || 'new email',
-        messageId: messageId || 'none',
         candidateName,
-        jobTitle
+        jobTitle,
+        threadId: threadId ? `THREAD: ${threadId.trim()}` : "NEW THREAD",
+        messageId: messageId ? `MESSAGE: ${messageId.trim()}` : "NO MESSAGE ID",
+        threadingDetails: {
+          hasThreadId: !!threadId,
+          hasMessageId: !!messageId,
+          threadIdLength: threadId ? threadId.trim().length : 0,
+          messageIdLength: messageId ? messageId.trim().length : 0
+        }
       });
       
       // Create the payload object with ALL threading information

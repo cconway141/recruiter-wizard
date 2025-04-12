@@ -1,19 +1,66 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Json } from "@/integrations/supabase/types";
 import { EmailThreadInfo } from "@/components/candidates/types";
 
-interface CandidateThreadData {
-  candidateId: string;
-  threadIds: Record<string, EmailThreadInfo>;
-  jobId?: string;
-  newThreadId?: string;
-  newMessageId?: string;
-}
-
 export const useCandidateThreads = () => {
   const { toast } = useToast();
+
+  const getThreadInfo = async (candidateId: string, jobId: string): Promise<EmailThreadInfo | null> => {
+    if (!candidateId || !jobId) {
+      console.warn("THREAD INFO: Missing candidateId or jobId");
+      return null;
+    }
+    
+    try {
+      const { data, error } = await supabase
+        .from('candidates')
+        .select('thread_ids')
+        .eq('id', candidateId)
+        .maybeSingle();
+        
+      if (error || !data) {
+        console.error("THREAD INFO RETRIEVAL ERROR:", { error, data });
+        return null;
+      }
+      
+      // Validate thread_ids structure
+      const threadIds = (data.thread_ids as unknown as Record<string, EmailThreadInfo>) || {};
+      console.log("THREAD IDS DEBUG:", { 
+        candidateId, 
+        jobId, 
+        rawThreadIds: data.thread_ids,
+        parsedThreadIds: threadIds,
+        hasJobThreadInfo: !!threadIds[jobId]
+      });
+      
+      const threadInfo = threadIds[jobId];
+      
+      if (!threadInfo) {
+        console.warn("NO THREAD INFO FOR JOB:", { candidateId, jobId });
+        return null;
+      }
+      
+      // Validate threadId and messageId
+      const isValidThreadInfo = 
+        typeof threadInfo.threadId === 'string' && 
+        typeof threadInfo.messageId === 'string' &&
+        threadInfo.threadId.trim() !== '' &&
+        threadInfo.messageId.trim() !== '';
+      
+      console.log("THREAD INFO VALIDATION:", {
+        threadInfo,
+        isValidThreadInfo,
+        threadIdLength: threadInfo.threadId?.length,
+        messageIdLength: threadInfo.messageId?.length
+      });
+      
+      return isValidThreadInfo ? threadInfo : null;
+    } catch (err) {
+      console.error("UNEXPECTED ERROR IN getThreadInfo:", err);
+      return null;
+    }
+  };
 
   const saveThreadId = async ({ 
     candidateId, 
@@ -69,40 +116,6 @@ export const useCandidateThreads = () => {
     } catch (err) {
       console.error("Error saving thread ID:", err);
       return false;
-    }
-  };
-  
-  const getThreadInfo = async (candidateId: string, jobId: string): Promise<EmailThreadInfo | null> => {
-    if (!candidateId || !jobId) {
-      return null;
-    }
-    
-    try {
-      const { data, error } = await supabase
-        .from('candidates')
-        .select('thread_ids')
-        .eq('id', candidateId)
-        .maybeSingle();
-        
-      if (error || !data) {
-        console.error("Error retrieving thread data:", error);
-        return null;
-      }
-      
-      // Properly cast the JSON data to the expected type
-      const threadIds = (data.thread_ids as unknown as Record<string, EmailThreadInfo>) || {};
-      
-      // Get thread info for this job
-      const threadInfo = threadIds[jobId];
-      
-      if (!threadInfo) {
-        return null;
-      }
-      
-      return threadInfo;
-    } catch (err) {
-      console.error("Error retrieving thread info:", err);
-      return null;
     }
   };
   
