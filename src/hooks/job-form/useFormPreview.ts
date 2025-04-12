@@ -107,7 +107,7 @@ export function useFormPreview(form: UseFormReturn<JobFormValues>) {
           const firstName = form.watch("previewName") || "[First Name]";
           const owner = watchedFields.owner || "";
           
-          // Fix: Wait for the promise to resolve before updating state
+          // Wait for the promises to resolve, then update state
           const m1 = await generateM1(firstName, watchedFields.candidateFacingTitle, watchedFields.compDesc, owner);
           const m2 = await generateM2(
             watchedFields.candidateFacingTitle,
@@ -121,6 +121,7 @@ export function useFormPreview(form: UseFormReturn<JobFormValues>) {
             m3 = await generateM3(watchedFields.videoQuestions);
           }
           
+          // Update state with resolved values, not promises
           setMessages({ m1, m2, m3 });
         } catch (err) {
           console.error("Error generating message previews:", err);
