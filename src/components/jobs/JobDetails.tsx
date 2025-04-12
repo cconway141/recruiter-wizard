@@ -1,4 +1,5 @@
-import { Badge } from "@/components/ui/badge";
+
+import React from "react";
 import { ExternalLink, ChevronDown } from "lucide-react";
 import { Job } from "@/types/job";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";

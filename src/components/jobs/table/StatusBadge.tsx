@@ -20,7 +20,10 @@ export function StatusBadge({ status }: StatusBadgeProps) {
   const statusValue = displayFormValue(status);
   
   return (
-    <Badge className={StatusBadgeColor[statusValue] || ""} variant="outline">
+    <Badge 
+      className={StatusBadgeColor[statusValue] || StatusBadgeColor.Active} 
+      variant="outline"
+    >
       {statusValue}
     </Badge>
   );
