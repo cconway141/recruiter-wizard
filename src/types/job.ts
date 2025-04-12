@@ -8,7 +8,7 @@ export interface Job {
   internalTitle: string;
   candidateFacingTitle: string;
   jd: string;
-  status: string; // Changed from JobStatus to string
+  status: string; // Changed from JobStatus object to string
   statusId: string;
   m1: string;
   m2: string;

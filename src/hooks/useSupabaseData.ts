@@ -1,7 +1,8 @@
+
 import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Job, JobStatus, Locale, Flavor } from "@/types/job";
+import { Job } from "@/types/job";
 import { JobsState } from "@/types/contextTypes";
 import { Candidate } from "@/components/candidates/types";
 
@@ -33,7 +34,6 @@ export function useSupabaseData() {
         .select(`
           *,
           clients(*),
-          flavors(*),
           locales(*),
           job_statuses(*),
           profiles(*)
@@ -43,43 +43,79 @@ export function useSupabaseData() {
         throw jobsError;
       }
 
+      // Load locales to get abbreviations and other data
+      const { data: localesData, error: localesError } = await supabase
+        .from('locales')
+        .select('*');
+        
+      if (localesError) {
+        throw localesError;
+      }
+      
+      const localesMap = new Map();
+      if (localesData) {
+        localesData.forEach(locale => {
+          localesMap.set(locale.name, {
+            id: locale.id,
+            abbreviation: locale.abbreviation || '',
+            workDetails: locale.work_details || '',
+            payDetails: locale.pay_details || ''
+          });
+        });
+      }
+
       // Update state with data from Supabase
       if (jobsData) {
         // Map database column names (snake_case) to frontend property names (camelCase) 
-        const transformedJobs: Job[] = jobsData.map(job => ({
-          id: job.id,
-          internalTitle: job.internal_title,
-          candidateFacingTitle: job.candidate_facing_title,
-          jd: job.jd,
-          status: job.status as JobStatus,
-          m1: job.m1,
-          m2: job.m2,
-          m3: job.m3,
-          skillsSought: job.skills_sought,
-          minSkills: job.min_skills,
-          linkedinSearch: job.linkedin_search,
-          lir: job.lir,
-          client: job.client,
-          clientId: job.client_id,
-          compDesc: job.comp_desc,
-          rate: Number(job.rate),
-          highRate: Number(job.high_rate),
-          mediumRate: Number(job.medium_rate),
-          lowRate: Number(job.low_rate),
-          locale: job.locale as Locale,
-          localeId: job.locale_id,
-          owner: job.owner,
-          ownerId: job.owner_id,
-          date: job.date,
-          workDetails: job.work_details,
-          payDetails: job.pay_details,
-          other: job.other || "",
-          videoQuestions: job.video_questions,
-          screeningQuestions: job.screening_questions,
-          flavor: job.flavor as Flavor,
-          flavorId: job.flavor_id,
-          statusId: job.status_id
-        }));
+        const transformedJobs: Job[] = jobsData.map(job => {
+          // Find locale details from the locales map
+          const localeData = localesMap.get(job.locale) || {
+            id: job.locale,
+            abbreviation: '',
+            workDetails: job.work_details || '',
+            payDetails: job.pay_details || ''
+          };
+          
+          return {
+            id: job.id,
+            internalTitle: job.internal_title,
+            candidateFacingTitle: job.candidate_facing_title,
+            jd: job.jd,
+            status: job.status,
+            statusId: job.status_id,
+            m1: job.m1,
+            m2: job.m2,
+            m3: job.m3,
+            skillsSought: job.skills_sought,
+            minSkills: job.min_skills,
+            linkedinSearch: job.linkedin_search,
+            lir: job.lir,
+            client: job.client,
+            clientId: job.client_id,
+            compDesc: job.comp_desc,
+            rate: Number(job.rate),
+            highRate: Number(job.high_rate),
+            mediumRate: Number(job.medium_rate),
+            lowRate: Number(job.low_rate),
+            locale: {
+              id: job.locale,
+              abbreviation: localeData.abbreviation,
+              workDetails: job.work_details,
+              payDetails: job.pay_details
+            },
+            localeId: job.locale_id,
+            owner: job.owner,
+            ownerId: job.owner_id,
+            date: job.date,
+            workDetails: job.work_details,
+            payDetails: job.pay_details,
+            other: job.other || "",
+            videoQuestions: job.video_questions,
+            screeningQuestions: job.screening_questions,
+            flavor: job.flavor,
+            flavorId: job.flavor_id
+          };
+        });
         
         console.log(`Loaded ${transformedJobs.length} jobs from Supabase`);
 

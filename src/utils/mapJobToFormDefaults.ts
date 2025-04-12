@@ -41,8 +41,8 @@ export const mapJobToFormDefaults = (job: Job): JobFormValues => {
     client: job.client,
     compDesc: job.compDesc,
     locale: job.locale,
-    flavor: job.flavor, // Now a string
-    status: job.status, // Now a string
+    flavor: job.flavor,
+    status: job.status,
     rate: job.rate,
     jd: job.jd,
     skillsSought: job.skillsSought,

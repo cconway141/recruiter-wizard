@@ -47,7 +47,7 @@ export function FlavorsManager() {
     try {
       const { data, error } = await supabase
         .from("flavors")
-        .select("*")
+        .select("id, name")
         .order('name');
       
       if (error) {
@@ -84,6 +84,7 @@ export function FlavorsManager() {
     }
     
     try {
+      // Insert with only name field (no label)
       const { error } = await supabase
         .from("flavors")
         .insert({ name: newName });

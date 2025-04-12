@@ -1,15 +1,21 @@
 
-import { useState, useEffect } from "react";
-import { useEmailDialogState } from "./useEmailDialogState";
-import { useToast } from "@/hooks/use-toast";
+import { useState, useEffect, useCallback } from "react";
+import { useGmailConnection } from "@/hooks/gmail/useGmailConnection";
+import { useGmailConnectionStatus } from "@/hooks/gmail/useGmailConnectionStatus";
+import { useEmailTemplate } from "@/hooks/email/useEmailTemplate";
+import { useEmailSubject } from "@/hooks/email/useEmailSubject";
+import { useEmailSending } from "@/hooks/email/useEmailSending";
+import { useGmailThread } from "@/hooks/email/useGmailThread";
+import { useGmailComposer } from "@/hooks/email/useGmailComposer";
 
-interface UseEmailDialogProps {
+export interface UseEmailDialogProps {
   candidateName: string;
   candidateEmail?: string;
   jobId?: string;
   candidateFacingTitle?: string;
   candidateId?: string;
   threadId?: string | null;
+  messageId?: string | null;
   threadTitle?: string;
   onClose: () => void;
 }
@@ -21,6 +27,7 @@ export const useEmailDialog = ({
   candidateFacingTitle,
   candidateId,
   threadId,
+  messageId,
   threadTitle,
   onClose,
 }: UseEmailDialogProps) => {

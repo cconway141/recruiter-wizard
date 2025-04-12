@@ -4,9 +4,9 @@ import { Job, JobStatus, Locale, Flavor } from "@/types/job";
 
 export interface JobFilters {
   search: string;
-  status: JobStatus | "All";
-  locale: Locale | "All";
-  flavor: Flavor | "All" | string;
+  status: string | "All";
+  locale: string | "All";
+  flavor: string | "All";
 }
 
 export function useJobFilters(jobs: Job[]) {
@@ -41,7 +41,7 @@ export function useJobFilters(jobs: Job[]) {
 
     // Apply locale filter
     if (filters.locale !== "All") {
-      result = result.filter((job) => job.locale === filters.locale);
+      result = result.filter((job) => job.locale.id === filters.locale);
     }
 
     // Apply flavor filter

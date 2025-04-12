@@ -1,6 +1,5 @@
 
 import { Badge } from "@/components/ui/badge";
-import { JobStatus } from "@/types/job";
 import { displayFormValue } from "@/utils/formFieldUtils";
 
 // Map status to badge color
@@ -12,19 +11,16 @@ const StatusBadgeColor: Record<string, string> = {
 };
 
 interface StatusBadgeProps {
-  status: JobStatus | { id: string; name: string } | null | undefined;
+  status: string;
 }
 
 export function StatusBadge({ status }: StatusBadgeProps) {
-  // Always use displayFormValue to get consistent string output
-  const statusValue = displayFormValue(status);
-  
   return (
     <Badge 
-      className={StatusBadgeColor[statusValue] || StatusBadgeColor.Active} 
+      className={StatusBadgeColor[status] || StatusBadgeColor.Active} 
       variant="outline"
     >
-      {statusValue}
+      {status}
     </Badge>
   );
 }

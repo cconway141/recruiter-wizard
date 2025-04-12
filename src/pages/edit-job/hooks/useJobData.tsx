@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { useJobs } from "@/contexts/JobContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Job, JobStatus, Locale, Flavor } from "@/types/job";
+import { Job } from "@/types/job";
 import { JobFormValues } from "@/components/forms/JobFormDetails";
 import { useToast } from "@/hooks/use-toast";
 import { mapJobToFormDefaults } from "@/utils/mapJobToFormDefaults";
@@ -47,60 +47,70 @@ export function useJobData(id?: string) {
     try {
       console.log(`Fetching job ${jobId} directly from Supabase...`);
       
-      const { data, error } = await supabase
+      // Fetch the job data
+      const { data: jobData, error: jobError } = await supabase
         .from('jobs')
-        .select(`
-          *,
-          clients(*),
-          flavors(*),
-          locales(*),
-          job_statuses(*),
-          profiles(*)
-        `)
+        .select('*')
         .eq('id', jobId)
         .single();
       
-      if (error) {
-        throw error;
+      if (jobError) {
+        throw jobError;
       }
 
-      if (!data) {
+      if (!jobData) {
         throw new Error("Job not found");
+      }
+      
+      // Fetch locale information to get abbreviation
+      const { data: localeData, error: localeError } = await supabase
+        .from('locales')
+        .select('*')
+        .eq('name', jobData.locale)
+        .single();
+        
+      if (localeError && localeError.code !== 'PGRST116') {
+        console.warn("Error fetching locale:", localeError);
       }
 
       const transformedJob: Job = {
-        id: data.id,
-        internalTitle: data.internal_title,
-        candidateFacingTitle: data.candidate_facing_title,
-        jd: data.jd,
-        status: data.status as JobStatus,
-        m1: data.m1,
-        m2: data.m2,
-        m3: data.m3,
-        skillsSought: data.skills_sought,
-        minSkills: data.min_skills,
-        linkedinSearch: data.linkedin_search,
-        lir: data.lir,
-        client: data.client,
-        clientId: data.client_id,
-        compDesc: data.comp_desc,
-        rate: Number(data.rate),
-        highRate: Number(data.high_rate),
-        mediumRate: Number(data.medium_rate),
-        lowRate: Number(data.low_rate),
-        locale: data.locale as Locale,
-        localeId: data.locale_id,
-        owner: data.owner,
-        ownerId: data.owner_id,
-        date: data.date,
-        workDetails: data.work_details,
-        payDetails: data.pay_details,
-        other: data.other || "",
-        videoQuestions: data.video_questions,
-        screeningQuestions: data.screening_questions,
-        flavor: data.flavor as Flavor,
-        flavorId: data.flavor_id,
-        statusId: data.status_id
+        id: jobData.id,
+        internalTitle: jobData.internal_title,
+        candidateFacingTitle: jobData.candidate_facing_title,
+        jd: jobData.jd,
+        status: jobData.status,
+        statusId: jobData.status_id || '',
+        m1: jobData.m1,
+        m2: jobData.m2,
+        m3: jobData.m3,
+        skillsSought: jobData.skills_sought,
+        minSkills: jobData.min_skills,
+        linkedinSearch: jobData.linkedin_search,
+        lir: jobData.lir,
+        client: jobData.client,
+        clientId: jobData.client_id || '',
+        compDesc: jobData.comp_desc,
+        rate: Number(jobData.rate),
+        highRate: Number(jobData.high_rate),
+        mediumRate: Number(jobData.medium_rate),
+        lowRate: Number(jobData.low_rate),
+        locale: {
+          id: jobData.locale,
+          abbreviation: localeData?.abbreviation || '',
+          workDetails: jobData.work_details || '',
+          payDetails: jobData.pay_details || ''
+        },
+        localeId: jobData.locale_id || '',
+        owner: jobData.owner,
+        ownerId: jobData.owner_id || '',
+        date: jobData.date,
+        workDetails: jobData.work_details || '',
+        payDetails: jobData.pay_details || '',
+        other: jobData.other || "",
+        videoQuestions: jobData.video_questions || '',
+        screeningQuestions: jobData.screening_questions || '',
+        flavor: jobData.flavor,
+        flavorId: jobData.flavor_id || '',
       };
 
       setLocalJob(transformedJob);
