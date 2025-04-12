@@ -1,3 +1,4 @@
+
 /**
  * Type guard to check if a value is a named object with id and name properties
  */
@@ -53,8 +54,8 @@ export function displayFormValue(value: any): string {
   }
   
   // If it's an object with a name property, return the name
-  if (value && typeof value === 'object' && 'name' in value) {
-    return value.name || '';
+  if (isNamedObject(value)) {
+    return value.name;
   }
   
   // Fallback to string conversion
