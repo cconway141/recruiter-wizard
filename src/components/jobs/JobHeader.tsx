@@ -9,13 +9,19 @@ interface JobHeaderProps {
 }
 
 export const JobHeader: React.FC<JobHeaderProps> = ({ job }) => {
+  // Ensure we display a valid string title
+  const titleDisplay = job.internalTitle || "Untitled Job";
+  
+  // Format the date properly
+  const formattedDate = job.date ? new Date(job.date).toLocaleDateString() : "Unknown date";
+  
   return (
     <div className="mb-6">
       <BackButton />
       <div className="flex justify-between items-center">
         <PageHeader 
-          title={job.internalTitle} 
-          description={`Added on ${new Date(job.date).toLocaleDateString()} by ${job.owner}`}
+          title={titleDisplay} 
+          description={`Added on ${formattedDate} by ${job.owner}`}
         />
         <EditButton jobId={job.id} />
       </div>

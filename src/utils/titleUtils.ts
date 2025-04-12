@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Locale } from "@/types/job";
 
@@ -7,10 +8,14 @@ import { Locale } from "@/types/job";
 export async function generateInternalTitle(
   client: string,
   candidateFacingTitle: string,
-  flavor: string,
-  locale: Locale
+  flavor: string | { id: string; name: string },
+  locale: Locale | { id: string; name: string }
 ): Promise<string> {
   try {
+    // Ensure we have string values for flavor and locale
+    const flavorName = typeof flavor === 'object' && flavor !== null ? flavor.name : flavor;
+    const localeName = typeof locale === 'object' && locale !== null ? locale.name : locale;
+    
     // Get client abbreviation
     const { data: clientData, error: clientError } = await supabase
       .from('clients')
@@ -20,7 +25,7 @@ export async function generateInternalTitle(
     
     if (clientError || !clientData) {
       console.error("Error fetching client abbreviation:", clientError);
-      return `${client} ${candidateFacingTitle} - ${flavor} ${locale}`;
+      return `${client} ${candidateFacingTitle} - ${flavorName} ${localeName}`;
     }
     
     // Get role abbreviation
@@ -30,29 +35,35 @@ export async function generateInternalTitle(
     const { data: localeData, error: localeError } = await supabase
       .from('locales')
       .select('abbreviation')
-      .eq('name', locale)
+      .eq('name', localeName)
       .single();
     
     if (localeError || !localeData) {
       console.error("Error fetching locale abbreviation:", localeError);
       
       // Fallback abbreviations
-      const fallbackAbbreviations: Record<Locale, string> = {
+      const fallbackAbbreviations: Record<string, string> = {
         "Onshore": "On",
         "Nearshore": "Near", 
         "Offshore": "Off"
       };
       
-      return `${clientData.abbreviation} ${roleAbbr} - ${flavor} ${fallbackAbbreviations[locale]}`;
+      const localeAbbr = fallbackAbbreviations[localeName] || localeName.substring(0, 3);
+      
+      return `${clientData.abbreviation} ${roleAbbr} - ${flavorName} ${localeAbbr}`;
     }
     
     // Construct the title with the desired format: ClientAbbr RoleAbbr - Flavor LocaleAbbr
-    return `${clientData.abbreviation} ${roleAbbr} - ${flavor} ${localeData.abbreviation}`;
+    return `${clientData.abbreviation} ${roleAbbr} - ${flavorName} ${localeData.abbreviation}`;
   } catch (err) {
     console.error("Error generating internal title:", err);
     
+    // Make sure to convert object values to strings in fallback
+    const flavorStr = typeof flavor === 'object' && flavor !== null ? flavor.name : String(flavor);
+    const localeStr = typeof locale === 'object' && locale !== null ? locale.name : String(locale);
+    
     // Fallback to a simple format
-    return `${client} ${candidateFacingTitle} - ${flavor} ${locale}`;
+    return `${client} ${candidateFacingTitle} - ${flavorStr} ${localeStr}`;
   }
 }
 

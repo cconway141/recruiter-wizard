@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { supabase } from "@/integrations/supabase/client";
@@ -118,7 +117,7 @@ export function useFieldsGenerator(form: UseFormReturn<JobFormValues>) {
         toast({
           title: "No skills found",
           description: "No specific skills were detected in the job description. Please add them manually.",
-          variant: "warning",
+          variant: "destructive",
         });
         return true;
       }
@@ -197,7 +196,7 @@ export function useFieldsGenerator(form: UseFormReturn<JobFormValues>) {
         toast({
           title: "No minimum skills generated",
           description: "Could not generate minimum skills from the provided information. Please add them manually.",
-          variant: "warning",
+          variant: "destructive",
         });
         return true;
       }
@@ -255,7 +254,7 @@ export function useFieldsGenerator(form: UseFormReturn<JobFormValues>) {
         toast({
           title: "No video questions generated",
           description: "Could not generate video questions from the minimum skills. Please add them manually.",
-          variant: "warning",
+          variant: "destructive",
         });
         return false;
       }
@@ -313,7 +312,7 @@ export function useFieldsGenerator(form: UseFormReturn<JobFormValues>) {
         toast({
           title: "No screening questions generated",
           description: "Could not generate screening questions from the minimum skills. Please add them manually.",
-          variant: "warning",
+          variant: "destructive",
         });
         return false;
       }

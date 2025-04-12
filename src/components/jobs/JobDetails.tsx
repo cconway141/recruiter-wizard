@@ -1,10 +1,13 @@
+
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink, ChevronDown } from "lucide-react";
 import { Job } from "@/types/job";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
+import { displayFormValue } from "@/utils/formFieldUtils";
+import { JobStatus } from "@/types/job";
 
-const StatusBadgeColor = {
+const StatusBadgeColor: Record<string, string> = {
   Active: "bg-green-100 text-green-800 hover:bg-green-100",
   Aquarium: "bg-blue-100 text-blue-800 hover:bg-blue-100",
   Inactive: "bg-orange-100 text-orange-800 hover:bg-orange-100",
@@ -16,6 +19,11 @@ interface JobDetailsProps {
 }
 
 export const JobDetails: React.FC<JobDetailsProps> = ({ job }) => {
+  // Safely extract status value
+  const statusValue = typeof job.status === 'object' && job.status !== null 
+    ? job.status.name 
+    : String(job.status);
+
   return (
     <div className="col-span-1 lg:col-span-2">
       <div className="bg-white p-6 rounded-lg border mb-8">
@@ -28,8 +36,8 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job }) => {
           </div>
           <div>
             <h4 className="font-medium text-gray-500 mb-1">Status</h4>
-            <Badge className={StatusBadgeColor[job.status] || ""} variant="outline">
-              {job.status}
+            <Badge className={StatusBadgeColor[statusValue] || ""} variant="outline">
+              {statusValue}
             </Badge>
           </div>
           <div>
@@ -38,7 +46,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job }) => {
           </div>
           <div>
             <h4 className="font-medium text-gray-500 mb-1">Locale</h4>
-            <p>{job.locale}</p>
+            <p>{displayFormValue(job.locale)}</p>
           </div>
           <div>
             <h4 className="font-medium text-gray-500 mb-1">Owner</h4>
