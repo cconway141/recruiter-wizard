@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { useFormContext } from "react-hook-form";
-import { useFormProcessor } from "./FormProcessor";
+import { useFormProcessorContext } from "./FormProcessorContext";
 import { Job } from "@/types/job";
 
 interface FormActionsProps {
@@ -15,7 +15,7 @@ interface FormActionsProps {
 export function FormActions({ isEditing, job }: FormActionsProps) {
   const navigate = useNavigate();
   const form = useFormContext();
-  const { handleSubmit, isSubmitting } = useFormProcessor({ job, isEditing });
+  const { isSubmitting } = useFormProcessorContext();
   
   // Only disable the submit button if we're actually submitting
   const isDisabled = isSubmitting === true;
@@ -37,6 +37,9 @@ export function FormActions({ isEditing, job }: FormActionsProps) {
         type="submit"
         disabled={isDisabled}
         className="min-w-[120px]"
+        onClick={() => {
+          console.log("Submit button clicked");
+        }}
       >
         {isSubmitting ? (
           <>

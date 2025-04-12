@@ -62,14 +62,15 @@ const AddJob = () => {
       m3: "",
       workDetails: "",
       payDetails: "",
-    }
+    },
+    mode: "onSubmit" // Explicitly set to onSubmit to ensure validation runs at submission time
   });
 
   // For debugging
   useEffect(() => {
     console.log("Form state:", methods.formState);
-    const subscription = methods.watch(() => {
-      console.log("Form values changed:", methods.getValues());
+    const subscription = methods.watch((_, { name }) => {
+      console.log(`Form value changed: ${name}`);
     });
     return () => subscription.unsubscribe();
   }, [methods]);

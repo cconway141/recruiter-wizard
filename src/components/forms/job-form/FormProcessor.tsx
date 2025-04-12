@@ -12,12 +12,11 @@ import { useSupabaseData } from "@/hooks/useSupabaseData";
 import { useState, useCallback } from "react";
 
 interface FormProcessorProps {
-  onSubmit: (values: JobFormValues) => void;
   job?: Job;
   isEditing?: boolean;
 }
 
-export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEditing?: boolean }) {
+export function useFormProcessor({ job, isEditing = false }: FormProcessorProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   let jobContext;
   
@@ -90,8 +89,6 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
       setIsSubmitting(true);
       console.log("Setting isSubmitting to true, values:", values);
       
-      document.querySelector('button[type="submit"]')?.setAttribute('disabled', 'true');
-
       // Type guard for locale validation
       const isValidLocale = (locale: string): locale is Locale =>
         ["Onshore", "Nearshore", "Offshore"].includes(locale);
@@ -108,7 +105,6 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
           variant: "destructive",
         });
         setIsSubmitting(false);
-        document.querySelector('button[type="submit"]')?.removeAttribute('disabled');
         return;
       }
 
@@ -231,7 +227,6 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
             variant: "destructive",
           });
           setIsSubmitting(false);
-          document.querySelector('button[type="submit"]')?.removeAttribute('disabled');
         }
       } else {
         throw new Error("addJob function is not available");
@@ -244,11 +239,9 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
         variant: "destructive",
       });
       setIsSubmitting(false);
-      document.querySelector('button[type="submit"]')?.removeAttribute('disabled');
     } finally {
       console.log("Form submission completed, setting isSubmitting to false");
       setIsSubmitting(false);
-      document.querySelector('button[type="submit"]')?.removeAttribute('disabled');
     }
   }, [isSubmitting, navigate, addJob, updateJob, job, isEditing, loadFromSupabase]);
 

@@ -10,7 +10,7 @@ import { JobFormCompanyDesc } from "./JobFormCompanyDesc";
 import { JobFormDetails, JobFormValues } from "./JobFormDetails";
 import { JobFormLinks } from "./JobFormLinks";
 import { FormActions } from "./job-form/FormActions";
-import { useFormProcessor } from "./job-form/FormProcessor";
+import { FormProcessorProvider } from "./job-form/FormProcessorContext";
 import { useClientSelection } from "./job-form/useClientSelection";
 
 import { 
@@ -28,7 +28,6 @@ interface JobFormProps {
 
 export function JobForm({ job, isEditing = false }: JobFormProps) {
   const form = useFormContext<JobFormValues>();
-  const { handleSubmit, isSubmitting } = useFormProcessor({ job, isEditing });
   const { handleClientSelection } = useClientSelection(form);
 
   const { isLoading: clientsLoading } = useClientOptions();
@@ -76,6 +75,28 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
     );
   }
 
+  return (
+    <FormProcessorProvider job={job} isEditing={isEditing}>
+      <JobFormContent 
+        form={form} 
+        handleClientSelection={handleClientSelection} 
+        job={job} 
+        isEditing={isEditing} 
+      />
+    </FormProcessorProvider>
+  );
+}
+
+interface JobFormContentProps {
+  form: ReturnType<typeof useFormContext<JobFormValues>>;
+  handleClientSelection: (clientName: string) => void;
+  job?: Job;
+  isEditing: boolean;
+}
+
+function JobFormContent({ form, handleClientSelection, job, isEditing }: JobFormContentProps) {
+  const { handleSubmit } = useFormProcessorContext();
+
   // Now we can safely use form methods
   const onSubmitForm = form.handleSubmit((values) => {
     console.log("Form submitted with values:", values);
@@ -94,3 +115,6 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
     </div>
   );
 }
+
+// Need to import this at the bottom to avoid circular dependencies
+import { useFormProcessorContext } from "./job-form/FormProcessorContext";
