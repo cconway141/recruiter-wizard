@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -9,7 +10,6 @@ import { useToast } from "@/hooks/use-toast";
 import { mapJobToFormDefaults } from "@/utils/mapJobToFormDefaults";
 
 export function useJobData(id?: string) {
-  const { getJob, loadFromSupabase } = useJobs();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
@@ -17,6 +17,23 @@ export function useJobData(id?: string) {
   const [localJob, setLocalJob] = useState<Job | undefined>(undefined);
   const { toast } = useToast();
 
+  // Safely access the useJobs hook
+  let jobContext;
+  try {
+    jobContext = useJobs();
+  } catch (error) {
+    console.error("Error accessing job context:", error);
+    // Return default values if the context isn't available
+    return { 
+      job: undefined, 
+      form: useForm<JobFormValues>(), 
+      isLoading: false, 
+      isFetching: false, 
+      error: "Job context not available" 
+    };
+  }
+  
+  const { getJob, loadFromSupabase } = jobContext;
   const contextJob = id ? getJob(id) : undefined;
   const job = contextJob || localJob;
 

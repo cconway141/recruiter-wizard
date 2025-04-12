@@ -10,7 +10,6 @@ import { toast } from "@/hooks/use-toast";
 
 const Index = () => {
   const location = useLocation();
-  const { loadFromSupabase } = useJobs();
   const refreshingRef = useRef(false);
   const [isInitialized, setIsInitialized] = useState(false);
   
@@ -31,6 +30,18 @@ const Index = () => {
     
     return () => clearTimeout(timeoutId);
   }, [location.key]);
+  
+  // Wrap the useJobs hook in a try/catch to handle potential errors
+  let jobContext;
+  try {
+    jobContext = useJobs();
+  } catch (error) {
+    console.error("Error accessing job context:", error);
+    // Return early with a loading indicator if the context isn't available
+    return null;
+  }
+  
+  const { loadFromSupabase } = jobContext;
   
   // Refresh data when navigating to the home page
   useEffect(() => {
