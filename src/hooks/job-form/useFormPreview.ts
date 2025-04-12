@@ -2,34 +2,8 @@
 import { useState, useEffect } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { Locale } from "@/types/job";
-import { generateInternalTitle } from "@/utils/titleUtils";
-import { calculateRates } from "@/utils/rateUtils";
-import { generateM1, generateM2, generateM3 } from "@/utils/messageUtils";
-
-// Define the JobFormValues interface here to avoid the import error
-interface JobFormValues {
-  candidateFacingTitle: string;
-  compDesc: string;
-  locale: { id: string; name: string };
-  flavor: { id: string; name: string };
-  status: { id: string; name: string };
-  skillsSought: string;
-  videoQuestions: string;
-  workDetails: string;
-  payDetails: string;
-  jd: string;
-  minSkills: string;
-  other: string;
-  screeningQuestions: string;
-  m1: string;
-  m2: string;
-  m3: string;
-  owner: string;
-  client: string;
-  rate: number;
-  previewName?: string;
-  [key: string]: any;
-}
+import { JobFormValues } from "@/components/forms/JobFormDetails";
+import { generateInternalTitle, calculateRates, generateM1, generateM2, generateM3 } from "@/utils/jobUtils";
 
 export function useFormPreview(form: UseFormReturn<JobFormValues>) {
   const [previewTitle, setPreviewTitle] = useState("");
@@ -107,7 +81,6 @@ export function useFormPreview(form: UseFormReturn<JobFormValues>) {
           const firstName = form.watch("previewName") || "[First Name]";
           const owner = watchedFields.owner || "";
           
-          // Wait for the promises to resolve, then update state
           const m1 = await generateM1(firstName, watchedFields.candidateFacingTitle, watchedFields.compDesc, owner);
           const m2 = await generateM2(
             watchedFields.candidateFacingTitle,
@@ -121,7 +94,6 @@ export function useFormPreview(form: UseFormReturn<JobFormValues>) {
             m3 = await generateM3(watchedFields.videoQuestions);
           }
           
-          // Update state with resolved values, not promises
           setMessages({ m1, m2, m3 });
         } catch (err) {
           console.error("Error generating message previews:", err);
