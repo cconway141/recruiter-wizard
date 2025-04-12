@@ -15,7 +15,8 @@ interface FormActionsProps {
 export function FormActions({ isEditing, job }: FormActionsProps) {
   const navigate = useNavigate();
   const form = useFormContext();
-  const { isSubmitting } = useFormProcessor({ job, isEditing }) || { isSubmitting: false };
+  const formProcessor = useFormProcessor({ job, isEditing });
+  const isSubmitting = formProcessor?.isSubmitting || false;
   
   return (
     <div className="flex justify-end gap-4">
