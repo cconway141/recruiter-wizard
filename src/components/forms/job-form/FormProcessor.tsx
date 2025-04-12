@@ -1,253 +1,132 @@
+
+import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Job, Locale } from "@/types/job";
 import { useJobs } from "@/contexts/JobContext";
+import { Job } from "@/types/job";
 import { JobFormValues } from "../JobFormDetails";
-import { calculateRates } from "@/utils/rateUtils";
-import { generateInternalTitle } from "@/utils/titleUtils";
-import { getWorkDetails, getPayDetails } from "@/utils/localeUtils";
+import { useToast } from "@/components/ui/use-toast";
 import { generateM1, generateM2, generateM3 } from "@/utils/messageUtils";
-import { toast } from "@/hooks/use-toast";
-import { useSupabaseData } from "@/hooks/useSupabaseData";
-import { useCallback } from "react";
+import { getWorkDetails, getPayDetails } from "@/utils/localeUtils";
 
 interface FormProcessorProps {
   job?: Job;
-  isEditing?: boolean;
+  isEditing: boolean;
   setSubmittingState: (isSubmitting: boolean) => void;
 }
 
-export function useFormProcessor({ job, isEditing = false, setSubmittingState }: FormProcessorProps) {
-  let jobContext;
-  
-  try {
-    jobContext = useJobs();
-  } catch (error) {
-    console.error("Error accessing JobContext:", error);
-    return {
-      processJobForm: async () => {
-        console.error("Job context not available. Cannot submit form.");
-        toast({
-          title: "Error",
-          description: "Unable to access job data. Please refresh the page.",
-          variant: "destructive",
-        });
-        setSubmittingState(false);
-        throw new Error("Job context not available");
-      }
-    };
-  }
-  
-  const { addJob, updateJob } = jobContext || {};
+export function useFormProcessor({ job, isEditing, setSubmittingState }: FormProcessorProps) {
+  const { addJob, updateJob } = useJobs();
   const navigate = useNavigate();
-  const { loadFromSupabase } = useSupabaseData();
-  
-  const validateRequiredFields = (values: JobFormValues): boolean => {
-    const requiredFields = [
-      { name: 'candidateFacingTitle', label: 'Job Title' },
-      { name: 'client', label: 'Client' },
-      { name: 'rate', label: 'Rate' },
-      { name: 'jd', label: 'Job Description' },
-      { name: 'compDesc', label: 'Company Description' },
-      { name: 'skillsSought', label: 'Skills Sought' },
-    ];
-    
-    const missingFields = requiredFields.filter(field => {
-      const value = values[field.name as keyof JobFormValues];
-      return !value || (typeof value === 'string' && value.trim() === '');
-    });
-    
-    if (missingFields.length > 0) {
-      const fieldNames = missingFields.map(f => f.label).join(', ');
+  const { toast } = useToast();
+  const [isGeneratingMessages, setIsGeneratingMessages] = useState(false);
+
+  // Function to generate messages before submission
+  const generateMessages = async (formValues: JobFormValues) => {
+    setIsGeneratingMessages(true);
+    try {
+      console.log("Generating messages before form submission...");
+      
+      // Ensure required values exist
+      if (!formValues.candidateFacingTitle || !formValues.compDesc || !formValues.skillsSought) {
+        throw new Error("Missing required fields for message generation");
+      }
+      
+      // Generate the messages
+      const firstName = formValues.previewName || "[First Name]";
+      const owner = formValues.owner || '';
+      
+      // Generate work and pay details based on locale if not already set
+      if (!formValues.workDetails || !formValues.payDetails) {
+        const locale = formValues.locale?.name;
+        if (locale) {
+          if (!formValues.workDetails) {
+            formValues.workDetails = await getWorkDetails(locale);
+          }
+          if (!formValues.payDetails) {
+            formValues.payDetails = await getPayDetails(locale);
+          }
+        }
+      }
+      
+      // Generate all messages in parallel
+      const [m1, m2, m3] = await Promise.all([
+        generateM1(firstName, formValues.candidateFacingTitle, formValues.compDesc, owner),
+        generateM2(
+          formValues.candidateFacingTitle, 
+          formValues.payDetails || "", 
+          formValues.workDetails || "", 
+          formValues.skillsSought
+        ),
+        formValues.videoQuestions ? generateM3(formValues.videoQuestions) : ""
+      ]);
+      
+      // Update the form values with generated messages
+      formValues.m1 = m1;
+      formValues.m2 = m2;
+      formValues.m3 = m3;
+      
+      console.log("Messages generated successfully");
+      return formValues;
+    } catch (error) {
+      console.error("Error generating messages:", error);
       toast({
-        title: "Missing Required Fields",
-        description: `Please fill in the following required fields: ${fieldNames}`,
+        title: "Error generating messages",
+        description: "There was a problem generating message templates. You can edit them manually.",
         variant: "destructive",
       });
-      return false;
+      return formValues;
+    } finally {
+      setIsGeneratingMessages(false);
     }
-    
-    return true;
   };
 
-  const processJobFormForCreation = async (values: JobFormValues) => {
-    console.log("Processing form values for creation:", values);
-    
-    // Type guard for locale validation
-    const isValidLocale = (locale: string): locale is Locale =>
-      ["Onshore", "Nearshore", "Offshore"].includes(locale);
-
-    const rawLocale = typeof values.locale === 'object' 
-      ? (values.locale as { name: string }).name 
-      : values.locale;
-
-    if (!rawLocale || typeof rawLocale !== "string" || !isValidLocale(rawLocale)) {
-      console.error("Invalid locale value:", rawLocale);
-      toast({
-        title: "Validation Error",
-        description: "Invalid locale selected. Please choose a valid locale.",
-        variant: "destructive",
-      });
-      setSubmittingState(false);
-      throw new Error("Invalid locale value");
-    }
-
-    const localeName = rawLocale as Locale;
-    
-    console.log("Getting work details for locale:", localeName);
-    const workDetails = await getWorkDetails(localeName);
-    
-    console.log("Getting pay details for locale:", localeName);
-    const payDetails = await getPayDetails(localeName);
-    
-    console.log("Calculating rates for:", values.rate);
-    const { high, medium, low } = calculateRates(values.rate);
-    
-    console.log("Generating internal title");
-    const internalTitle = await generateInternalTitle(
-      values.client,
-      values.candidateFacingTitle,
-      typeof values.flavor === 'object' ? values.flavor.name || '' : values.flavor,
-      localeName
-    );
-    
-    console.log("Generated internal title:", internalTitle);
-    
-    console.log("Generating message templates");
-    const m1 = generateM1("[First Name]", values.candidateFacingTitle, values.compDesc);
-    const m2 = generateM2(values.candidateFacingTitle, payDetails, workDetails, values.skillsSought);
-    const m3 = generateM3(values.videoQuestions);
-    
-    if (isEditing && job && updateJob) {
-      console.log("Updating existing job");
-      updateJob({
-        ...job,
-        ...values,
-        localeId: typeof values.locale === 'object' ? values.locale.id : undefined,
-        flavorId: typeof values.flavor === 'object' ? values.flavor.id : undefined,
-        locale: localeName,
-        flavor: typeof values.flavor === 'object' ? values.flavor.name : values.flavor,
-        status: typeof values.status === 'object' ? values.status.name : values.status,
-        internalTitle,
-        highRate: high,
-        mediumRate: medium,
-        lowRate: low,
-        workDetails,
-        payDetails,
-        m1,
-        m2,
-        m3
-      });
-      
-      toast({
-        title: "Job Updated",
-        description: `${internalTitle} has been updated successfully.`,
-      });
-      
-      navigate("/");
-      return; // Early return on success
-    } else if (addJob) {
-      console.log("Adding new job with prepared values:", {
-        candidateFacingTitle: values.candidateFacingTitle,
-        client: values.client,
-        rate: values.rate,
-        // ... other values for logging
-      });
-      
+  const processJobForm = useCallback(
+    async (formData: JobFormValues) => {
       try {
-        // Include ALL required fields for job creation, including generated ones
-        const jobValues = {
-          jd: values.jd,
-          candidateFacingTitle: values.candidateFacingTitle,
-          status: typeof values.status === 'object' ? values.status.name : values.status,
-          skillsSought: values.skillsSought,
-          minSkills: values.minSkills, 
-          lir: values.lir,
-          client: values.client,
-          compDesc: values.compDesc,
-          rate: values.rate,
-          localeId: typeof values.locale === 'object' ? values.locale.id : undefined,
-          flavorId: typeof values.flavor === 'object' ? values.flavor.id : undefined,
-          locale: localeName,
-          flavor: typeof values.flavor === 'object' ? values.flavor.name : values.flavor,
-          owner: values.owner,
-          date: values.date,
-          other: values.other || "",
-          videoQuestions: values.videoQuestions,
-          screeningQuestions: values.screeningQuestions,
-          internalTitle,
-          highRate: high,
-          mediumRate: medium,
-          lowRate: low,
-          workDetails,
-          payDetails,
-          m1,
-          m2,
-          m3
-        };
+        console.log(`Processing form data for ${isEditing ? "edit" : "add"} job`);
         
-        console.log("Calling addJob with complete values");
-        const result = await addJob(jobValues);
+        // Make sure isSubmitting is set to true
+        setSubmittingState(true);
         
-        if (result) {
-          toast({
-            title: "Job Created",
-            description: `${internalTitle} has been added successfully.`,
-            variant: "default",
-            className: "bg-green-500 text-white border-green-600",
-          });
+        // Generate messages before submission
+        const completedFormData = await generateMessages(formData);
+        
+        if (isEditing && job) {
+          // Handle job update
+          const updatedJob = await updateJob(job.id, completedFormData);
           
-          await loadFromSupabase();
-          
-          navigate("/");
-          return; // Early return on success
+          if (updatedJob) {
+            toast({
+              title: "Job Updated",
+              description: `Job "${updatedJob.internalTitle}" has been updated successfully.`,
+            });
+            navigate(`/jobs/${updatedJob.id}`);
+          }
         } else {
-          throw new Error("Failed to create job - no result returned");
+          // Handle new job creation
+          const newJob = await addJob(completedFormData);
+          
+          if (newJob) {
+            toast({
+              title: "Job Added",
+              description: `Job "${newJob.internalTitle}" has been created successfully.`,
+            });
+            navigate(`/jobs/${newJob.id}`);
+          }
         }
-      } catch (addError) {
-        console.error("Error in addJob:", addError);
+      } catch (error) {
+        console.error("Error processing form:", error);
         toast({
           title: "Error",
-          description: `Failed to create job: ${addError instanceof Error ? addError.message : String(addError)}`,
+          description: `Failed to ${isEditing ? "update" : "add"} job: ${error instanceof Error ? error.message : "Unknown error"}`,
           variant: "destructive",
         });
+      } finally {
         setSubmittingState(false);
-        throw addError; // Re-throw for handling in caller
       }
-    } else {
-      const error = new Error("addJob function is not available");
-      setSubmittingState(false);
-      throw error;
-    }
-  };
-  
-  const processJobForm = useCallback(async (values: JobFormValues) => {
-    try {
-      console.log("Form submission started with values:", values);
-      
-      // Set submission state
-      console.log("Setting isSubmitting to true");
-      
-      // Validate required fields
-      if (!validateRequiredFields(values)) {
-        console.log("Form validation failed - missing required fields");
-        setSubmittingState(false);
-        return;
-      }
-      
-      await processJobFormForCreation(values);
-    } catch (err) {
-      console.error("Error in form submission:", err);
-      toast({
-        title: "Error",
-        description: `Failed to ${isEditing ? "update" : "create"} job: ${err instanceof Error ? err.message : String(err)}`,
-        variant: "destructive",
-      });
-      throw err; // Re-throw for handling in caller
-    } finally {
-      console.log("Form submission completed, setting isSubmitting to false");
-      setSubmittingState(false);
-    }
-  }, [setSubmittingState, navigate, addJob, updateJob, job, isEditing, loadFromSupabase]);
+    },
+    [isEditing, job, addJob, updateJob, navigate, toast, setSubmittingState]
+  );
 
-  return { processJobForm };
+  return { processJobForm, isGeneratingMessages };
 }

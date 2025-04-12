@@ -1,11 +1,4 @@
 
-import { useState, useEffect, useRef } from "react";
-import { UseFormReturn } from "react-hook-form";
-import { Locale } from "@/types/job";
-import { getWorkDetails, getPayDetails } from "@/utils/localeUtils";
-import { generateM1, generateM2, generateM3 } from "@/utils/messageUtils";
-
-// Import the components
 import { JobFormDescription } from "./job-details/JobFormDescription";
 import { JobFormWorkDetails } from "./job-details/JobFormWorkDetails";
 import { JobFormQuestionDetails } from "./job-details/JobFormQuestionDetails";
@@ -29,6 +22,9 @@ export interface JobFormValues {
   m2: string;
   m3: string;
   owner: string;
+  client: string;
+  rate: number;
+  previewName?: string;
   [key: string]: any;
 }
 
@@ -36,96 +32,7 @@ interface JobFormDetailsProps {
   form: UseFormReturn<JobFormValues>;
 }
 
-export function JobFormDetails({ form }: JobFormDetailsProps) {
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Safely watch fields with null checks
-  const safeWatch = (fieldName: string) => {
-    try {
-      return form.watch(fieldName);
-    } catch (err) {
-      console.error(`Error watching field ${fieldName}:`, err);
-      return undefined;
-    }
-  };
-
-  const watchedFields = {
-    candidateFacingTitle: safeWatch("candidateFacingTitle"),
-    compDesc: safeWatch("compDesc"),
-    locale: safeWatch("locale"),
-    skillsSought: safeWatch("skillsSought"),
-    videoQuestions: safeWatch("videoQuestions"),
-    owner: safeWatch("owner")
-  };
-
-  // Update messages with debounce to prevent too frequent updates
-  useEffect(() => {
-    // Only proceed if form is valid and all required fields are filled
-    if (!form || !form.setValue) {
-      return;
-    }
-
-    // Only proceed if all required fields are filled
-    if (
-      watchedFields.candidateFacingTitle && 
-      watchedFields.compDesc && 
-      watchedFields.locale && 
-      watchedFields.skillsSought
-    ) {
-      // Clear any existing timer
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
-      
-      // Set a new timer
-      debounceTimerRef.current = setTimeout(async () => {
-        try {
-          const locale = watchedFields.locale as Locale;
-          const workDetails = await getWorkDetails(locale);
-          const payDetails = await getPayDetails(locale);
-          
-          // Update the form values with the fetched details
-          form.setValue("workDetails", workDetails);
-          form.setValue("payDetails", payDetails);
-          
-          // Generate messages and update form
-          const firstName = "[First Name]";
-          const candidateFacingTitle = watchedFields.candidateFacingTitle as string;
-          const compDesc = watchedFields.compDesc as string;
-          const owner = watchedFields.owner as string || '';
-          const skills = watchedFields.skillsSought as string;
-          
-          const m1 = await generateM1(firstName, candidateFacingTitle, compDesc, owner);
-          
-          const m2 = await generateM2(
-            candidateFacingTitle, 
-            payDetails, 
-            workDetails, 
-            skills
-          );
-          
-          form.setValue("m1", m1);
-          form.setValue("m2", m2);
-          
-          // Only generate m3 if videoQuestions has content
-          if (watchedFields.videoQuestions) {
-            const m3 = await generateM3(watchedFields.videoQuestions as string);
-            form.setValue("m3", m3);
-          }
-        } catch (err) {
-          console.error("Error generating messages:", err);
-        }
-      }, 1000); // 1 second debounce
-    }
-    
-    // Clean up the timer on component unmount
-    return () => {
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
-    };
-  }, [watchedFields, form]);
-
+export function JobFormDetails() {
   return (
     <div className="space-y-6">
       <JobFormDescription />

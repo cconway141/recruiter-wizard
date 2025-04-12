@@ -1,404 +1,56 @@
 
-import { useState, useRef, useEffect } from "react";
+import { useRef } from "react";
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { useFormContext } from "react-hook-form";
-import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Check, RefreshCw, AlertTriangle } from "lucide-react";
+import { Loader2, Check, RefreshCw, AlertTriangle, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useFieldsGenerator } from "@/hooks/job-form/useFieldsGenerator";
 
 export function JobFormDescription() {
   const form = useFormContext();
-  const [isGeneratingSkills, setIsGeneratingSkills] = useState(false);
-  const [isGeneratingMinSkills, setIsGeneratingMinSkills] = useState(false);
-  const [isGeneratingVideoQuestions, setIsGeneratingVideoQuestions] = useState(false);
-  const [skillsExtracted, setSkillsExtracted] = useState(false);
-  const [minSkillsExtracted, setMinSkillsExtracted] = useState(false);
-  const [videoQuestionsGenerated, setVideoQuestionsGenerated] = useState(false);
-  const [extractionError, setExtractionError] = useState<string | null>(null);
+  const { 
+    generateSkills, 
+    generateMinSkills, 
+    generateVideoQuestions, 
+    generateAllFields,
+    generationState 
+  } = useFieldsGenerator(form);
   
-  // Track if functions have already been called to prevent multiple calls
-  const skillsExtractedRef = useRef(false);
-  const minSkillsExtractedRef = useRef(false);
-  const videoQuestionsGeneratedRef = useRef(false);
-  
-  // Track timeouts for each API call
-  const skillsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const minSkillsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const videoQuestionsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const extractSkillsFromDescription = async (description: string) => {
-    if (!description.trim()) {
-      toast({
-        title: "Missing job description",
-        description: "Please enter a job description to extract skills.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setIsGeneratingSkills(true);
-    setSkillsExtracted(false);
-    setExtractionError(null);
-    
-    // Set a timeout for the API call (60 seconds)
-    skillsTimeoutRef.current = setTimeout(() => {
-      setIsGeneratingSkills(false);
-      setExtractionError("Request timed out. Please try again.");
-      toast({
-        title: "Skills extraction timed out",
-        description: "The request took too long. You can try again or enter skills manually.",
-        variant: "destructive",
-      });
-    }, 60000);
-    
-    try {
-      console.log("Extracting skills from job description...", description.substring(0, 100) + "...");
-      
-      const { data, error } = await supabase.functions.invoke('extract-skills', {
-        body: { jobDescription: description },
-      });
-
-      // Clear timeout since we got a response
-      if (skillsTimeoutRef.current) {
-        clearTimeout(skillsTimeoutRef.current);
-        skillsTimeoutRef.current = null;
-      }
-
-      if (error) {
-        console.error("Supabase function error:", error);
-        setExtractionError(`Error calling extraction function: ${error.message}`);
-        throw error;
-      }
-
-      if (!data) {
-        console.error("No data returned from skills extraction");
-        setExtractionError("No data returned from skills extraction");
-        throw new Error("No data returned from skills extraction");
-      }
-      
-      if (data.error) {
-        console.error("API returned error:", data.error);
-        setExtractionError(`Could not extract skills: ${data.error}`);
-        throw new Error(data.error);
-      }
-
-      // Update the skills field with the generated content
-      if (data.skills) {
-        console.log("Skills extracted successfully");
-        form.setValue('skillsSought', data.skills, { 
-          shouldDirty: true,
-          shouldTouch: true,
-          shouldValidate: true 
-        });
-        
-        setSkillsExtracted(true);
-        skillsExtractedRef.current = true;
-        
-        toast({
-          title: "Skills extracted",
-          description: "Skills have been automatically extracted from the job description.",
-        });
-
-        // Only proceed to extract minimum skills after skills are successfully extracted
-        // No need to await here as we want this to run sequentially but not block the UI
-        setTimeout(() => {
-          extractMinimumSkills(data.skills, description);
-        }, 500);
-      } else {
-        console.error("No skills returned in the response");
-        setExtractionError("No skills returned in the response");
-        throw new Error("No skills returned in the response");
-      }
-    } catch (error) {
-      console.error("Error extracting skills:", error);
-      const errorMessage = error instanceof Error ? error.message : "Could not extract skills from the job description";
-      if (!extractionError) {
-        setExtractionError(errorMessage);
-      }
-      toast({
-        title: "Error extracting skills",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    } finally {
-      // Clear timeout if it's still active
-      if (skillsTimeoutRef.current) {
-        clearTimeout(skillsTimeoutRef.current);
-        skillsTimeoutRef.current = null;
-      }
-      setIsGeneratingSkills(false);
-    }
-  };
-
-  const extractMinimumSkills = async (skillsSought: string, jobDescription: string) => {
-    if (!skillsSought.trim() || !jobDescription.trim() || isGeneratingMinSkills) return;
-    
-    setIsGeneratingMinSkills(true);
-    setMinSkillsExtracted(false);
-    
-    // Set a timeout for the API call (60 seconds)
-    minSkillsTimeoutRef.current = setTimeout(() => {
-      setIsGeneratingMinSkills(false);
-      toast({
-        title: "Minimum skills extraction timed out",
-        description: "The request took too long. You can try again or enter minimum skills manually.",
-        variant: "destructive",
-      });
-    }, 60000);
-    
-    try {
-      const { data, error } = await supabase.functions.invoke('extract-minimum-skills', {
-        body: { skillsSought, jobDescription },
-      });
-
-      // Clear timeout since we got a response
-      if (minSkillsTimeoutRef.current) {
-        clearTimeout(minSkillsTimeoutRef.current);
-        minSkillsTimeoutRef.current = null;
-      }
-
-      if (error) throw error;
-
-      // Update the minimum skills field with the generated content
-      if (data?.minSkills) {
-        form.setValue('minSkills', data.minSkills, { 
-          shouldDirty: true,
-          shouldTouch: true,
-          shouldValidate: true 
-        });
-        
-        setMinSkillsExtracted(true);
-        minSkillsExtractedRef.current = true;
-        
-        toast({
-          title: "Minimum skills extracted",
-          description: "Minimum skills with experience levels have been generated.",
-        });
-
-        // Only proceed to generate video questions after minimum skills are successfully extracted
-        // No need to await here as we want this to run sequentially but not block the UI
-        setTimeout(() => {
-          generateVideoQuestions(data.minSkills);
-        }, 500);
-      }
-    } catch (error) {
-      console.error("Error extracting minimum skills:", error);
-      toast({
-        title: "Error extracting minimum skills",
-        description: "Could not generate minimum skills requirements.",
-        variant: "destructive",
-      });
-    } finally {
-      // Clear timeout if it's still active
-      if (minSkillsTimeoutRef.current) {
-        clearTimeout(minSkillsTimeoutRef.current);
-        minSkillsTimeoutRef.current = null;
-      }
-      setIsGeneratingMinSkills(false);
-    }
-  };
-
-  const generateVideoQuestions = async (minSkills: string) => {
-    if (!minSkills.trim() || isGeneratingVideoQuestions) return;
-    
-    setIsGeneratingVideoQuestions(true);
-    setVideoQuestionsGenerated(false);
-    
-    // Set a timeout for the API call (60 seconds)
-    videoQuestionsTimeoutRef.current = setTimeout(() => {
-      setIsGeneratingVideoQuestions(false);
-      toast({
-        title: "Video questions generation timed out",
-        description: "The request took too long. You can try again or enter video questions manually.",
-        variant: "destructive",
-      });
-    }, 60000);
-    
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-video-questions', {
-        body: { minSkills },
-      });
-
-      // Clear timeout since we got a response
-      if (videoQuestionsTimeoutRef.current) {
-        clearTimeout(videoQuestionsTimeoutRef.current);
-        videoQuestionsTimeoutRef.current = null;
-      }
-
-      if (error) throw error;
-
-      // Update the video questions field with the generated content
-      if (data?.videoQuestions) {
-        form.setValue('videoQuestions', data.videoQuestions, { 
-          shouldDirty: true,
-          shouldTouch: true,
-          shouldValidate: true 
-        });
-        
-        // Explicitly set video questions generated state here
-        setVideoQuestionsGenerated(true);
-        videoQuestionsGeneratedRef.current = true;
-        
-        toast({
-          title: "Video questions generated",
-          description: "Video questions have been automatically generated based on the minimum skills.",
-        });
-      }
-    } catch (error) {
-      console.error("Error generating video questions:", error);
-      toast({
-        title: "Error generating video questions",
-        description: "Could not generate video questions from the minimum skills.",
-        variant: "destructive",
-      });
-    } finally {
-      // Clear timeout if it's still active
-      if (videoQuestionsTimeoutRef.current) {
-        clearTimeout(videoQuestionsTimeoutRef.current);
-        videoQuestionsTimeoutRef.current = null;
-      }
-      setIsGeneratingVideoQuestions(false);
-    }
-  };
-
-  // Function to regenerate skills only (without the cascade)
-  const handleRegenerateSkills = async () => {
-    const description = form.getValues('jd');
-    if (!description) {
-      toast({
-        title: "Missing job description",
-        description: "Job description is required to extract skills.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    await extractSkillsFromDescription(description);
-  };
-
-  // Function to regenerate minimum skills only
-  const handleRegenerateMinSkills = async () => {
-    const skillsSought = form.getValues('skillsSought');
-    const jobDescription = form.getValues('jd');
-    
-    if (!skillsSought || !jobDescription) {
-      toast({
-        title: "Missing information",
-        description: "Both job description and skills are required to generate minimum skills.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    await extractMinimumSkills(skillsSought, jobDescription);
-  };
-
-  // Function to regenerate video questions only
-  const handleRegenerateVideoQuestions = async () => {
-    const minSkills = form.getValues('minSkills');
-    
-    if (!minSkills) {
-      toast({
-        title: "Missing minimum skills",
-        description: "Minimum skills are required to generate video questions.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    await generateVideoQuestions(minSkills);
-  };
-
-  // Clean up timeouts on unmount
-  useEffect(() => {
-    return () => {
-      if (skillsTimeoutRef.current) clearTimeout(skillsTimeoutRef.current);
-      if (minSkillsTimeoutRef.current) clearTimeout(minSkillsTimeoutRef.current);
-      if (videoQuestionsTimeoutRef.current) clearTimeout(videoQuestionsTimeoutRef.current);
-    };
-  }, []);
+  const { isGenerating, generatedFields } = generationState;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <FormField
-        control={form.control}
-        name="jd"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Job Description</FormLabel>
-            <FormControl>
-              <Textarea
-                placeholder="Enter the full job description"
-                className="min-h-[200px]"
-                {...field}
-                onBlur={(e) => {
-                  field.onBlur();
-                  if (!skillsExtractedRef.current && e.target.value.trim()) {
-                    extractSkillsFromDescription(e.target.value);
-                  }
-                }}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <div className="space-y-6">
-        {extractionError && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>{extractionError}</AlertDescription>
-          </Alert>
-        )}
-        
+    <div className="space-y-6">
+      <div className="flex justify-between items-start mb-6">
+        <h3 className="text-lg font-semibold">Job Description</h3>
+        <Button
+          type="button"
+          size="sm"
+          onClick={generateAllFields}
+          disabled={isGenerating}
+          className="flex items-center gap-2"
+        >
+          {isGenerating ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Zap className="h-4 w-4" />
+          )}
+          {isGenerating ? "Generating..." : "Generate All Fields"}
+        </Button>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <FormField
           control={form.control}
-          name="skillsSought"
+          name="jd"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="flex items-center gap-2">
-                Skills Sought
-                {isGeneratingSkills && (
-                  <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
-                )}
-                {skillsExtracted && !isGeneratingSkills && (
-                  <span className="flex items-center text-green-500 text-sm font-medium">
-                    <Check className="h-4 w-4 mr-1" />
-                    Success!
-                  </span>
-                )}
-                {!isGeneratingSkills && (
-                  <Button 
-                    type="button" 
-                    size="sm" 
-                    variant="outline"
-                    className="ml-auto flex items-center gap-1 text-xs"
-                    onClick={() => {
-                      const description = form.getValues('jd');
-                      if (description) {
-                        extractSkillsFromDescription(description);
-                      } else {
-                        toast({
-                          title: "Missing job description",
-                          description: "Please enter a job description to extract skills.",
-                          variant: "destructive",
-                        });
-                      }
-                    }}
-                  >
-                    <RefreshCw className="h-3 w-3" />
-                    Regenerate
-                  </Button>
-                )}
-              </FormLabel>
+              <FormLabel>Job Description</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="List the required skills"
-                  className="min-h-[100px]"
+                  placeholder="Enter the full job description"
+                  className="min-h-[200px]"
                   {...field}
                 />
               </FormControl>
@@ -407,46 +59,89 @@ export function JobFormDescription() {
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="minSkills"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel className="flex items-center gap-2">
-                Minimum Skills
-                {isGeneratingMinSkills && (
-                  <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
-                )}
-                {minSkillsExtracted && !isGeneratingMinSkills && (
-                  <span className="flex items-center text-green-500 text-sm font-medium">
-                    <Check className="h-4 w-4 mr-1" />
-                    Success!
-                  </span>
-                )}
-                {!isGeneratingMinSkills && (
-                  <Button 
-                    type="button" 
-                    size="sm" 
-                    variant="outline"
-                    className="ml-auto flex items-center gap-1 text-xs"
-                    onClick={handleRegenerateMinSkills}
-                  >
-                    <RefreshCw className="h-3 w-3" />
-                    Regenerate
-                  </Button>
-                )}
-              </FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="List the minimum required skills"
-                  className="min-h-[100px]"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="space-y-6">          
+          <FormField
+            control={form.control}
+            name="skillsSought"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="flex items-center gap-2">
+                  Skills Sought
+                  {isGenerating && !generatedFields.skills && (
+                    <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+                  )}
+                  {generatedFields.skills && !isGenerating && (
+                    <span className="flex items-center text-green-500 text-sm font-medium">
+                      <Check className="h-4 w-4 mr-1" />
+                      Success!
+                    </span>
+                  )}
+                  {!isGenerating && (
+                    <Button 
+                      type="button" 
+                      size="sm" 
+                      variant="outline"
+                      className="ml-auto flex items-center gap-1 text-xs"
+                      onClick={generateSkills}
+                    >
+                      <RefreshCw className="h-3 w-3" />
+                      Generate
+                    </Button>
+                  )}
+                </FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="List the required skills"
+                    className="min-h-[100px]"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="minSkills"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="flex items-center gap-2">
+                  Minimum Skills
+                  {isGenerating && !generatedFields.minSkills && (
+                    <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+                  )}
+                  {generatedFields.minSkills && !isGenerating && (
+                    <span className="flex items-center text-green-500 text-sm font-medium">
+                      <Check className="h-4 w-4 mr-1" />
+                      Success!
+                    </span>
+                  )}
+                  {!isGenerating && (
+                    <Button 
+                      type="button" 
+                      size="sm" 
+                      variant="outline"
+                      className="ml-auto flex items-center gap-1 text-xs"
+                      onClick={generateMinSkills}
+                    >
+                      <RefreshCw className="h-3 w-3" />
+                      Generate
+                    </Button>
+                  )}
+                </FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="List the minimum required skills"
+                    className="min-h-[100px]"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
       </div>
     </div>
   );

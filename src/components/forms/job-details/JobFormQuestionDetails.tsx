@@ -1,343 +1,108 @@
 
-import { useState, useEffect, useRef } from "react";
-import { FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { useFormContext } from "react-hook-form";
 import { Loader2, Check, RefreshCw } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
+import { useFieldsGenerator } from "@/hooks/job-form/useFieldsGenerator";
 
 export function JobFormQuestionDetails() {
   const form = useFormContext();
-  const [isGeneratingScreeningQuestions, setIsGeneratingScreeningQuestions] = useState(false);
-  const [isGeneratingVideoQuestions, setIsGeneratingVideoQuestions] = useState(false);
-  const videoQuestionsValue = form.watch("videoQuestions");
-  const minSkillsValue = form.watch("minSkills");
-  const [videoQuestionsGenerated, setVideoQuestionsGenerated] = useState(false);
-  const videoQuestionsGeneratedRef = useRef(false);
-  const [screeningQuestionsGenerated, setScreeningQuestionsGenerated] = useState(false);
-  const screeningQuestionsGeneratedRef = useRef(false);
+  const { 
+    generateVideoQuestions, 
+    generateScreeningQuestions,
+    generationState 
+  } = useFieldsGenerator(form);
   
-  // Track timeout for each API call
-  const screeningQuestionsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const videoQuestionsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  useEffect(() => {
-    const generateScreeningQuestions = async () => {
-      if (
-        videoQuestionsValue && 
-        minSkillsValue && 
-        !isGeneratingScreeningQuestions && 
-        !screeningQuestionsGeneratedRef.current &&
-        !isGeneratingVideoQuestions  // Don't start if video questions are generating
-      ) {
-        setIsGeneratingScreeningQuestions(true);
-        
-        // Set a timeout for the API call (60 seconds)
-        screeningQuestionsTimeoutRef.current = setTimeout(() => {
-          setIsGeneratingScreeningQuestions(false);
-          toast({
-            title: "Screening questions generation timed out",
-            description: "The request took too long. You can try again or enter questions manually.",
-            variant: "destructive",
-          });
-        }, 60000);
-        
-        try {
-          const { data, error } = await supabase.functions.invoke('generate-screening-questions', {
-            body: { minSkills: minSkillsValue }
-          });
-
-          // Clear timeout since we got a response
-          if (screeningQuestionsTimeoutRef.current) {
-            clearTimeout(screeningQuestionsTimeoutRef.current);
-            screeningQuestionsTimeoutRef.current = null;
-          }
-
-          if (error) throw error;
-
-          if (data?.screeningQuestions) {
-            form.setValue('screeningQuestions', data.screeningQuestions, { 
-              shouldDirty: true,
-              shouldTouch: true,
-              shouldValidate: true 
-            });
-            setScreeningQuestionsGenerated(true);
-            screeningQuestionsGeneratedRef.current = true;
-            
-            toast({
-              title: "Screening questions generated",
-              description: "Screening questions have been automatically generated based on the skills.",
-            });
-          }
-        } catch (error) {
-          console.error("Error generating screening questions:", error);
-          toast({
-            title: "Error generating screening questions",
-            description: "Could not generate screening questions from the skills.",
-            variant: "destructive",
-          });
-        } finally {
-          // Clear timeout if it's still active
-          if (screeningQuestionsTimeoutRef.current) {
-            clearTimeout(screeningQuestionsTimeoutRef.current);
-            screeningQuestionsTimeoutRef.current = null;
-          }
-          setIsGeneratingScreeningQuestions(false);
-        }
-      }
-    };
-
-    generateScreeningQuestions();
-    
-    // Cleanup timeouts on unmount
-    return () => {
-      if (screeningQuestionsTimeoutRef.current) {
-        clearTimeout(screeningQuestionsTimeoutRef.current);
-      }
-      if (videoQuestionsTimeoutRef.current) {
-        clearTimeout(videoQuestionsTimeoutRef.current);
-      }
-    };
-  }, [videoQuestionsValue, minSkillsValue, form, isGeneratingScreeningQuestions, isGeneratingVideoQuestions]);
-
-  // Make sure we update the flag based on the videoQuestions field content
-  useEffect(() => {
-    if (videoQuestionsValue && videoQuestionsValue.trim().length > 0 && !videoQuestionsGeneratedRef.current) {
-      setVideoQuestionsGenerated(true);
-      videoQuestionsGeneratedRef.current = true;
-    }
-  }, [videoQuestionsValue]);
-
-  const handleRegenerateVideoQuestions = async () => {
-    const minSkills = form.getValues('minSkills');
-    
-    if (!minSkills) {
-      toast({
-        title: "Missing minimum skills",
-        description: "Minimum skills are required to generate video questions.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setIsGeneratingVideoQuestions(true);
-    setVideoQuestionsGenerated(false);
-    
-    // Set a timeout for the API call (60 seconds)
-    videoQuestionsTimeoutRef.current = setTimeout(() => {
-      setIsGeneratingVideoQuestions(false);
-      toast({
-        title: "Video questions generation timed out",
-        description: "The request took too long. You can try again or enter questions manually.",
-        variant: "destructive",
-      });
-    }, 60000);
-    
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-video-questions', {
-        body: { minSkills },
-      });
-
-      // Clear timeout since we got a response
-      if (videoQuestionsTimeoutRef.current) {
-        clearTimeout(videoQuestionsTimeoutRef.current);
-        videoQuestionsTimeoutRef.current = null;
-      }
-
-      if (error) throw error;
-
-      if (data?.videoQuestions) {
-        form.setValue('videoQuestions', data.videoQuestions, { 
-          shouldDirty: true,
-          shouldTouch: true,
-          shouldValidate: true 
-        });
-        
-        setVideoQuestionsGenerated(true);
-        videoQuestionsGeneratedRef.current = true;
-        
-        toast({
-          title: "Video questions generated",
-          description: "Video questions have been regenerated based on the minimum skills.",
-        });
-      }
-    } catch (error) {
-      console.error("Error regenerating video questions:", error);
-      toast({
-        title: "Error regenerating video questions",
-        description: "Could not regenerate video questions from the minimum skills.",
-        variant: "destructive",
-      });
-    } finally {
-      // Clear timeout if it's still active
-      if (videoQuestionsTimeoutRef.current) {
-        clearTimeout(videoQuestionsTimeoutRef.current);
-        videoQuestionsTimeoutRef.current = null;
-      }
-      setIsGeneratingVideoQuestions(false);
-    }
-  };
-
-  const handleRegenerateScreeningQuestions = async () => {
-    const minSkills = form.getValues('minSkills');
-    
-    if (!minSkills) {
-      toast({
-        title: "Missing minimum skills",
-        description: "Minimum skills are required to generate screening questions.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setIsGeneratingScreeningQuestions(true);
-    
-    // Set a timeout for the API call (60 seconds)
-    screeningQuestionsTimeoutRef.current = setTimeout(() => {
-      setIsGeneratingScreeningQuestions(false);
-      toast({
-        title: "Screening questions generation timed out",
-        description: "The request took too long. You can try again or enter questions manually.",
-        variant: "destructive",
-      });
-    }, 60000);
-    
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-screening-questions', {
-        body: { minSkills }
-      });
-
-      // Clear timeout since we got a response
-      if (screeningQuestionsTimeoutRef.current) {
-        clearTimeout(screeningQuestionsTimeoutRef.current);
-        screeningQuestionsTimeoutRef.current = null;
-      }
-
-      if (error) throw error;
-
-      if (data?.screeningQuestions) {
-        form.setValue('screeningQuestions', data.screeningQuestions, { 
-          shouldDirty: true,
-          shouldTouch: true,
-          shouldValidate: true 
-        });
-        
-        setScreeningQuestionsGenerated(true);
-        screeningQuestionsGeneratedRef.current = true;
-        
-        toast({
-          title: "Screening questions regenerated",
-          description: "Screening questions have been regenerated based on the skills.",
-        });
-      }
-    } catch (error) {
-      console.error("Error regenerating screening questions:", error);
-      toast({
-        title: "Error regenerating screening questions",
-        description: "Could not regenerate screening questions from the skills.",
-        variant: "destructive",
-      });
-    } finally {
-      // Clear timeout if it's still active
-      if (screeningQuestionsTimeoutRef.current) {
-        clearTimeout(screeningQuestionsTimeoutRef.current);
-        screeningQuestionsTimeoutRef.current = null;
-      }
-      setIsGeneratingScreeningQuestions(false);
-    }
-  };
+  const { isGenerating, generatedFields } = generationState;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <FormField
-        control={form.control}
-        name="videoQuestions"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel className="flex items-center gap-2">
-              Video Questions
-              {isGeneratingVideoQuestions && (
-                <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
-              )}
-              {videoQuestionsGenerated && !isGeneratingVideoQuestions && (
-                <span className="flex items-center text-green-500 text-sm font-medium">
-                  <Check className="h-4 w-4 mr-1" />
-                  Success!
-                </span>
-              )}
-              {!isGeneratingVideoQuestions && (
-                <Button 
-                  type="button" 
-                  size="sm" 
-                  variant="outline"
-                  className="ml-auto flex items-center gap-1 text-xs"
-                  onClick={handleRegenerateVideoQuestions}
-                >
-                  <RefreshCw className="h-3 w-3" />
-                  Regenerate
-                </Button>
-              )}
-            </FormLabel>
-            <FormControl>
-              <Textarea
-                placeholder="Questions for the candidate's video response"
-                className="min-h-[100px]"
-                {...field}
-              />
-            </FormControl>
-            <FormDescription>
-              These questions will be included in the video instructions message (M3).
-            </FormDescription>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={form.control}
-        name="screeningQuestions"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel className="flex items-center gap-2">
-              Screening Questions
-              {isGeneratingScreeningQuestions && (
-                <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
-              )}
-              {screeningQuestionsGenerated && !isGeneratingScreeningQuestions && (
-                <span className="flex items-center text-green-500 text-sm font-medium">
-                  <Check className="h-4 w-4 mr-1" />
-                  Success!
-                </span>
-              )}
-              {!isGeneratingScreeningQuestions && (
-                <Button 
-                  type="button" 
-                  size="sm" 
-                  variant="outline"
-                  className="ml-auto flex items-center gap-1 text-xs"
-                  onClick={handleRegenerateScreeningQuestions}
-                >
-                  <RefreshCw className="h-3 w-3" />
-                  Regenerate
-                </Button>
-              )}
-            </FormLabel>
-            <FormControl>
-              <Textarea
-                placeholder="Questions for initial screening"
-                className="min-h-[100px]"
-                {...field}
-              />
-            </FormControl>
-            <FormDescription>
-              These questions will be used during the initial candidate screening.
-            </FormDescription>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+    <div className="space-y-6">
+      <h3 className="text-lg font-semibold">Interview Questions</h3>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <FormField
+          control={form.control}
+          name="videoQuestions"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="flex items-center gap-2">
+                Video Questions
+                {isGenerating && !generatedFields.videoQuestions && (
+                  <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+                )}
+                {generatedFields.videoQuestions && !isGenerating && (
+                  <span className="flex items-center text-green-500 text-sm font-medium">
+                    <Check className="h-4 w-4 mr-1" />
+                    Success!
+                  </span>
+                )}
+                {!isGenerating && (
+                  <Button 
+                    type="button" 
+                    size="sm" 
+                    variant="outline"
+                    className="ml-auto flex items-center gap-1 text-xs"
+                    onClick={generateVideoQuestions}
+                  >
+                    <RefreshCw className="h-3 w-3" />
+                    Generate
+                  </Button>
+                )}
+              </FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Enter video questions for candidates"
+                  className="min-h-[150px]"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="screeningQuestions"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="flex items-center gap-2">
+                Screening Questions
+                {isGenerating && !generatedFields.screeningQuestions && (
+                  <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+                )}
+                {generatedFields.screeningQuestions && !isGenerating && (
+                  <span className="flex items-center text-green-500 text-sm font-medium">
+                    <Check className="h-4 w-4 mr-1" />
+                    Success!
+                  </span>
+                )}
+                {!isGenerating && (
+                  <Button 
+                    type="button" 
+                    size="sm" 
+                    variant="outline"
+                    className="ml-auto flex items-center gap-1 text-xs"
+                    onClick={generateScreeningQuestions}
+                  >
+                    <RefreshCw className="h-3 w-3" />
+                    Generate
+                  </Button>
+                )}
+              </FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Enter screening questions for candidates"
+                  className="min-h-[150px]"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
     </div>
   );
 }
