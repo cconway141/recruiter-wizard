@@ -139,12 +139,12 @@ export function JobFormBasicInfo({ handleClientSelection }: JobFormBasicInfoProp
                   const selectedFlavor = flavorOptions?.find(flavor => flavor.id === value);
                   field.onChange(selectedFlavor);
                 }} 
-                value={typeof field.value === 'object' ? field.value.id : field.value}
+                value={typeof field.value === 'object' && field.value ? field.value.id : field.value}
               >
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Select flavor">
-                      {typeof field.value === 'object' ? field.value.name : field.value}
+                      {typeof field.value === 'object' && field.value ? field.value.name : field.value}
                     </SelectValue>
                   </SelectTrigger>
                 </FormControl>
@@ -172,12 +172,12 @@ export function JobFormBasicInfo({ handleClientSelection }: JobFormBasicInfoProp
                   const selectedLocale = localeOptions?.find(locale => locale.name === value);
                   field.onChange(selectedLocale || value);
                 }} 
-                value={typeof field.value === 'object' ? field.value.name : field.value}
+                value={typeof field.value === 'object' && field.value ? field.value.name : field.value}
               >
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Select locale">
-                      {typeof field.value === 'object' ? field.value.name : field.value}
+                      {typeof field.value === 'object' && field.value ? field.value.name : field.value}
                     </SelectValue>
                   </SelectTrigger>
                 </FormControl>
@@ -205,12 +205,12 @@ export function JobFormBasicInfo({ handleClientSelection }: JobFormBasicInfoProp
                   const selectedStatus = statusOptions?.find(status => status.name === value);
                   field.onChange(selectedStatus || value);
                 }} 
-                value={typeof field.value === 'object' ? field.value.name : field.value}
+                value={typeof field.value === 'object' && field.value ? field.value.name : field.value}
               >
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Select status">
-                      {typeof field.value === 'object' ? field.value.name : field.value}
+                      {typeof field.value === 'object' && field.value ? field.value.name : field.value}
                     </SelectValue>
                   </SelectTrigger>
                 </FormControl>

@@ -18,7 +18,12 @@ export function FormPreview({ previewTitle, watchedFields, messages }: FormPrevi
   // Extract values properly, handling both string and object types
   const candidateFacingTitle = watchedFields.candidateFacingTitle;
   const compDesc = watchedFields.compDesc;
-  const locale = typeof watchedFields.locale === 'object' ? watchedFields.locale.name : watchedFields.locale;
+  
+  // Extract locale name properly
+  const locale = typeof watchedFields.locale === 'object' && watchedFields.locale 
+    ? watchedFields.locale.name 
+    : watchedFields.locale;
+    
   const skillsSought = watchedFields.skillsSought;
   
   // Check if all required fields for message preview are filled

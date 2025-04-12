@@ -37,8 +37,18 @@ export function useFormPreview(form: UseFormReturn<JobFormValues>) {
       const updateTitle = async () => {
         try {
           // Extract the flavor name and locale name from objects if needed
-          const flavorName = typeof watchedFields.flavor === 'object' ? watchedFields.flavor.name : watchedFields.flavor;
-          const localeName = typeof watchedFields.locale === 'object' ? watchedFields.locale.name : watchedFields.locale;
+          const flavorName = typeof watchedFields.flavor === 'object' && watchedFields.flavor 
+            ? watchedFields.flavor.name 
+            : watchedFields.flavor;
+            
+          const localeName = typeof watchedFields.locale === 'object' && watchedFields.locale 
+            ? watchedFields.locale.name 
+            : watchedFields.locale;
+          
+          if (!flavorName || !localeName) {
+            console.log("Missing flavor or locale for title generation");
+            return;
+          }
           
           const newTitle = await generateInternalTitle(
             watchedFields.client,
@@ -76,7 +86,11 @@ export function useFormPreview(form: UseFormReturn<JobFormValues>) {
       // Extract proper values, handling both object and string types
       const candidateFacingTitle = watchedFields.candidateFacingTitle;
       const compDesc = watchedFields.compDesc;
-      const localeName = typeof watchedFields.locale === 'object' ? watchedFields.locale.name : watchedFields.locale;
+      
+      const localeName = typeof watchedFields.locale === 'object' && watchedFields.locale 
+        ? watchedFields.locale.name 
+        : watchedFields.locale;
+        
       const skillsSought = watchedFields.skillsSought;
       
       // Only update if we have all required fields
