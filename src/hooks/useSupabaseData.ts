@@ -78,6 +78,15 @@ export function useSupabaseData() {
             payDetails: job.pay_details || ''
           };
           
+          // Ensure the locale object has all required properties
+          const localeObject: LocaleObject = {
+            id: job.locale,
+            name: job.locale,
+            abbreviation: localeData.abbreviation,
+            workDetails: job.work_details,
+            payDetails: job.pay_details
+          };
+          
           return {
             id: job.id,
             internalTitle: job.internal_title,
@@ -99,13 +108,7 @@ export function useSupabaseData() {
             highRate: Number(job.high_rate),
             mediumRate: Number(job.medium_rate),
             lowRate: Number(job.low_rate),
-            locale: {
-              id: job.locale,
-              name: job.locale,
-              abbreviation: localeData.abbreviation,
-              workDetails: job.work_details,
-              payDetails: job.pay_details
-            },
+            locale: localeObject,
             localeId: job.locale_id,
             owner: job.owner,
             ownerId: job.owner_id,

@@ -39,7 +39,7 @@ export function useJobFilters(jobs: Job[]) {
       result = result.filter((job) => job.status === filters.status);
     }
 
-    // Apply locale filter - now consistently using locale.id
+    // Apply locale filter
     if (filters.locale !== "All") {
       result = result.filter((job) => job.locale.id === filters.locale);
     }

@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { useJobs } from "@/contexts/JobContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Job } from "@/types/job";
+import { Job, LocaleObject } from "@/types/job";
 import { JobFormValues } from "@/components/forms/JobFormDetails";
 import { useToast } from "@/hooks/use-toast";
 import { mapJobToFormDefaults } from "@/utils/mapJobToFormDefaults";
@@ -73,6 +73,15 @@ export function useJobData(id?: string) {
         console.warn("Error fetching locale:", localeError);
       }
 
+      // Create locale object with all required properties
+      const localeObject: LocaleObject = {
+        id: jobData.locale,
+        name: jobData.locale,
+        abbreviation: localeData?.abbreviation || '',
+        workDetails: jobData.work_details || '',
+        payDetails: jobData.pay_details || ''
+      };
+
       const transformedJob: Job = {
         id: jobData.id,
         internalTitle: jobData.internal_title,
@@ -94,13 +103,7 @@ export function useJobData(id?: string) {
         highRate: Number(jobData.high_rate),
         mediumRate: Number(jobData.medium_rate),
         lowRate: Number(jobData.low_rate),
-        locale: {
-          id: jobData.locale,
-          name: jobData.locale,
-          abbreviation: localeData?.abbreviation || '',
-          workDetails: jobData.work_details || '',
-          payDetails: jobData.pay_details || ''
-        },
+        locale: localeObject,
         localeId: jobData.locale_id || '',
         owner: jobData.owner,
         ownerId: jobData.owner_id || '',

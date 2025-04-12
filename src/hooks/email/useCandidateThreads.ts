@@ -89,8 +89,8 @@ export const useCandidateThreads = () => {
         return null;
       }
       
-      // Properly cast the JSON data to the expected type with a safe fallback
-      const threadIds = (data.thread_ids as Record<string, EmailThreadInfo>) || {};
+      // Properly cast the JSON data to the expected type
+      const threadIds = (data.thread_ids as unknown as Record<string, EmailThreadInfo>) || {};
       
       // Get thread info for this job
       const threadInfo = threadIds[jobId];

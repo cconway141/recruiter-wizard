@@ -7,19 +7,14 @@ export function displayFormValue(value: any): string {
     return '';
   }
   
-  // If it's a string, return it directly
-  if (typeof value === 'string') {
-    return value;
-  }
-  
   // If it's an object with a name property, return the name
   if (typeof value === 'object' && value !== null && 'name' in value) {
     return value.name;
   }
   
-  // If it's an object with an id property (fallback)
-  if (typeof value === 'object' && value !== null && 'id' in value) {
-    return value.id;
+  // If it's a string, return it directly
+  if (typeof value === 'string') {
+    return value;
   }
   
   // Fallback to string conversion
@@ -34,14 +29,14 @@ export function extractId(value: any): string {
     return '';
   }
   
-  // If it's a string, return empty (no ID)
-  if (typeof value === 'string') {
-    return '';
-  }
-  
   // If it's an object with an id property, return the id
   if (typeof value === 'object' && value !== null && 'id' in value) {
     return value.id;
+  }
+  
+  // If it's a string, return it as the ID
+  if (typeof value === 'string') {
+    return value;
   }
   
   return '';
@@ -55,19 +50,14 @@ export function extractName(value: any): string {
     return '';
   }
   
-  // If it's a string, return it directly
-  if (typeof value === 'string') {
-    return value;
-  }
-  
   // If it's an object with a name property, return the name
   if (typeof value === 'object' && value !== null && 'name' in value) {
     return value.name;
   }
   
-  // For locale objects which have 'id' instead of 'name'
-  if (typeof value === 'object' && value !== null && 'id' in value) {
-    return value.id;
+  // If it's a string, return it directly
+  if (typeof value === 'string') {
+    return value;
   }
   
   // Fallback to string conversion

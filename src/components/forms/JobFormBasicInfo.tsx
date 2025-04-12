@@ -138,9 +138,12 @@ export function JobFormBasicInfo({ handleClientSelection }: JobFormBasicInfoProp
               <Select 
                 onValueChange={(value) => {
                   const selectedFlavor = flavorOptions?.find(flavor => flavor.id === value);
-                  field.onChange(selectedFlavor);
+                  field.onChange({
+                    id: value,
+                    name: selectedFlavor?.name || value
+                  });
                 }} 
-                value={typeof field.value === 'object' && field.value ? field.value.id : field.value}
+                value={field.value?.id}
               >
                 <FormControl>
                   <SelectTrigger>
@@ -171,9 +174,12 @@ export function JobFormBasicInfo({ handleClientSelection }: JobFormBasicInfoProp
               <Select 
                 onValueChange={(value) => {
                   const selectedLocale = localeOptions?.find(locale => locale.name === value);
-                  field.onChange(selectedLocale || value);
+                  field.onChange({
+                    id: selectedLocale?.id || value,
+                    name: value
+                  });
                 }} 
-                value={typeof field.value === 'object' && field.value ? field.value.name : field.value}
+                value={field.value?.name}
               >
                 <FormControl>
                   <SelectTrigger>
@@ -204,9 +210,12 @@ export function JobFormBasicInfo({ handleClientSelection }: JobFormBasicInfoProp
               <Select 
                 onValueChange={(value) => {
                   const selectedStatus = statusOptions?.find(status => status.name === value);
-                  field.onChange(selectedStatus || value);
+                  field.onChange({
+                    id: selectedStatus?.id || value,
+                    name: value
+                  });
                 }} 
-                value={typeof field.value === 'object' && field.value ? field.value.name : field.value}
+                value={field.value?.name}
               >
                 <FormControl>
                   <SelectTrigger>

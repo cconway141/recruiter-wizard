@@ -1,5 +1,5 @@
 
-import { Job, LocaleObject, FlavorObject, StatusObject } from "@/types/job";
+import { Job } from "@/types/job";
 import { JobFormValues } from "@/components/forms/JobFormDetails";
 
 /**
@@ -16,8 +16,14 @@ export const mapJobToFormDefaults = (job: Job): JobFormValues => {
         id: '',
         name: ''
       },
-      flavor: '',
-      status: '',
+      flavor: {
+        id: '',
+        name: ''
+      },
+      status: {
+        id: '',
+        name: ''
+      },
       rate: 0,
       jd: '',
       skillsSought: '',
@@ -34,19 +40,19 @@ export const mapJobToFormDefaults = (job: Job): JobFormValues => {
     };
   }
   
-  // Create a properly structured locale object
-  const localeObject = {
-    id: typeof job.locale === 'string' ? job.locale : job.locale.id,
-    name: typeof job.locale === 'string' ? job.locale : job.locale.name,
-  };
-  
   return {
     candidateFacingTitle: job.candidateFacingTitle,
     client: job.client,
     compDesc: job.compDesc,
-    locale: localeObject,
-    flavor: job.flavor,
-    status: job.status,
+    locale: job.locale,
+    flavor: {
+      id: job.flavor,
+      name: job.flavor
+    },
+    status: {
+      id: job.status,
+      name: job.status
+    },
     rate: job.rate,
     jd: job.jd,
     skillsSought: job.skillsSought,

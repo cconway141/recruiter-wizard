@@ -37,9 +37,12 @@ export function MetadataSelects() {
             <Select 
               onValueChange={(value) => {
                 const selectedFlavor = flavorOptions?.find(flavor => flavor.id === value);
-                field.onChange(selectedFlavor?.name || value);
+                field.onChange({
+                  id: value,
+                  name: selectedFlavor?.name || value
+                });
               }} 
-              value={field.value || ''}
+              value={field.value?.id}
             >
               <FormControl>
                 <SelectTrigger>
@@ -64,40 +67,37 @@ export function MetadataSelects() {
       <Controller
         control={form.control}
         name="locale"
-        render={({ field }) => {
-          const localeValue = field.value && typeof field.value === 'object' 
-            ? field.value.name
-            : field.value;
-          
-          return (
-            <FormItem>
-              <FormLabel>Locale</FormLabel>
-              <Select 
-                onValueChange={(value) => {
-                  const selectedLocale = localeOptions?.find(locale => locale.name === value);
-                  field.onChange(selectedLocale || { id: value, name: value });
-                }} 
-                value={localeValue || ''}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select locale">
-                      {displayFormValue(field.value)}
-                    </SelectValue>
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {localeOptions?.map((locale) => (
-                    <SelectItem key={locale.id} value={locale.name}>
-                      {locale.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          );
-        }}
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Locale</FormLabel>
+            <Select 
+              onValueChange={(value) => {
+                const selectedLocale = localeOptions?.find(locale => locale.name === value);
+                field.onChange({
+                  id: selectedLocale?.id || value,
+                  name: value
+                });
+              }} 
+              value={field.value?.name}
+            >
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select locale">
+                    {displayFormValue(field.value)}
+                  </SelectValue>
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {localeOptions?.map((locale) => (
+                  <SelectItem key={locale.id} value={locale.name}>
+                    {locale.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )}
       />
       
       <Controller
@@ -108,9 +108,13 @@ export function MetadataSelects() {
             <FormLabel>Status</FormLabel>
             <Select 
               onValueChange={(value) => {
-                field.onChange(value);
+                const selectedStatus = statusOptions?.find(status => status.name === value);
+                field.onChange({
+                  id: selectedStatus?.id || value,
+                  name: value
+                });
               }} 
-              value={field.value || ''}
+              value={field.value?.name}
             >
               <FormControl>
                 <SelectTrigger>
