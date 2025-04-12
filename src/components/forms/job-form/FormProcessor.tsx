@@ -91,27 +91,29 @@ export function useFormProcessor({ job, isEditing, setSubmittingState }: FormPro
         // Generate messages before submission
         const completedFormData = await generateMessages(formData);
         
+        let result;
+        
         if (isEditing && job) {
           // Handle job update
-          const updatedJob = await updateJob(job.id, completedFormData);
+          result = await updateJob(job.id, completedFormData);
           
-          if (updatedJob) {
+          if (result) {
             toast({
               title: "Job Updated",
-              description: `Job "${updatedJob.internalTitle}" has been updated successfully.`,
+              description: `Job "${result.internalTitle || 'Untitled'}" has been updated successfully.`,
             });
-            navigate(`/jobs/${updatedJob.id}`);
+            navigate(`/jobs/${result.id}`);
           }
         } else {
           // Handle new job creation
-          const newJob = await addJob(completedFormData);
+          result = await addJob(completedFormData);
           
-          if (newJob) {
+          if (result) {
             toast({
               title: "Job Added",
-              description: `Job "${newJob.internalTitle}" has been created successfully.`,
+              description: `Job "${result.internalTitle || 'Untitled'}" has been created successfully.`,
             });
-            navigate(`/jobs/${newJob.id}`);
+            navigate(`/jobs/${result.id}`);
           }
         }
       } catch (error) {
