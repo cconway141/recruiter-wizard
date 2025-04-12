@@ -1,16 +1,23 @@
 
 import { useFormContext } from "react-hook-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useLocaleOptions } from "@/hooks/use-dropdown-options";
+import { displayFormValue } from "@/utils/formFieldUtils";
 
 export function JobFormWorkDetails() {
   const form = useFormContext();
-  const { data: localeOptions } = useLocaleOptions();
-  const selectedLocale = form.watch("locale");
   
-  // This component no longer renders editable fields for work and pay details
-  // The information is instead pulled from the settings (locales table)
+  // Only access these values if the form is available
+  const localeValue = form?.watch ? form.watch("locale") : null;
   
+  // Use the utility function to get safe display values
+  const displayLocale = displayFormValue(localeValue);
+  
+  // Register the fields but don't display them as they're generated fields
+  if (form?.register) {
+    form.register("workDetails");
+    form.register("payDetails");
+  }
+
   return (
     <Card className="bg-muted/50">
       <CardHeader className="pb-3">
@@ -18,13 +25,8 @@ export function JobFormWorkDetails() {
       </CardHeader>
       <CardContent>
         <p className="text-sm text-muted-foreground mb-4">
-          Work and payment details are managed in Settings → Locales and will be populated 
-          automatically based on the selected locale: <span className="font-medium">{selectedLocale}</span>
+          Work and pay details are generated automatically based on the locale: <span className="font-medium">{displayLocale || "None selected"}</span>
         </p>
-
-        {/* Fields are rendered as hidden inputs to maintain form structure */}
-        <input type="hidden" {...form.register("workDetails")} />
-        <input type="hidden" {...form.register("payDetails")} />
       </CardContent>
     </Card>
   );
