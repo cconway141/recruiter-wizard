@@ -95,14 +95,43 @@ export function useFormProcessor({ job, isEditing, setSubmittingState }: FormPro
         
         if (isEditing && job) {
           // Handle job update
-          // First create a full job object by merging the existing job with the form data
-          const updatedJobData = {
+          // Convert form values to match Job type structure
+          const updatedJobData: Job = {
             ...job,
-            ...completedFormData,
-            id: job.id // Ensure ID is preserved
+            candidateFacingTitle: completedFormData.candidateFacingTitle,
+            compDesc: completedFormData.compDesc,
+            locale: typeof completedFormData.locale === 'object' ? completedFormData.locale.name as Locale : job.locale,
+            localeId: typeof completedFormData.locale === 'object' ? completedFormData.locale.id : job.localeId,
+            flavor: typeof completedFormData.flavor === 'object' ? completedFormData.flavor.name : job.flavor,
+            flavorId: typeof completedFormData.flavor === 'object' ? completedFormData.flavor.id : job.flavorId,
+            status: typeof completedFormData.status === 'object' ? completedFormData.status.name : job.status,
+            statusId: typeof completedFormData.status === 'object' ? completedFormData.status.id : job.statusId,
+            rate: Number(completedFormData.rate),
+            jd: completedFormData.jd || job.jd,
+            skillsSought: completedFormData.skillsSought || job.skillsSought,
+            minSkills: completedFormData.minSkills || job.minSkills,
+            owner: completedFormData.owner || job.owner,
+            ownerId: job.ownerId, // Preserve owner ID
+            videoQuestions: completedFormData.videoQuestions || job.videoQuestions,
+            screeningQuestions: completedFormData.screeningQuestions || job.screeningQuestions,
+            workDetails: completedFormData.workDetails || job.workDetails,
+            payDetails: completedFormData.payDetails || job.payDetails,
+            other: completedFormData.other || job.other,
+            m1: completedFormData.m1 || job.m1,
+            m2: completedFormData.m2 || job.m2,
+            m3: completedFormData.m3 || job.m3,
+            client: completedFormData.client || job.client,
+            clientId: job.clientId, // Preserve client ID
+            linkedinSearch: job.linkedinSearch, // Preserve LinkedIn search
+            lir: job.lir, // Preserve LIR field
+            internalTitle: job.internalTitle, // Preserve internal title
+            date: job.date, // Preserve date
+            highRate: job.highRate, // Preserve high rate
+            mediumRate: job.mediumRate, // Preserve medium rate
+            lowRate: job.lowRate // Preserve low rate
           };
           
-          // Now call updateJob with the single full job object
+          // Now call updateJob with the properly typed Job object
           result = await updateJob(updatedJobData);
           
           if (result) {
