@@ -31,6 +31,7 @@ import {
 interface Flavor {
   id: string;
   name: string;
+  label?: string; // Make label optional to handle transition period
 }
 
 export function FlavorsManager() {
@@ -47,7 +48,7 @@ export function FlavorsManager() {
     try {
       const { data, error } = await supabase
         .from("flavors")
-        .select("id, name")
+        .select("id, name, label")
         .order('name');
       
       if (error) {
@@ -84,10 +85,13 @@ export function FlavorsManager() {
     }
     
     try {
-      // Insert with only name field (no label)
+      // For new records, make sure to add both name and label fields
       const { error } = await supabase
         .from("flavors")
-        .insert({ name: newName });
+        .insert({ 
+          name: newName,
+          label: newName // Set label to match name for backward compatibility
+        });
       
       if (error) {
         throw error;
@@ -125,7 +129,8 @@ export function FlavorsManager() {
       const { error } = await supabase
         .from("flavors")
         .update({
-          name: editingFlavor.name
+          name: editingFlavor.name,
+          label: editingFlavor.name // Update label to match name
         })
         .eq("id", editingFlavor.id);
         

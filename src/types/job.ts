@@ -3,12 +3,34 @@ export type JobStatus = "Active" | "Aquarium" | "Inactive" | "Closed";
 export type Locale = "Onshore" | "Nearshore" | "Offshore";
 export type Flavor = "FE" | "BE" | "FS" | "DevOps" | "Data" | "ML" | "Mobile" | "Other";
 
+// Define updated interface for locale objects
+export interface LocaleObject {
+  id: string;
+  name: string;
+  abbreviation?: string;
+  workDetails?: string;
+  payDetails?: string;
+}
+
+// Define updated interface for flavor objects
+export interface FlavorObject {
+  id: string;
+  name: string;
+  label?: string; // Optional for transition
+}
+
+// Define updated interface for status objects
+export interface StatusObject {
+  id: string;
+  name: string;
+}
+
 export interface Job {
   id: string;
   internalTitle: string;
   candidateFacingTitle: string;
   jd: string;
-  status: string; // Changed from JobStatus object to string
+  status: string;
   statusId: string;
   m1: string;
   m2: string;
@@ -24,12 +46,7 @@ export interface Job {
   highRate: number;
   mediumRate: number;
   lowRate: number;
-  locale: {
-    id: string;
-    abbreviation: string;
-    workDetails: string;
-    payDetails: string;
-  };
+  locale: LocaleObject;
   localeId: string;
   owner: string;
   ownerId: string;

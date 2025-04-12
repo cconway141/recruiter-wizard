@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useMemo } from "react";
-import { Job, JobStatus, Locale, Flavor } from "@/types/job";
+import { Job } from "@/types/job";
 
 export interface JobFilters {
   search: string;
@@ -39,9 +39,15 @@ export function useJobFilters(jobs: Job[]) {
       result = result.filter((job) => job.status === filters.status);
     }
 
-    // Apply locale filter
+    // Apply locale filter - checking if locale is an object with id or a string
     if (filters.locale !== "All") {
-      result = result.filter((job) => job.locale.id === filters.locale);
+      result = result.filter((job) => {
+        if (typeof job.locale === 'object' && job.locale.id) {
+          return job.locale.id === filters.locale;
+        }
+        // Fallback for backward compatibility
+        return job.locale === filters.locale;
+      });
     }
 
     // Apply flavor filter

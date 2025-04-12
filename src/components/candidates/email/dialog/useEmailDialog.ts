@@ -7,6 +7,8 @@ import { useEmailSubject } from "@/hooks/email/useEmailSubject";
 import { useEmailSending } from "@/hooks/email/useEmailSending";
 import { useGmailThread } from "@/hooks/email/useGmailThread";
 import { useGmailComposer } from "@/hooks/email/useGmailComposer";
+import { useToast } from "@/hooks/use-toast";
+import { useEmailDialogState } from "./useEmailDialogState";
 
 export interface UseEmailDialogProps {
   candidateName: string;
@@ -74,9 +76,9 @@ export const useEmailDialog = ({
     candidateName,
     candidateEmail,
     jobId,
-    candidateFacingTitle, // Pass the job title directly
+    candidateFacingTitle, 
     candidateId,
-    threadId: cleanedThreadId, // Pass cleaned threadId instead of raw value
+    threadId: cleanedThreadId,
     threadTitle,
     onClose,
   });

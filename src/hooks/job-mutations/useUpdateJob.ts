@@ -7,16 +7,23 @@ import { generateInternalTitle } from "@/utils/titleUtils";
 export function useUpdateJob(jobs: Job[], setJobs: (jobs: Job[]) => void) {
   const updateJob = async (updatedJob: Job) => {
     try {
+      // Extract locale ID based on whether it's a string or an object
+      const localeId = typeof updatedJob.locale === 'object' ? updatedJob.locale.id : updatedJob.locale;
+      
       // Regenerate the internal title to ensure it uses the latest format
       const newInternalTitle = await generateInternalTitle(
         updatedJob.client,
         updatedJob.candidateFacingTitle,
         updatedJob.flavor,
-        updatedJob.locale.id
+        localeId
       );
 
       // Update the job with the new internal title
       updatedJob.internalTitle = newInternalTitle;
+
+      // Get work details and pay details from the locale object if available
+      const workDetails = typeof updatedJob.locale === 'object' ? updatedJob.locale.workDetails : updatedJob.workDetails;
+      const payDetails = typeof updatedJob.locale === 'object' ? updatedJob.locale.payDetails : updatedJob.payDetails;
 
       // Update in Supabase
       const { error } = await supabase
@@ -39,13 +46,13 @@ export function useUpdateJob(jobs: Job[], setJobs: (jobs: Job[]) => void) {
           high_rate: updatedJob.highRate,
           medium_rate: updatedJob.mediumRate,
           low_rate: updatedJob.lowRate,
-          locale: updatedJob.locale.id,
+          locale: localeId,
           locale_id: updatedJob.localeId,
           owner: updatedJob.owner,
           owner_id: updatedJob.ownerId,
           date: updatedJob.date,
-          work_details: updatedJob.locale.workDetails,
-          pay_details: updatedJob.locale.payDetails,
+          work_details: workDetails,
+          pay_details: payDetails,
           other: updatedJob.other,
           video_questions: updatedJob.videoQuestions,
           screening_questions: updatedJob.screeningQuestions,

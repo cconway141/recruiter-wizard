@@ -1,6 +1,6 @@
 
 import { uuid } from "@/utils/uuid";
-import { Job } from "@/types/job";
+import { Job, LocaleObject } from "@/types/job";
 import { calculateRates } from "@/utils/rateUtils";
 import { generateInternalTitle } from "@/utils/titleUtils";
 
@@ -19,12 +19,15 @@ export const prepareJobForCreate = async (
   const now = new Date();
   const date = now.toISOString().split("T")[0]; // YYYY-MM-DD
 
+  // Ensure we have a valid locale object with an id property
+  const localeId = typeof job.locale === 'object' ? job.locale.id : job.locale;
+
   // Generate the internal title using the correct format: ClientAbbr RoleAbbr - Flavor LocaleAbbr
   const internalTitle = await generateInternalTitle(
     job.client,
     job.candidateFacingTitle,
     job.flavor,
-    job.locale.id
+    localeId
   );
   
   // Calculate rates based on the main rate using our utility function
@@ -48,6 +51,9 @@ export const prepareJobForCreate = async (
  * Map job data to the format expected by Supabase
  */
 export const mapJobToDatabase = (job: Job) => {
+  // Get locale ID depending on if it's a string or object
+  const localeId = typeof job.locale === 'object' ? job.locale.id : job.locale;
+  
   return {
     id: job.id,
     internal_title: job.internalTitle,
@@ -66,13 +72,13 @@ export const mapJobToDatabase = (job: Job) => {
     high_rate: job.highRate,
     medium_rate: job.mediumRate,
     low_rate: job.lowRate,
-    locale: job.locale.id, // Store locale ID as string
+    locale: localeId, // Store locale ID as string
     locale_id: job.localeId, // This should be the UUID from locales table
     owner: job.owner,
     owner_id: job.ownerId,
     date: job.date,
-    work_details: job.locale.workDetails || "",
-    pay_details: job.locale.payDetails || "",
+    work_details: typeof job.locale === 'object' ? job.locale.workDetails || "" : "",
+    pay_details: typeof job.locale === 'object' ? job.locale.payDetails || "" : "",
     other: job.other || "",
     video_questions: job.videoQuestions || "",
     screening_questions: job.screeningQuestions || "",
@@ -88,19 +94,27 @@ export const mapJobToDatabase = (job: Job) => {
  * Map database job to Job object
  */
 export const mapDatabaseToJob = (dbJob: any): Job => {
+  // Create a properly structured locale object
+  const localeObject: LocaleObject = {
+    id: dbJob.locale || '',
+    name: dbJob.locale || '',  // Fallback for missing name
+    workDetails: dbJob.work_details || '',
+    payDetails: dbJob.pay_details || ''
+  };
+
   return {
     id: dbJob.id,
     internalTitle: dbJob.internal_title,
-    candidateFacingTitle: dbJob.candidate_facing_title, // Convert snake_case to camelCase
+    candidateFacingTitle: dbJob.candidate_facing_title,
     jd: dbJob.jd,
-    status: dbJob.status, // Direct string mapping
-    statusId: dbJob.status_id, // UUID of the status
+    status: dbJob.status,
+    statusId: dbJob.status_id,
     m1: dbJob.m1,
     m2: dbJob.m2,
     m3: dbJob.m3,
     skillsSought: dbJob.skills_sought,
     minSkills: dbJob.min_skills,
-    linkedinSearch: dbJob.linkedin_search, // Map the linkedinSearch field
+    linkedinSearch: dbJob.linkedin_search,
     lir: dbJob.lir,
     client: dbJob.client,
     clientId: dbJob.client_id,
@@ -109,13 +123,8 @@ export const mapDatabaseToJob = (dbJob: any): Job => {
     highRate: Number(dbJob.high_rate),
     mediumRate: Number(dbJob.medium_rate),
     lowRate: Number(dbJob.low_rate),
-    locale: {
-      id: dbJob.locale,
-      abbreviation: "", // We'll need to fill this from locales table or keep empty for now
-      workDetails: dbJob.work_details,
-      payDetails: dbJob.pay_details
-    },
-    localeId: dbJob.locale_id, // UUID of the locale
+    locale: localeObject,
+    localeId: dbJob.locale_id,
     owner: dbJob.owner,
     ownerId: dbJob.owner_id,
     date: dbJob.date,
@@ -124,7 +133,7 @@ export const mapDatabaseToJob = (dbJob: any): Job => {
     other: dbJob.other || "",
     videoQuestions: dbJob.video_questions,
     screeningQuestions: dbJob.screening_questions,
-    flavor: dbJob.flavor, // Direct string mapping
+    flavor: dbJob.flavor,
     flavorId: dbJob.flavor_id,
   };
 };
