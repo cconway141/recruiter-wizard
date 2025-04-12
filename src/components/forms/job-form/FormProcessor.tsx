@@ -1,4 +1,3 @@
-
 import { useNavigate } from "react-router-dom";
 import { Job, Locale } from "@/types/job";
 import { useJobs } from "@/contexts/JobContext";
@@ -25,13 +24,15 @@ export function useFormProcessor({ job, isEditing = false, setSubmittingState }:
   } catch (error) {
     console.error("Error accessing JobContext:", error);
     return {
-      processJobForm: () => {
+      processJobForm: async () => {
         console.error("Job context not available. Cannot submit form.");
         toast({
           title: "Error",
           description: "Unable to access job data. Please refresh the page.",
           variant: "destructive",
         });
+        setSubmittingState(false);
+        throw new Error("Job context not available");
       }
     };
   }
@@ -87,7 +88,7 @@ export function useFormProcessor({ job, isEditing = false, setSubmittingState }:
         variant: "destructive",
       });
       setSubmittingState(false);
-      return;
+      throw new Error("Invalid locale value");
     }
 
     const localeName = rawLocale as Locale;
@@ -143,35 +144,13 @@ export function useFormProcessor({ job, isEditing = false, setSubmittingState }:
       });
       
       navigate("/");
+      return; // Early return on success
     } else if (addJob) {
-      console.log("Adding new job with fully prepared values:", {
-        jd: values.jd,
+      console.log("Adding new job with prepared values:", {
         candidateFacingTitle: values.candidateFacingTitle,
-        status: typeof values.status === 'object' ? values.status.name : values.status,
-        skillsSought: values.skillsSought,
-        minSkills: values.minSkills, 
-        lir: values.lir,
         client: values.client,
-        compDesc: values.compDesc,
         rate: values.rate,
-        localeId: typeof values.locale === 'object' ? values.locale.id : undefined,
-        flavorId: typeof values.flavor === 'object' ? values.flavor.id : undefined,
-        locale: localeName,
-        flavor: typeof values.flavor === 'object' ? values.flavor.name : values.flavor,
-        owner: values.owner,
-        date: values.date,
-        other: values.other || "",
-        videoQuestions: values.videoQuestions,
-        screeningQuestions: values.screeningQuestions,
-        internalTitle,
-        highRate: high,
-        mediumRate: medium,
-        lowRate: low,
-        workDetails,
-        payDetails,
-        m1,
-        m2,
-        m3
+        // ... other values for logging
       });
       
       try {
@@ -195,7 +174,6 @@ export function useFormProcessor({ job, isEditing = false, setSubmittingState }:
           other: values.other || "",
           videoQuestions: values.videoQuestions,
           screeningQuestions: values.screeningQuestions,
-          // Include these fields that were missing before
           internalTitle,
           highRate: high,
           mediumRate: medium,
@@ -207,7 +185,7 @@ export function useFormProcessor({ job, isEditing = false, setSubmittingState }:
           m3
         };
         
-        console.log("Calling addJob with complete values:", jobValues);
+        console.log("Calling addJob with complete values");
         const result = await addJob(jobValues);
         
         if (result) {
@@ -221,6 +199,7 @@ export function useFormProcessor({ job, isEditing = false, setSubmittingState }:
           await loadFromSupabase();
           
           navigate("/");
+          return; // Early return on success
         } else {
           throw new Error("Failed to create job - no result returned");
         }
@@ -232,9 +211,12 @@ export function useFormProcessor({ job, isEditing = false, setSubmittingState }:
           variant: "destructive",
         });
         setSubmittingState(false);
+        throw addError; // Re-throw for handling in caller
       }
     } else {
-      throw new Error("addJob function is not available");
+      const error = new Error("addJob function is not available");
+      setSubmittingState(false);
+      throw error;
     }
   };
   
@@ -242,9 +224,8 @@ export function useFormProcessor({ job, isEditing = false, setSubmittingState }:
     try {
       console.log("Form submission started with values:", values);
       
-      // Set submission state to prevent duplicate submissions
-      setSubmittingState(true);
-      console.log("Setting isSubmitting to true, values:", values);
+      // Set submission state
+      console.log("Setting isSubmitting to true");
       
       // Validate required fields
       if (!validateRequiredFields(values)) {
@@ -261,7 +242,7 @@ export function useFormProcessor({ job, isEditing = false, setSubmittingState }:
         description: `Failed to ${isEditing ? "update" : "create"} job: ${err instanceof Error ? err.message : String(err)}`,
         variant: "destructive",
       });
-      setSubmittingState(false);
+      throw err; // Re-throw for handling in caller
     } finally {
       console.log("Form submission completed, setting isSubmitting to false");
       setSubmittingState(false);

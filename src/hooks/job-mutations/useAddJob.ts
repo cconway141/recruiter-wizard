@@ -13,21 +13,19 @@ export function useAddJob(jobs: Job[], setJobs: (jobs: Job[]) => void) {
    * Add a new job to the state and database
    */
   const addJob = useCallback(
-    async (
-      jobToAdd: Omit<
-        Job,
-        | "id"
-        | "internalTitle"
-        | "highRate"
-        | "mediumRate"
-        | "lowRate"
-        | "workDetails"
-        | "payDetails"
-        | "m1"
-        | "m2"
-        | "m3"
-      >
-    ) => {
+    async (jobToAdd: Omit<
+      Job,
+      | "id"
+      | "internalTitle"
+      | "highRate"
+      | "mediumRate"
+      | "lowRate"
+      | "workDetails"
+      | "payDetails"
+      | "m1"
+      | "m2"
+      | "m3"
+    >) => {
       try {
         console.log("Adding job with data:", jobToAdd);
         
@@ -39,13 +37,14 @@ export function useAddJob(jobs: Job[], setJobs: (jobs: Job[]) => void) {
         const newJob: Job = {
           ...preparedJobPromise,
           // Add default values for the omitted properties
-          workDetails: "",
-          payDetails: "",
-          m1: "",
-          m2: "",
-          m3: "",
+          workDetails: jobToAdd.workDetails || "",
+          payDetails: jobToAdd.payDetails || "",
+          m1: jobToAdd.m1 || "",
+          m2: jobToAdd.m2 || "",
+          m3: jobToAdd.m3 || "",
         };
 
+        console.log("Generated job object for state:", newJob);
         setJobs([...jobs, newJob]);
         console.log("Added job to local state, now saving to database...");
 
