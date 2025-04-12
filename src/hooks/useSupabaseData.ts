@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Job, LocaleObject } from "@/types/job";
+import { Job, LocaleObject, StatusObject } from "@/types/job";
 import { JobsState } from "@/types/contextTypes";
 import { Candidate } from "@/components/candidates/types";
 
@@ -87,12 +87,18 @@ export function useSupabaseData() {
             payDetails: job.pay_details
           };
           
+          // Create a standardized status object
+          const statusObject: StatusObject = {
+            id: job.status_id || '',
+            name: job.status || 'Active'
+          };
+          
           return {
             id: job.id,
             internalTitle: job.internal_title,
             candidateFacingTitle: job.candidate_facing_title,
             jd: job.jd,
-            status: job.status,
+            status: statusObject, // Use the standardized status object
             statusId: job.status_id,
             m1: job.m1,
             m2: job.m2,

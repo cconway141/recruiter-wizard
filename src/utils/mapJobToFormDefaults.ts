@@ -45,13 +45,18 @@ export const mapJobToFormDefaults = (job: Job): JobFormValues => {
     ? job.flavor
     : { id: job.flavor || '', name: job.flavor || '' };
   
+  // Ensure status is an object
+  const status: StatusObject = job.status && typeof job.status === 'object'
+    ? job.status
+    : { id: job.statusId || '', name: typeof job.status === 'string' ? job.status : 'Active' };
+  
   return {
     candidateFacingTitle: job.candidateFacingTitle,
     client: job.client,
     compDesc: job.compDesc,
     locale: job.locale,
     flavor: flavor,
-    status: job.status,
+    status: status,
     rate: job.rate,
     jd: job.jd,
     skillsSought: job.skillsSought,

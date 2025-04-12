@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { useJobs } from "@/contexts/JobContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Job, LocaleObject } from "@/types/job";
+import { Job, LocaleObject, StatusObject } from "@/types/job";
 import { JobFormValues } from "@/components/forms/JobFormDetails";
 import { useToast } from "@/hooks/use-toast";
 import { mapJobToFormDefaults } from "@/utils/mapJobToFormDefaults";
@@ -82,12 +82,18 @@ export function useJobData(id?: string) {
         payDetails: jobData.pay_details || ''
       };
 
+      // Create standardized status object
+      const statusObject: StatusObject = {
+        id: jobData.status_id || '',
+        name: jobData.status || 'Active'
+      };
+
       const transformedJob: Job = {
         id: jobData.id,
         internalTitle: jobData.internal_title,
         candidateFacingTitle: jobData.candidate_facing_title,
         jd: jobData.jd,
-        status: jobData.status,
+        status: statusObject, // Use standardized status object
         statusId: jobData.status_id || '',
         m1: jobData.m1,
         m2: jobData.m2,
