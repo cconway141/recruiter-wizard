@@ -1,3 +1,4 @@
+
 import { uuid } from "@/utils/uuid";
 import { Job } from "@/types/job";
 import { calculateRates } from "@/utils/rateUtils";
@@ -52,8 +53,8 @@ export const mapJobToDatabase = (job: Job) => {
     internal_title: job.internalTitle,
     candidate_facing_title: job.candidateFacingTitle, // Convert camelCase to snake_case
     jd: job.jd || "",
-    status: job.status, // This is a direct string from JobStatus type
-    status_id: job.statusId, // This should be the UUID from job_statuses table
+    status: job.status,
+    status_id: job.statusId,
     skills_sought: job.skillsSought || "",
     min_skills: job.minSkills || "",
     linkedin_search: job.linkedinSearch || "", // Map the linkedinSearch field
@@ -65,8 +66,8 @@ export const mapJobToDatabase = (job: Job) => {
     high_rate: job.highRate,
     medium_rate: job.mediumRate,
     low_rate: job.lowRate,
-    locale: job.locale, // This is a direct string from Locale type
-    locale_id: job.localeId, // This should be the UUID from locales table
+    locale: job.locale,
+    locale_id: job.localeId,
     owner: job.owner,
     owner_id: job.ownerId,
     date: job.date,
@@ -92,8 +93,8 @@ export const mapDatabaseToJob = (dbJob: any): Job => {
     internalTitle: dbJob.internal_title,
     candidateFacingTitle: dbJob.candidate_facing_title, // Convert snake_case to camelCase
     jd: dbJob.jd,
-    status: dbJob.status, // Direct string mapping
-    statusId: dbJob.status_id, // UUID of the status
+    status: dbJob.status,
+    statusId: dbJob.status_id,
     m1: dbJob.m1,
     m2: dbJob.m2,
     m3: dbJob.m3,
@@ -108,8 +109,8 @@ export const mapDatabaseToJob = (dbJob: any): Job => {
     highRate: Number(dbJob.high_rate),
     mediumRate: Number(dbJob.medium_rate),
     lowRate: Number(dbJob.low_rate),
-    locale: dbJob.locale, // Direct string mapping
-    localeId: dbJob.locale_id, // UUID of the locale
+    locale: dbJob.locale,
+    localeId: dbJob.locale_id,
     owner: dbJob.owner,
     ownerId: dbJob.owner_id,
     date: dbJob.date,

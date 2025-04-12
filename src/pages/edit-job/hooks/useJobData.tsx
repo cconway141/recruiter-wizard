@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -17,13 +18,17 @@ export function useJobData(id?: string) {
   const [localJob, setLocalJob] = useState<Job | undefined>(undefined);
   const { toast } = useToast();
 
+  // First try to get the job from context
   const contextJob = id ? getJob(id) : undefined;
+  // Use either the job from context or our local fetched job
   const job = contextJob || localJob;
 
+  // Create form instance here to pass down to JobForm
   const form = useForm<JobFormValues>({
     defaultValues: job ? mapJobToFormDefaults(job) : {},
   });
 
+  // Fetch job directly from Supabase if it's not in the context
   const fetchJobFromSupabase = async (jobId: string) => {
     setIsFetching(true);
     setError(null);
@@ -51,6 +56,7 @@ export function useJobData(id?: string) {
         throw new Error("Job not found");
       }
 
+      // Transform the job data to match our expected format
       const transformedJob: Job = {
         id: data.id,
         internalTitle: data.internal_title,
@@ -88,6 +94,7 @@ export function useJobData(id?: string) {
 
       setLocalJob(transformedJob);
       
+      // Also refresh the global job list to include this job for future use
       loadFromSupabase();
       
       return transformedJob;
@@ -106,11 +113,14 @@ export function useJobData(id?: string) {
   };
 
   useEffect(() => {
+    // If job not found in context and we have an ID, fetch it directly
     if (!contextJob && id && !localJob && !isFetching) {
       fetchJobFromSupabase(id);
     } else if (!id) {
+      // No ID provided, redirect to dashboard
       navigate("/");
     } else if (contextJob || localJob) {
+      // Job found (either in context or fetched), give a little time for form to initialize
       setTimeout(() => setIsLoading(false), 100);
     }
   }, [id, contextJob, localJob, isFetching, navigate]);
