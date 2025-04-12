@@ -35,7 +35,7 @@ export function useFormProcessor({ job, isEditing, setSubmittingState }: FormPro
   });
 
   const processJobForm = useCallback(
-    async (formData: JobFormValues) => {
+    async (formData: JobFormValues): Promise<Job> => {
       try {
         console.log(`Processing form data for ${isEditing ? "edit" : "add"} job:`, formData);
         setSubmittingState(true);
