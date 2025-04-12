@@ -103,7 +103,7 @@ export function JobForm({ job, isEditing = false }: JobFormProps) {
         <JobFormCompanyDesc />
         <JobFormDetails form={form} />
         <JobFormLinks />
-        <FormActions isEditing={isEditing} />
+        <FormActions isEditing={isEditing} job={job} />
       </form>
     </div>
   );

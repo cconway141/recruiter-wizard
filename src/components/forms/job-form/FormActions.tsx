@@ -5,15 +5,17 @@ import { useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { useFormContext } from "react-hook-form";
 import { useFormProcessor } from "./FormProcessor";
+import { Job } from "@/types/job";
 
 interface FormActionsProps {
   isEditing: boolean;
+  job?: Job;
 }
 
-export function FormActions({ isEditing }: FormActionsProps) {
+export function FormActions({ isEditing, job }: FormActionsProps) {
   const navigate = useNavigate();
   const form = useFormContext();
-  const { isSubmitting } = useFormProcessor({ isEditing }) || { isSubmitting: false };
+  const { isSubmitting } = useFormProcessor({ job, isEditing }) || { isSubmitting: false };
   
   return (
     <div className="flex justify-end gap-4">
