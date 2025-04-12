@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEmailSender } from "@/hooks/email/useEmailSender";
 import { useCandidateThreads } from "@/hooks/email/useCandidateThreads";

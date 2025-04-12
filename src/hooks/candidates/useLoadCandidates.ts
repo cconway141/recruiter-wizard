@@ -2,7 +2,7 @@
 import { useState, useCallback, useRef } from "react";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Candidate } from "@/components/candidates/types";
+import { Candidate, EmailThreadInfo } from "@/components/candidates/types";
 import { CandidateState } from "./types";
 import { Json } from "@/integrations/supabase/types";
 
@@ -79,14 +79,32 @@ export function useLoadCandidates(
         const application = applications.find(app => app.candidate_id === candidate.id);
         
         // Safely parse thread_ids from JSON
-        let threadIds: Record<string, any> = {};
+        let threadIds: Record<string, EmailThreadInfo> = {};
         try {
           // Check if thread_ids is a string and needs parsing
           if (typeof candidate.thread_ids === 'string') {
             threadIds = JSON.parse(candidate.thread_ids || '{}');
           } else if (candidate.thread_ids && typeof candidate.thread_ids === 'object') {
             // Already an object, make a safe copy
-            threadIds = { ...candidate.thread_ids as Record<string, any> };
+            const rawThreadIds = { ...candidate.thread_ids as Record<string, any> };
+            
+            // Convert each entry to the standardized EmailThreadInfo format
+            Object.entries(rawThreadIds).forEach(([key, value]) => {
+              if (typeof value === 'string') {
+                // Legacy format: string -> { threadId, messageId }
+                threadIds[key] = { threadId: value, messageId: value };
+              } else if (value && typeof value === 'object') {
+                // Object format: ensure it has both threadId and messageId
+                const threadInfo = value as Partial<EmailThreadInfo>;
+                threadIds[key] = {
+                  threadId: threadInfo.threadId || '',
+                  messageId: threadInfo.messageId || threadInfo.threadId || ''
+                };
+              } else {
+                // Handle null or undefined
+                threadIds[key] = { threadId: '', messageId: '' };
+              }
+            });
           }
         } catch (error) {
           console.error(`Error parsing thread_ids for candidate ${candidate.id}:`, error);
