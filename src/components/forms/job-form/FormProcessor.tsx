@@ -25,11 +25,30 @@ export function useFormProcessor({ job, isEditing, setSubmittingState }: FormPro
     toast 
   });
   
+  // Create a wrapper function to handle the different updateJob signatures
+  const adaptedUpdateJob = useCallback(
+    async (jobId: string, formData: any): Promise<Job | null> => {
+      if (job) {
+        // Create an updated job object that merges the original job with form data
+        const updatedJob: Job = {
+          ...job,
+          ...formData
+        };
+        
+        // Call the actual updateJob function that takes a Job
+        await updateJob(updatedJob);
+        return updatedJob;
+      }
+      return null;
+    },
+    [job, updateJob]
+  );
+  
   const { processFormSubmission } = useFormSubmission({ 
     isEditing, 
     job, 
     addJob, 
-    updateJob, 
+    updateJob: adaptedUpdateJob, 
     navigate, 
     toast 
   });
