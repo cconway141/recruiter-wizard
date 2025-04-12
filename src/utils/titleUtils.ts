@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { Locale } from "@/types/job";
+import { displayFormValue } from "@/utils/formFieldUtils";
 
 /**
  * Generate internal title for a job
@@ -12,9 +13,9 @@ export async function generateInternalTitle(
   locale: Locale | { id: string; name: string }
 ): Promise<string> {
   try {
-    // Ensure we have string values for flavor and locale
-    const flavorName = typeof flavor === 'object' && flavor !== null ? flavor.name : flavor;
-    const localeName = typeof locale === 'object' && locale !== null ? locale.name : locale;
+    // Ensure we have string values for flavor and locale using displayFormValue utility
+    const flavorName = displayFormValue(flavor);
+    const localeName = displayFormValue(locale);
     
     // Get client abbreviation
     const { data: clientData, error: clientError } = await supabase
@@ -58,9 +59,9 @@ export async function generateInternalTitle(
   } catch (err) {
     console.error("Error generating internal title:", err);
     
-    // Make sure to convert object values to strings in fallback
-    const flavorStr = typeof flavor === 'object' && flavor !== null ? flavor.name : String(flavor);
-    const localeStr = typeof locale === 'object' && locale !== null ? locale.name : String(locale);
+    // Use displayFormValue to safely convert object values to strings in fallback
+    const flavorStr = displayFormValue(flavor);
+    const localeStr = displayFormValue(locale);
     
     // Fallback to a simple format
     return `${client} ${candidateFacingTitle} - ${flavorStr} ${localeStr}`;
