@@ -40,6 +40,11 @@ export function extractName(value: any): string {
     return value.name;
   }
   
+  // For locale objects which have 'id' instead of 'name'
+  if (isObjectWithId(value)) {
+    return value.id;
+  }
+  
   // Fallback to string conversion
   return String(value);
 }
@@ -83,21 +88,25 @@ export function displayFormValue(value: any): string {
     if (parsed && parsed.name) {
       return parsed.name;
     }
+    if (parsed && parsed.id) {
+      return parsed.id;
+    }
     return value;
   }
   
-  // If it's already a string matching our predefined types, return it
-  const validStatuses: string[] = ['Active', 'Aquarium', 'Inactive', 'Closed'];
-  const validLocales: string[] = ['Onshore', 'Nearshore', 'Offshore'];
-  
-  if (typeof value === 'string' && 
-      (validStatuses.includes(value) || validLocales.includes(value))) {
+  // If it's already a string, return it
+  if (typeof value === 'string') {
     return value;
   }
   
   // If it's an object with a name property, return the name
   if (isNamedObject(value)) {
     return value.name;
+  }
+  
+  // If it's a locale object with an id property, return the id
+  if (isObjectWithId(value)) {
+    return value.id;
   }
   
   // Fallback to string conversion

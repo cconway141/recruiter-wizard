@@ -31,18 +31,16 @@ import {
 interface Flavor {
   id: string;
   name: string;
-  label: string;
 }
 
 export function FlavorsManager() {
   const [flavors, setFlavors] = useState<Flavor[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [newName, setNewName] = useState("");
-  const [newLabel, setNewLabel] = useState("");
   const [editingFlavor, setEditingFlavor] = useState<Flavor | null>(null);
   
   const { sortField, sortDirection, handleSort, sortedData: sortedFlavors } = 
-    useSortableTable<Flavor, "name" | "label">(flavors, "name");
+    useSortableTable<Flavor, "name">(flavors, "name");
 
   const fetchFlavors = async () => {
     setIsLoading(true);
@@ -76,10 +74,10 @@ export function FlavorsManager() {
   }, []);
 
   const handleAddFlavor = async () => {
-    if (!newName.trim() || !newLabel.trim()) {
+    if (!newName.trim()) {
       toast({
         title: "Error",
-        description: "Name and label are required",
+        description: "Name is required",
         variant: "destructive",
       });
       return;
@@ -88,7 +86,7 @@ export function FlavorsManager() {
     try {
       const { error } = await supabase
         .from("flavors")
-        .insert({ name: newName, label: newLabel });
+        .insert({ name: newName });
       
       if (error) {
         throw error;
@@ -100,7 +98,6 @@ export function FlavorsManager() {
       });
       
       setNewName("");
-      setNewLabel("");
       fetchFlavors();
     } catch (error) {
       console.error("Error adding flavor:", error);
@@ -127,8 +124,7 @@ export function FlavorsManager() {
       const { error } = await supabase
         .from("flavors")
         .update({
-          name: editingFlavor.name,
-          label: editingFlavor.label
+          name: editingFlavor.name
         })
         .eq("id", editingFlavor.id);
         
@@ -195,12 +191,6 @@ export function FlavorsManager() {
               onChange={(e) => setNewName(e.target.value)} 
               className="max-w-sm"
             />
-            <Input 
-              placeholder="Display Label" 
-              value={newLabel} 
-              onChange={(e) => setNewLabel(e.target.value)} 
-              className="max-w-sm"
-            />
             <Button onClick={handleAddFlavor}>Add Flavor</Button>
           </div>
           
@@ -215,26 +205,19 @@ export function FlavorsManager() {
                     direction={sortDirection}
                     onSort={handleSort}
                   />
-                  <SortableHeader 
-                    title="Label"
-                    field="label"
-                    currentField={sortField}
-                    direction={sortDirection}
-                    onSort={handleSort}
-                  />
                   <TableHead className="w-[100px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={3} className="text-center text-muted-foreground py-6">
+                    <TableCell colSpan={2} className="text-center text-muted-foreground py-6">
                       Loading flavors...
                     </TableCell>
                   </TableRow>
                 ) : sortedFlavors.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={3} className="text-center text-muted-foreground py-6">
+                    <TableCell colSpan={2} className="text-center text-muted-foreground py-6">
                       No flavors found
                     </TableCell>
                   </TableRow>
@@ -247,12 +230,6 @@ export function FlavorsManager() {
                             <Input 
                               value={editingFlavor.name}
                               onChange={(e) => setEditingFlavor({...editingFlavor, name: e.target.value})}
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Input 
-                              value={editingFlavor.label}
-                              onChange={(e) => setEditingFlavor({...editingFlavor, label: e.target.value})}
                             />
                           </TableCell>
                           <TableCell>
@@ -269,7 +246,6 @@ export function FlavorsManager() {
                       ) : (
                         <>
                           <TableCell>{flavor.name}</TableCell>
-                          <TableCell>{flavor.label}</TableCell>
                           <TableCell>
                             <div className="flex space-x-2">
                               <Button size="sm" variant="outline" onClick={() => handleStartEditing(flavor)}>

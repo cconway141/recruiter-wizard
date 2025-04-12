@@ -1,3 +1,4 @@
+
 export type JobStatus = "Active" | "Aquarium" | "Inactive" | "Closed";
 export type Locale = "Onshore" | "Nearshore" | "Offshore";
 export type Flavor = "FE" | "BE" | "FS" | "DevOps" | "Data" | "ML" | "Mobile" | "Other";
@@ -7,7 +8,7 @@ export interface Job {
   internalTitle: string;
   candidateFacingTitle: string;
   jd: string;
-  status: JobStatus;
+  status: string; // Changed from JobStatus to string
   statusId: string;
   m1: string;
   m2: string;
@@ -23,7 +24,12 @@ export interface Job {
   highRate: number;
   mediumRate: number;
   lowRate: number;
-  locale: Locale;
+  locale: {
+    id: string;
+    abbreviation: string;
+    workDetails: string;
+    payDetails: string;
+  };
   localeId: string;
   owner: string;
   ownerId: string;
@@ -33,7 +39,7 @@ export interface Job {
   other: string;
   videoQuestions: string;
   screeningQuestions: string;
-  flavor: Flavor;
+  flavor: string; // Changed from Flavor object to string
   flavorId: string;
 }
 

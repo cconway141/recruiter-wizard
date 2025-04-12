@@ -12,7 +12,7 @@ export function useUpdateJob(jobs: Job[], setJobs: (jobs: Job[]) => void) {
         updatedJob.client,
         updatedJob.candidateFacingTitle,
         updatedJob.flavor,
-        updatedJob.locale
+        updatedJob.locale.id
       );
 
       // Update the job with the new internal title
@@ -39,13 +39,13 @@ export function useUpdateJob(jobs: Job[], setJobs: (jobs: Job[]) => void) {
           high_rate: updatedJob.highRate,
           medium_rate: updatedJob.mediumRate,
           low_rate: updatedJob.lowRate,
-          locale: updatedJob.locale,
+          locale: updatedJob.locale.id,
           locale_id: updatedJob.localeId,
           owner: updatedJob.owner,
           owner_id: updatedJob.ownerId,
           date: updatedJob.date,
-          work_details: updatedJob.workDetails,
-          pay_details: updatedJob.payDetails,
+          work_details: updatedJob.locale.workDetails,
+          pay_details: updatedJob.locale.payDetails,
           other: updatedJob.other,
           video_questions: updatedJob.videoQuestions,
           screening_questions: updatedJob.screeningQuestions,

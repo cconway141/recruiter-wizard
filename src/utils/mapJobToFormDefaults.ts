@@ -12,9 +12,14 @@ export const mapJobToFormDefaults = (job: Job): JobFormValues => {
       candidateFacingTitle: '',
       client: '',
       compDesc: '',
-      locale: { id: '', name: '' },
-      flavor: { id: '', name: '' },
-      status: { id: '', name: '' },
+      locale: {
+        id: '',
+        abbreviation: '',
+        workDetails: '',
+        payDetails: ''
+      },
+      flavor: '',
+      status: '',
       rate: 0,
       jd: '',
       skillsSought: '',
@@ -31,35 +36,13 @@ export const mapJobToFormDefaults = (job: Job): JobFormValues => {
     };
   }
   
-  // Prepare proper objects for select fields
-  let flavorObj;
-  if (typeof job.flavor === 'object' && job.flavor) {
-    flavorObj = job.flavor;
-  } else {
-    flavorObj = { id: job.flavorId || '', name: job.flavor || '' };
-  }
-  
-  let localeObj;
-  if (typeof job.locale === 'object' && job.locale) {
-    localeObj = job.locale;
-  } else {
-    localeObj = { id: job.localeId || '', name: job.locale || '' };
-  }
-  
-  let statusObj;
-  if (typeof job.status === 'object' && job.status) {
-    statusObj = job.status;
-  } else {
-    statusObj = { id: job.statusId || '', name: job.status || '' };
-  }
-  
   return {
     candidateFacingTitle: job.candidateFacingTitle,
     client: job.client,
     compDesc: job.compDesc,
-    locale: localeObj,
-    flavor: flavorObj,
-    status: statusObj,
+    locale: job.locale,
+    flavor: job.flavor, // Now a string
+    status: job.status, // Now a string
     rate: job.rate,
     jd: job.jd,
     skillsSought: job.skillsSought,

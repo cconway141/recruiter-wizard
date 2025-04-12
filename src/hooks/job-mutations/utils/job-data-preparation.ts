@@ -1,3 +1,4 @@
+
 import { uuid } from "@/utils/uuid";
 import { Job } from "@/types/job";
 import { calculateRates } from "@/utils/rateUtils";
@@ -23,7 +24,7 @@ export const prepareJobForCreate = async (
     job.client,
     job.candidateFacingTitle,
     job.flavor,
-    job.locale
+    job.locale.id
   );
   
   // Calculate rates based on the main rate using our utility function
@@ -52,7 +53,7 @@ export const mapJobToDatabase = (job: Job) => {
     internal_title: job.internalTitle,
     candidate_facing_title: job.candidateFacingTitle, // Convert camelCase to snake_case
     jd: job.jd || "",
-    status: job.status, // This is a direct string from JobStatus type
+    status: job.status, // This is now always a string
     status_id: job.statusId, // This should be the UUID from job_statuses table
     skills_sought: job.skillsSought || "",
     min_skills: job.minSkills || "",
@@ -65,7 +66,7 @@ export const mapJobToDatabase = (job: Job) => {
     high_rate: job.highRate,
     medium_rate: job.mediumRate,
     low_rate: job.lowRate,
-    locale: job.locale, // This is a direct string from Locale type
+    locale: job.locale.id, // Store locale ID as string
     locale_id: job.localeId, // This should be the UUID from locales table
     owner: job.owner,
     owner_id: job.ownerId,
@@ -75,7 +76,7 @@ export const mapJobToDatabase = (job: Job) => {
     other: job.other || "",
     video_questions: job.videoQuestions || "",
     screening_questions: job.screeningQuestions || "",
-    flavor: job.flavor,
+    flavor: job.flavor, // This is now always a string
     flavor_id: job.flavorId,
     m1: job.m1 || "",
     m2: job.m2 || "",
@@ -108,7 +109,12 @@ export const mapDatabaseToJob = (dbJob: any): Job => {
     highRate: Number(dbJob.high_rate),
     mediumRate: Number(dbJob.medium_rate),
     lowRate: Number(dbJob.low_rate),
-    locale: dbJob.locale, // Direct string mapping
+    locale: {
+      id: dbJob.locale,
+      abbreviation: "", // We'll need to fill this from locales table or keep empty for now
+      workDetails: dbJob.work_details,
+      payDetails: dbJob.pay_details
+    },
     localeId: dbJob.locale_id, // UUID of the locale
     owner: dbJob.owner,
     ownerId: dbJob.owner_id,
@@ -118,7 +124,7 @@ export const mapDatabaseToJob = (dbJob: any): Job => {
     other: dbJob.other || "",
     videoQuestions: dbJob.video_questions,
     screeningQuestions: dbJob.screening_questions,
-    flavor: dbJob.flavor,
+    flavor: dbJob.flavor, // Direct string mapping
     flavorId: dbJob.flavor_id,
   };
 };
