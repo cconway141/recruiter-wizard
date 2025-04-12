@@ -18,7 +18,7 @@ import {
   useLocaleOptions, 
   useStatusOptions 
 } from "@/hooks/use-dropdown-options";
-import { displayFormValue, extractId } from "@/utils/formFieldUtils";
+import { displayFormValue } from "@/utils/formFieldUtils";
 
 export function MetadataSelects() {
   const form = useFormContext();
@@ -31,82 +31,43 @@ export function MetadataSelects() {
       <Controller
         control={form.control}
         name="flavor"
-        render={({ field }) => {
-          // Get the value to display and the ID for selection
-          const displayValue = displayFormValue(field.value);
-          
-          // Extract the ID value from the field value (either from object or string)
-          let idValue = '';
-          if (typeof field.value === 'object' && field.value) {
-            idValue = field.value.id;
-          } else if (field.value && typeof field.value === 'string') {
-            try {
-              // Try to parse it in case it's a stringified JSON
-              const parsed = JSON.parse(field.value);
-              if (parsed && parsed.id) {
-                idValue = parsed.id;
-              }
-            } catch (e) {
-              // If it's not a valid JSON string, use the extractId utility
-              idValue = extractId(field.value);
-            }
-          }
-          
-          return (
-            <FormItem>
-              <FormLabel>Flavor</FormLabel>
-              <Select 
-                onValueChange={(value) => {
-                  const selectedFlavor = flavorOptions?.find(flavor => flavor.id === value);
-                  field.onChange(selectedFlavor);
-                }} 
-                value={idValue || ''}
-                defaultValue={idValue || ''}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select flavor">
-                      {displayValue}
-                    </SelectValue>
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {flavorOptions?.map((flavor) => (
-                    <SelectItem key={flavor.id} value={flavor.id}>
-                      {flavor.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          );
-        }}
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Flavor</FormLabel>
+            <Select 
+              onValueChange={(value) => {
+                const selectedFlavor = flavorOptions?.find(flavor => flavor.id === value);
+                field.onChange(selectedFlavor?.name || value);
+              }} 
+              value={field.value || ''}
+            >
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select flavor">
+                    {displayFormValue(field.value)}
+                  </SelectValue>
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {flavorOptions?.map((flavor) => (
+                  <SelectItem key={flavor.id} value={flavor.id}>
+                    {flavor.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )}
       />
       
       <Controller
         control={form.control}
         name="locale"
         render={({ field }) => {
-          // Get the value to display and extract the name for selection
-          const displayValue = displayFormValue(field.value);
-          
-          // Extract the name value for matching in the dropdown
-          let nameValue = '';
-          if (typeof field.value === 'object' && field.value) {
-            nameValue = field.value.name;
-          } else if (field.value && typeof field.value === 'string') {
-            try {
-              // Try to parse it in case it's a stringified JSON
-              const parsed = JSON.parse(field.value);
-              if (parsed && parsed.name) {
-                nameValue = parsed.name;
-              }
-            } catch (e) {
-              // If not a JSON string, use the value directly
-              nameValue = field.value;
-            }
-          }
+          const localeValue = field.value && typeof field.value === 'object' 
+            ? field.value.name
+            : field.value;
           
           return (
             <FormItem>
@@ -114,15 +75,14 @@ export function MetadataSelects() {
               <Select 
                 onValueChange={(value) => {
                   const selectedLocale = localeOptions?.find(locale => locale.name === value);
-                  field.onChange(selectedLocale || value);
+                  field.onChange(selectedLocale || { id: value, name: value });
                 }} 
-                value={nameValue || ''}
-                defaultValue={nameValue || ''}
+                value={localeValue || ''}
               >
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Select locale">
-                      {displayValue}
+                      {displayFormValue(field.value)}
                     </SelectValue>
                   </SelectTrigger>
                 </FormControl>
@@ -143,57 +103,33 @@ export function MetadataSelects() {
       <Controller
         control={form.control}
         name="status"
-        render={({ field }) => {
-          // Get the value to display and extract the name for selection
-          const displayValue = displayFormValue(field.value);
-          
-          // Extract the name value for matching in the dropdown
-          let nameValue = '';
-          if (typeof field.value === 'object' && field.value) {
-            nameValue = field.value.name;
-          } else if (field.value && typeof field.value === 'string') {
-            try {
-              // Try to parse it in case it's a stringified JSON
-              const parsed = JSON.parse(field.value);
-              if (parsed && parsed.name) {
-                nameValue = parsed.name;
-              }
-            } catch (e) {
-              // If not a JSON string, use the value directly
-              nameValue = field.value;
-            }
-          }
-          
-          return (
-            <FormItem>
-              <FormLabel>Status</FormLabel>
-              <Select 
-                onValueChange={(value) => {
-                  const selectedStatus = statusOptions?.find(status => status.name === value);
-                  field.onChange(selectedStatus || value);
-                }} 
-                value={nameValue || ''}
-                defaultValue={nameValue || ''}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status">
-                      {displayValue}
-                    </SelectValue>
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {statusOptions?.map((status) => (
-                    <SelectItem key={status.id} value={status.name}>
-                      {status.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          );
-        }}
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Status</FormLabel>
+            <Select 
+              onValueChange={(value) => {
+                field.onChange(value);
+              }} 
+              value={field.value || ''}
+            >
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status">
+                    {displayFormValue(field.value)}
+                  </SelectValue>
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {statusOptions?.map((status) => (
+                  <SelectItem key={status.id} value={status.name}>
+                    {status.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )}
       />
     </div>
   );

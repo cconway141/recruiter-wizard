@@ -6,7 +6,7 @@ import { EmailThreadInfo } from "@/components/candidates/types";
 
 interface CandidateThreadData {
   candidateId: string;
-  threadIds: Record<string, any>; // Allow any type for conversion
+  threadIds: Record<string, EmailThreadInfo>;
   jobId?: string;
   newThreadId?: string;
   newMessageId?: string;
@@ -35,34 +35,14 @@ export const useCandidateThreads = () => {
         newMessageId
       });
       
-      // Convert any format to the standardized EmailThreadInfo format
-      const convertedThreadIds: Record<string, EmailThreadInfo> = {};
-      
-      // Copy existing threads with conversion from legacy format
-      Object.entries(threadIds || {}).forEach(([key, value]) => {
-        if (typeof value === 'string') {
-          // Legacy format, use the threadId as both threadId and messageId
-          convertedThreadIds[key] = { threadId: value, messageId: value };
-        } else if (value && typeof value === 'object') {
-          // Partial object format, ensure both properties exist
-          const threadInfo = value as Partial<EmailThreadInfo>;
-          convertedThreadIds[key] = { 
-            threadId: threadInfo.threadId || '', 
-            messageId: threadInfo.messageId || threadInfo.threadId || ''
-          };
-        } else {
-          // Handle null or undefined case
-          convertedThreadIds[key] = { threadId: '', messageId: '' };
-        }
-      });
-      
-      // Add the new thread info
+      // Create new thread info
       if (!newMessageId) {
         console.warn("Missing messageId when saving thread info — using threadId as fallback to prevent threading issues.");
         newMessageId = newThreadId;
       }
 
-      convertedThreadIds[jobId] = {
+      const updatedThreadIds = { ...threadIds };
+      updatedThreadIds[jobId] = {
         threadId: newThreadId,
         messageId: newMessageId
       };
@@ -70,7 +50,7 @@ export const useCandidateThreads = () => {
       const { error: updateError } = await supabase
         .from('candidates')
         .update({
-          thread_ids: convertedThreadIds as unknown as Json
+          thread_ids: updatedThreadIds as unknown as Json
         })
         .eq('id', candidateId);
         
@@ -109,20 +89,8 @@ export const useCandidateThreads = () => {
         return null;
       }
       
-      // Safely parse thread_ids
-      let threadIds: Record<string, any> = {};
-      try {
-        // Check if thread_ids is a string and needs parsing
-        if (typeof data.thread_ids === 'string') {
-          threadIds = JSON.parse(data.thread_ids || '{}');
-        } else if (data.thread_ids && typeof data.thread_ids === 'object') {
-          // Already an object, make a safe copy
-          threadIds = { ...data.thread_ids as Record<string, any> };
-        }
-      } catch (parseError) {
-        console.error("Error parsing thread_ids:", parseError);
-        return null;
-      }
+      // Safely access thread_ids
+      const threadIds = data.thread_ids as Record<string, EmailThreadInfo> || {};
       
       // Get thread info for this job
       const threadInfo = threadIds[jobId];
@@ -131,21 +99,7 @@ export const useCandidateThreads = () => {
         return null;
       }
       
-      // Standardize the format
-      if (typeof threadInfo === 'string') {
-        // Legacy format - convert to standardized format
-        return { threadId: threadInfo, messageId: threadInfo };
-      } else if (threadInfo && typeof threadInfo === 'object') {
-        // Already an object, ensure it has both properties
-        const threadData = threadInfo as Partial<EmailThreadInfo>;
-        return {
-          threadId: threadData.threadId || '',
-          messageId: threadData.messageId || threadData.threadId || ''
-        };
-      }
-      
-      // Unknown format
-      return null;
+      return threadInfo;
     } catch (err) {
       console.error("Error retrieving thread info:", err);
       return null;

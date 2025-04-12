@@ -51,13 +51,13 @@ export const mapJobToDatabase = (job: Job) => {
   return {
     id: job.id,
     internal_title: job.internalTitle,
-    candidate_facing_title: job.candidateFacingTitle, // Convert camelCase to snake_case
+    candidate_facing_title: job.candidateFacingTitle,
     jd: job.jd || "",
-    status: job.status, // This is now always a string
-    status_id: job.statusId, // This should be the UUID from job_statuses table
+    status: job.status,
+    status_id: job.statusId,
     skills_sought: job.skillsSought || "",
     min_skills: job.minSkills || "",
-    linkedin_search: job.linkedinSearch || "", // Map the linkedinSearch field
+    linkedin_search: job.linkedinSearch || "",
     lir: job.lir || "",
     client: job.client,
     client_id: job.clientId,
@@ -66,8 +66,8 @@ export const mapJobToDatabase = (job: Job) => {
     high_rate: job.highRate,
     medium_rate: job.mediumRate,
     low_rate: job.lowRate,
-    locale: job.locale.id, // Store locale ID as string
-    locale_id: job.localeId, // This should be the UUID from locales table
+    locale: job.locale.id,
+    locale_id: job.localeId,
     owner: job.owner,
     owner_id: job.ownerId,
     date: job.date,
@@ -76,7 +76,7 @@ export const mapJobToDatabase = (job: Job) => {
     other: job.other || "",
     video_questions: job.videoQuestions || "",
     screening_questions: job.screeningQuestions || "",
-    flavor: job.flavor, // This is now always a string
+    flavor: job.flavor,
     flavor_id: job.flavorId,
     m1: job.m1 || "",
     m2: job.m2 || "",
@@ -91,7 +91,8 @@ export const mapDatabaseToJob = (dbJob: any): Job => {
   // Create a properly structured locale object
   const localeObject: LocaleObject = {
     id: dbJob.locale || '',
-    name: dbJob.locale || '',  // Fallback for missing name
+    name: dbJob.locale || '',
+    abbreviation: dbJob.locale_abbreviation || '',
     workDetails: dbJob.work_details || '',
     payDetails: dbJob.pay_details || ''
   };

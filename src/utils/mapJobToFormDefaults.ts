@@ -34,20 +34,11 @@ export const mapJobToFormDefaults = (job: Job): JobFormValues => {
     };
   }
   
-  // Ensure locale has the right structure
-  const locale: LocaleObject = {
-    id: job.locale.id,
-    name: job.locale.name || '',
-    abbreviation: job.locale.abbreviation || '',
-    workDetails: job.locale.workDetails || '',
-    payDetails: job.locale.payDetails || ''
-  };
-  
   return {
     candidateFacingTitle: job.candidateFacingTitle,
     client: job.client,
     compDesc: job.compDesc,
-    locale: locale,
+    locale: job.locale,
     flavor: job.flavor,
     status: job.status,
     rate: job.rate,

@@ -39,12 +39,9 @@ export function useJobFilters(jobs: Job[]) {
       result = result.filter((job) => job.status === filters.status);
     }
 
-    // Apply locale filter - checking if locale is an object with id or a string
+    // Apply locale filter - now consistently using locale.id
     if (filters.locale !== "All") {
-      result = result.filter((job) => {
-        // Check if job.locale.id matches the filter value
-        return job.locale.id === filters.locale;
-      });
+      result = result.filter((job) => job.locale.id === filters.locale);
     }
 
     // Apply flavor filter
