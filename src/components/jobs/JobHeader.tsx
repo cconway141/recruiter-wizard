@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { Job } from "@/types/job";
 import { BackButton } from "./header/BackButton";
 import { EditButton } from "./header/EditButton";
+import { displayFormValue } from "@/utils/formFieldUtils";
 
 interface JobHeaderProps {
   job: Job;
