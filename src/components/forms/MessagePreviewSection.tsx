@@ -4,6 +4,7 @@ import { useFormContext } from "react-hook-form";
 import { MessageCard } from "@/components/messages/MessageCard";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { displayFormValue } from "@/utils/formFieldUtils";
 
 interface MessagePreviewSectionProps {
   messages: {
@@ -25,18 +26,30 @@ export function MessagePreviewSection({ messages }: MessagePreviewSectionProps) 
     { value: "m3", label: "M3 - Video & Final Questions" }
   ];
   
-  // Get current message based on selection
+  // Get current message based on selection and ensure it's a string
   const getCurrentMessage = () => {
+    let messageValue: string = "";
+    let messageTitle: string = "";
+    
     switch (selectedMessage) {
       case "m1":
-        return { value: messages.m1, title: "M1 - Initial Outreach" };
+        messageValue = typeof messages.m1 === 'string' ? messages.m1 : String(messages.m1 || "");
+        messageTitle = "M1 - Initial Outreach";
+        break;
       case "m2":
-        return { value: messages.m2, title: "M2 - Detailed Information" };
+        messageValue = typeof messages.m2 === 'string' ? messages.m2 : String(messages.m2 || "");
+        messageTitle = "M2 - Detailed Information";
+        break;
       case "m3":
-        return { value: messages.m3, title: "M3 - Video & Final Questions" };
+        messageValue = typeof messages.m3 === 'string' ? messages.m3 : String(messages.m3 || "");
+        messageTitle = "M3 - Video & Final Questions";
+        break;
       default:
-        return { value: messages.m1, title: "M1 - Initial Outreach" };
+        messageValue = typeof messages.m1 === 'string' ? messages.m1 : String(messages.m1 || "");
+        messageTitle = "M1 - Initial Outreach";
     }
+    
+    return { value: messageValue, title: messageTitle };
   };
   
   const currentMessage = getCurrentMessage();

@@ -15,9 +15,9 @@ export function FormRatePreview({ rate, highRate, mediumRate, lowRate }: FormRat
   }
 
   // Use the passed in rates if available, otherwise they will be calculated elsewhere
-  const high = highRate || 0;
-  const medium = mediumRate || 0;
-  const low = lowRate || 0;
+  const high = typeof highRate === 'number' ? highRate : 0;
+  const medium = typeof mediumRate === 'number' ? mediumRate : 0;
+  const low = typeof lowRate === 'number' ? lowRate : 0;
 
   return (
     <div className="mb-2 flex items-center space-x-2">

@@ -52,6 +52,7 @@ export function displayFormValue(value: any): string {
     return value.name;
   }
   
+  // Convert any non-string values to strings to ensure we never return objects
   return String(value);
 }
 

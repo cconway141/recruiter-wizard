@@ -23,6 +23,7 @@ import {
 } from "@/hooks/use-dropdown-options";
 import { useUserOptions } from "@/hooks/useUserOptions";
 import { useRoleAbbreviations } from "@/hooks/useRoleAbbreviations";
+import { displayFormValue } from "@/utils/formFieldUtils";
 
 interface JobFormBasicInfoProps {
   handleClientSelection: (clientName: string) => void;
@@ -144,7 +145,7 @@ export function JobFormBasicInfo({ handleClientSelection }: JobFormBasicInfoProp
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Select flavor">
-                      {typeof field.value === 'object' && field.value ? field.value.name : field.value}
+                      {displayFormValue(field.value)}
                     </SelectValue>
                   </SelectTrigger>
                 </FormControl>
@@ -177,7 +178,7 @@ export function JobFormBasicInfo({ handleClientSelection }: JobFormBasicInfoProp
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Select locale">
-                      {typeof field.value === 'object' && field.value ? field.value.name : field.value}
+                      {displayFormValue(field.value)}
                     </SelectValue>
                   </SelectTrigger>
                 </FormControl>
@@ -210,7 +211,7 @@ export function JobFormBasicInfo({ handleClientSelection }: JobFormBasicInfoProp
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Select status">
-                      {typeof field.value === 'object' && field.value ? field.value.name : field.value}
+                      {displayFormValue(field.value)}
                     </SelectValue>
                   </SelectTrigger>
                 </FormControl>
