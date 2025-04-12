@@ -40,10 +40,14 @@ export function JobFormBasicInfo({ handleClientSelection }: JobFormBasicInfoProp
   const { data: userOptions, isLoading: usersLoading } = useUserOptions();
   const { data: roleOptions, isLoading: rolesLoading } = useRoleAbbreviations();
 
+  // Only trigger client selection once on initial load for the current value
   useEffect(() => {
-    console.log("User options:", userOptions);
-    console.log("Role options:", roleOptions);
-  }, [userOptions, roleOptions]);
+    const currentClient = form?.getValues?.("client");
+    if (currentClient) {
+      console.log("Initial client selection:", currentClient);
+      handleClientSelection(currentClient);
+    }
+  }, [form, handleClientSelection]);
 
   if (!form || !form.control) {
     return (
@@ -64,13 +68,15 @@ export function JobFormBasicInfo({ handleClientSelection }: JobFormBasicInfoProp
               <FormLabel>Client</FormLabel>
               <Select 
                 onValueChange={(value) => {
-                  // Only trigger handleClientSelection if the value actually changed
+                  // Only trigger handleClientSelection for actual user-driven changes
                   if (value !== field.value) {
+                    console.log("User selected new client:", value);
                     field.onChange(value);
                     handleClientSelection(value);
                   }
                 }} 
                 defaultValue={field.value}
+                value={field.value}
               >
                 <FormControl>
                   <SelectTrigger>

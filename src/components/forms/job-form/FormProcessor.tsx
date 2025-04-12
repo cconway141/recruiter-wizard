@@ -111,11 +111,17 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
       }
 
       const localeName = rawLocale as Locale;
+      
+      console.log("Getting work details for locale:", localeName);
       const workDetails = await getWorkDetails(localeName);
+      
+      console.log("Getting pay details for locale:", localeName);
       const payDetails = await getPayDetails(localeName);
       
+      console.log("Calculating rates for:", values.rate);
       const { high, medium, low } = calculateRates(values.rate);
       
+      console.log("Generating internal title");
       const internalTitle = await generateInternalTitle(
         values.client,
         values.candidateFacingTitle,
@@ -125,9 +131,12 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
       
       console.log("Generated internal title:", internalTitle);
       
+      console.log("Generating message templates");
       const m1 = generateM1("[First Name]", values.candidateFacingTitle, values.compDesc);
       const m2 = generateM2(values.candidateFacingTitle, payDetails, workDetails, values.skillsSought);
       const m3 = generateM3(values.videoQuestions);
+      
+      console.log("Templates generated, preparing to save job");
       
       if (isEditing && job && updateJob) {
         console.log("Updating existing job");
