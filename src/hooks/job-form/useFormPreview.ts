@@ -4,7 +4,7 @@ import { UseFormReturn } from "react-hook-form";
 import { Locale } from "@/types/job";
 import { JobFormValues } from "@/components/forms/JobFormDetails";
 import { generateInternalTitle, calculateRates, generateM1, generateM2, generateM3 } from "@/utils/jobUtils";
-import { extractName, extractId } from "@/utils/formFieldUtils";
+import { extractName, extractId, displayFormValue } from "@/utils/formFieldUtils";
 
 export function useFormPreview(form: UseFormReturn<JobFormValues>) {
   const [previewTitle, setPreviewTitle] = useState("");

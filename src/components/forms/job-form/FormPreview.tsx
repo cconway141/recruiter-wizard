@@ -3,7 +3,7 @@ import React from "react";
 import { FormRatePreview } from "../FormRatePreview";
 import { MessagePreviewSection } from "../MessagePreviewSection";
 import { JobFormValues } from "../JobFormDetails";
-import { displayFormValue, extractName } from "@/utils/formFieldUtils";
+import { displayFormValue } from "@/utils/formFieldUtils";
 
 interface FormPreviewProps {
   previewTitle: string;
