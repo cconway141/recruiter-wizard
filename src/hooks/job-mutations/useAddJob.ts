@@ -20,11 +20,6 @@ export function useAddJob(jobs: Job[], setJobs: (jobs: Job[]) => void) {
       | "highRate"
       | "mediumRate"
       | "lowRate"
-      | "workDetails"
-      | "payDetails"
-      | "m1"
-      | "m2"
-      | "m3"
     >) => {
       try {
         console.log("Adding job with data:", jobToAdd);
@@ -36,7 +31,7 @@ export function useAddJob(jobs: Job[], setJobs: (jobs: Job[]) => void) {
         // Step 2: Update state immediately for a responsive UI
         const newJob: Job = {
           ...preparedJobPromise,
-          // Add default values for the omitted properties
+          // Add these properties which will be included in the final job
           workDetails: jobToAdd.workDetails || "",
           payDetails: jobToAdd.payDetails || "",
           m1: jobToAdd.m1 || "",

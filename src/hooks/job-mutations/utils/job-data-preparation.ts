@@ -8,7 +8,7 @@ import { generateInternalTitle } from "@/utils/titleUtils";
  * Prepare job data for creation in the database
  */
 export const prepareJobForCreate = async (
-  job: Omit<Job, "id" | "internalTitle" | "highRate" | "mediumRate" | "lowRate" | "workDetails" | "payDetails" | "m1" | "m2" | "m3">
+  job: Omit<Job, "id" | "internalTitle" | "highRate" | "mediumRate" | "lowRate">
 ): Promise<Omit<Job, "workDetails" | "payDetails" | "m1" | "m2" | "m3">> => {
   // Validate and set a default job title if missing
   if (!job.candidateFacingTitle) {
