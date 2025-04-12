@@ -1,4 +1,3 @@
-
 import { useNavigate } from "react-router-dom";
 import { Job, Locale } from "@/types/job";
 import { useJobs } from "@/contexts/JobContext";
@@ -43,7 +42,6 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
   const { loadFromSupabase } = useSupabaseData();
   
   const validateRequiredFields = (values: JobFormValues): boolean => {
-    // Check for essential fields to avoid silent failures
     const requiredFields = [
       { name: 'candidateFacingTitle', label: 'Job Title' },
       { name: 'client', label: 'Client' },
@@ -75,25 +73,31 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
     try {
       console.log("Form submission started with values:", values);
       
-      // Prevent multiple submissions
-      if (isSubmitting) {
-        console.log("Form submission already in progress, ignoring duplicate submit");
-        return;
-      }
-      
       // Validate required fields
       if (!validateRequiredFields(values)) {
         console.log("Form validation failed - missing required fields");
         return;
       }
-      
-      setIsSubmitting(true);
-      document.querySelector('button[type="submit"]')?.setAttribute('disabled', 'true');
-      
-      // Handle both object and string types for locale
-      const localeName = typeof values.locale === 'object' ? values.locale.name : values.locale as Locale;
-      console.log("Processing locale:", localeName);
-      
+
+      // Type guard for locale validation
+      const isValidLocale = (locale: string): locale is Locale =>
+        ["Onshore", "Nearshore", "Offshore"].includes(locale);
+
+      const rawLocale = typeof values.locale === 'object' 
+        ? (values.locale as { name: string }).name 
+        : values.locale;
+
+      if (!rawLocale || typeof rawLocale !== "string" || !isValidLocale(rawLocale)) {
+        console.error("Invalid locale value:", rawLocale);
+        toast({
+          title: "Validation Error",
+          description: "Invalid locale selected. Please choose a valid locale.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const localeName = rawLocale as Locale;
       const workDetails = await getWorkDetails(localeName);
       const payDetails = await getPayDetails(localeName);
       
@@ -102,7 +106,7 @@ export function useFormProcessor({ job, isEditing = false }: { job?: Job; isEdit
       const internalTitle = await generateInternalTitle(
         values.client,
         values.candidateFacingTitle,
-        typeof values.flavor === 'object' ? values.flavor.name || '' : values.flavor || '',
+        typeof values.flavor === 'object' ? values.flavor.name || '' : values.flavor,
         localeName
       );
       
