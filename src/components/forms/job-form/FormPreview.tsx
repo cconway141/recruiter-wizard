@@ -31,7 +31,7 @@ export function FormPreview({
   const compDesc = displayFormValue(watchedFields.compDesc || '');
   
   // Extract locale name properly
-  const locale = extractName(watchedFields.locale);
+  const locale = displayFormValue(watchedFields.locale || '');
     
   const skillsSought = displayFormValue(watchedFields.skillsSought || '');
   
@@ -55,7 +55,7 @@ export function FormPreview({
         )}
         
         <FormRatePreview 
-          rate={watchedFields.rate || 0} 
+          rate={Number(watchedFields.rate || 0)}
           highRate={previewHighRate}
           mediumRate={previewMediumRate}
           lowRate={previewLowRate}

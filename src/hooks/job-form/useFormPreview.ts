@@ -48,7 +48,7 @@ export function useFormPreview(form: UseFormReturn<JobFormValues>) {
           
           const newTitle = await generateInternalTitle(
             watchedFields.client,
-            watchedFields.candidateFacingTitle,
+            extractName(watchedFields.candidateFacingTitle),
             flavorName,
             localeName as Locale
           );
@@ -96,14 +96,14 @@ export function useFormPreview(form: UseFormReturn<JobFormValues>) {
           const m1 = await generateM1(firstName, candidateFacingTitle, compDesc, owner);
           const m2 = await generateM2(
             candidateFacingTitle,
-            watchedFields.payDetails || "",
-            watchedFields.workDetails || "",
+            extractName(watchedFields.payDetails) || "",
+            extractName(watchedFields.workDetails) || "",
             skillsSought
           );
           
           let m3 = "";
           if (watchedFields.videoQuestions) {
-            m3 = await generateM3(watchedFields.videoQuestions);
+            m3 = await generateM3(extractName(watchedFields.videoQuestions));
           }
           
           // Update state with resolved values, not promises

@@ -41,6 +41,7 @@ export function createNamedObject(value: string | { id: string; name: string } |
 
 /**
  * Handles form value display safely
+ * This is critical for rendering values that could be objects
  */
 export function displayFormValue(value: any): string {
   if (value === null || value === undefined) {
