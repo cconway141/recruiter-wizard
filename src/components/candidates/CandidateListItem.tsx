@@ -47,6 +47,14 @@ export const CandidateListItem: React.FC<CandidateListItemProps> = ({
     return threadInfo?.threadId || null;
   };
 
+  // Get message ID for the current job
+  const getMessageIdForJob = (): string | null => {
+    if (!candidate.threadIds || !jobId) return null;
+    
+    const threadInfo = candidate.threadIds[jobId] as EmailThreadInfo | undefined;
+    return threadInfo?.messageId || null;
+  };
+
   return (
     <>
       <div className="grid grid-cols-8 gap-2 items-center p-2 rounded hover:bg-gray-50">
@@ -118,6 +126,7 @@ export const CandidateListItem: React.FC<CandidateListItemProps> = ({
         jobId={jobId}
         candidateId={candidate.id}
         threadId={getThreadIdForJob()}
+        messageId={getMessageIdForJob()}
       />
     </>
   );

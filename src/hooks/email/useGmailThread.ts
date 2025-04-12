@@ -14,18 +14,19 @@ export const useGmailThread = ({
   threadId
 }: UseGmailThreadProps) => {
   const [messageId, setMessageId] = useState<string | null>(null);
-  const { getMessageId } = useCandidateThreads();
+  const { getMessageId, getThreadInfo } = useCandidateThreads();
   
   useEffect(() => {
     const fetchMessageId = async () => {
-      if (threadId && candidateId && jobId) {
-        console.log("🔍 Retrieving message ID for threading...");
+      if (candidateId && jobId) {
+        console.log("🔍 Retrieving thread info for threading...");
         console.log({
           candidateId,
           jobId,
           threadId,
         });
         
+        // Get message ID from candidate thread storage
         const storedMessageId = await getMessageId(candidateId, jobId);
         console.log("Retrieved message ID for threading:", storedMessageId);
         setMessageId(storedMessageId);

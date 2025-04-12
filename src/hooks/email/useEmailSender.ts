@@ -152,8 +152,7 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
     subject: string,
     body: string,
     candidateName: string,
-    jobTitle: string = "", 
-    threadId?: string | null
+    jobTitle: string = ""
   ) => {
     try {
       const cc = "recruitment@theitbc.com";

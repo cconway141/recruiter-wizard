@@ -58,7 +58,7 @@ export const useCandidateThreads = () => {
       
       // Add the new thread info
       if (!newMessageId) {
-        console.error("Missing messageId when saving thread info — using threadId as fallback to prevent threading issues.");
+        console.warn("Missing messageId when saving thread info — using threadId as fallback to prevent threading issues.");
         newMessageId = newThreadId;
       }
 

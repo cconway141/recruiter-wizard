@@ -148,8 +148,7 @@ export const useEmailSending = ({
       subject,
       body,
       candidateName,
-      candidateFacingTitle || "",
-      threadId
+      candidateFacingTitle || ""
     );
 
     onClose();

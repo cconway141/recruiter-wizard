@@ -17,6 +17,7 @@ interface EmailDialogProps {
   jobTitle?: string; 
   candidateId?: string;
   threadId?: string | null;
+  messageId?: string | null;
   threadTitle?: string;
 }
 
@@ -29,6 +30,7 @@ export function EmailDialog({
   jobTitle,
   candidateId,
   threadId,
+  messageId,
   threadTitle,
 }: EmailDialogProps) {
   // Get the job from context instead of relying on passed props
@@ -49,9 +51,10 @@ export function EmailDialog({
       jobFromContext: job ? job.candidateFacingTitle : 'Not found',
       finalCandidateFacingTitle: candidateFacingTitle,
       threadId,
+      messageId,
       threadTitle
     });
-  }, [candidateName, candidateEmail, jobId, jobTitle, job, candidateFacingTitle, threadId, threadTitle]);
+  }, [candidateName, candidateEmail, jobId, jobTitle, job, candidateFacingTitle, threadId, messageId, threadTitle]);
 
   const {
     subject,
@@ -72,9 +75,10 @@ export function EmailDialog({
     candidateName,
     candidateEmail,
     jobId,
-    candidateFacingTitle, // Pass the correct job title
+    candidateFacingTitle,
     candidateId,
     threadId,
+    messageId,
     threadTitle,
     onClose,
   });
