@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useRoleAbbreviations } from "@/hooks/useRoleAbbreviations";
+import { displayFormValue } from "@/utils/formFieldUtils";
 
 export function JobTitleSelect() {
   const form = useFormContext();
@@ -30,10 +31,13 @@ export function JobTitleSelect() {
           <Select 
             onValueChange={field.onChange} 
             defaultValue={field.value}
+            value={field.value}
           >
             <FormControl>
               <SelectTrigger>
-                <SelectValue placeholder="Select job role" />
+                <SelectValue placeholder="Select job role">
+                  {displayFormValue(field.value)}
+                </SelectValue>
               </SelectTrigger>
             </FormControl>
             <SelectContent className="max-h-80 overflow-y-auto">
