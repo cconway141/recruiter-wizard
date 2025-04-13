@@ -17,7 +17,7 @@ export async function insertJob(job: Job): Promise<Job | null> {
         .from('job_statuses')
         .select('id')
         .eq('id', jobData.status_id)
-        .single();
+        .maybeSingle();
       
       if (!statusExists) {
         console.warn(`Status ID ${jobData.status_id} not found in job_statuses table`);
