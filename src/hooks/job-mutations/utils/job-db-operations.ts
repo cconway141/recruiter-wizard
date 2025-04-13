@@ -58,8 +58,62 @@ export async function insertJob(job: Job): Promise<Job | null> {
       } else {
         console.log(`Confirmed valid status ID: ${jobData.status_id} for "${jobData.status}"`);
       }
+    } else if (jobData.status) {
+      // If no status_id is provided but we have a status name, try to find it
+      const { data: statusData } = await supabase
+        .from('job_statuses')
+        .select('id')
+        .eq('name', jobData.status)
+        .maybeSingle();
+        
+      if (statusData?.id) {
+        jobData.status_id = statusData.id;
+      } else {
+        // Create a new status if it doesn't exist
+        const newStatusId = uuid();
+        const { error: statusError } = await supabase
+          .from('job_statuses')
+          .insert({ id: newStatusId, name: jobData.status })
+          .select()
+          .single();
+          
+        if (statusError) {
+          console.error("Failed to create job status:", statusError);
+          throw new Error(`Failed to create job status: ${statusError.message}`);
+        }
+        
+        jobData.status_id = newStatusId;
+      }
     } else {
-      console.warn("No status_id provided for job - this may cause foreign key constraint issues");
+      console.warn("No status information provided for job - using default 'Active' status");
+      
+      // Try to find the 'Active' status
+      const { data: activeStatus } = await supabase
+        .from('job_statuses')
+        .select('id')
+        .eq('name', 'Active')
+        .maybeSingle();
+        
+      if (activeStatus?.id) {
+        jobData.status_id = activeStatus.id;
+        jobData.status = 'Active';
+      } else {
+        // Create the Active status if it doesn't exist
+        const activeStatusId = uuid();
+        const { error: statusError } = await supabase
+          .from('job_statuses')
+          .insert({ id: activeStatusId, name: 'Active' })
+          .select()
+          .single();
+          
+        if (statusError) {
+          console.error("Failed to create default Active status:", statusError);
+          throw new Error(`Failed to create default Active status: ${statusError.message}`);
+        }
+        
+        jobData.status_id = activeStatusId;
+        jobData.status = 'Active';
+      }
     }
     
     // Now that we've verified/created the status, insert the job
@@ -117,10 +171,11 @@ export async function updateJob(job: Job): Promise<Job | null> {
           jobData.status_id = statusByName.id;
         } else {
           // Create new status
+          const newStatusId = jobData.status_id || uuid();
           const { data: newStatus, error: statusError } = await supabase
             .from('job_statuses')
             .insert({ 
-              id: jobData.status_id || uuid(), 
+              id: newStatusId,
               name: jobData.status 
             })
             .select()
@@ -134,6 +189,32 @@ export async function updateJob(job: Job): Promise<Job | null> {
           console.log(`Created new status for update: ${newStatus.id}`);
           jobData.status_id = newStatus.id;
         }
+      }
+    } else if (jobData.status) {
+      // If no status_id but we have a status name, try to find or create it
+      const { data: statusData } = await supabase
+        .from('job_statuses')
+        .select('id')
+        .eq('name', jobData.status)
+        .maybeSingle();
+        
+      if (statusData?.id) {
+        jobData.status_id = statusData.id;
+      } else {
+        // Create a new status
+        const newStatusId = uuid();
+        const { error: statusError } = await supabase
+          .from('job_statuses')
+          .insert({ id: newStatusId, name: jobData.status })
+          .select()
+          .single();
+          
+        if (statusError) {
+          console.error("Failed to create job status:", statusError);
+          throw new Error(`Failed to create job status: ${statusError.message}`);
+        }
+        
+        jobData.status_id = newStatusId;
       }
     }
     
@@ -168,6 +249,19 @@ export async function updateJob(job: Job): Promise<Job | null> {
  */
 export async function deleteJob(jobId: string): Promise<boolean> {
   try {
+    // First check if job exists
+    const { data: jobExists, error: checkError } = await supabase
+      .from('jobs')
+      .select('id')
+      .eq('id', jobId)
+      .single();
+      
+    if (checkError || !jobExists) {
+      console.error("Job not found or error checking job:", checkError);
+      throw new Error(`Job not found with ID: ${jobId}`);
+    }
+    
+    // Then delete the job
     const { error } = await supabase
       .from('jobs')
       .delete()
