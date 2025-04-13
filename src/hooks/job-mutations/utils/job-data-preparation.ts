@@ -3,6 +3,7 @@ import { uuid } from "@/utils/uuid";
 import { Job, LocaleObject, StatusObject } from "@/types/job";
 import { calculateRates } from "@/utils/rateUtils";
 import { generateInternalTitle } from "@/utils/titleUtils";
+import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Prepare job data for creation in the database
@@ -31,21 +32,47 @@ export const prepareJobForCreate = async (
   const rate = Number(job.rate) || 0;
   const { high: highRate, medium: mediumRate, low: lowRate = 0 } = calculateRates(rate);
 
-  // Ensure status is a valid object
-  const status: StatusObject = (job.status && typeof job.status === 'object') 
-    ? job.status 
-    : { id: "", name: typeof job.status === 'string' ? job.status : "Active" };
-  
-  // Generate a UUID for status.id if it's empty
-  if (!status.id) {
-    status.id = uuid();
-    console.log("Generated UUID for missing status.id:", status.id);
+  // Ensure status is a valid object with proper statusId
+  let status = job.status;
+  let statusId = typeof job.status === 'object' ? job.status.id : null;
+
+  // If no status ID is provided or it's an empty string, fetch a valid one from the database
+  if (!statusId || statusId.trim() === '') {
+    try {
+      // Try to fetch a valid status ID for the status name
+      const statusName = typeof job.status === 'object' ? job.status.name : 'Active';
+      const { data: statusData } = await supabase
+        .from('job_statuses')
+        .select('id')
+        .eq('name', statusName)
+        .single();
+      
+      if (statusData?.id) {
+        console.log(`Found existing status ID for "${statusName}": ${statusData.id}`);
+        statusId = statusData.id;
+      } else {
+        // If status not found in database, use locally generated UUID as fallback
+        statusId = uuid();
+        console.log(`No status found for "${statusName}", generated fallback UUID: ${statusId}`);
+      }
+    } catch (error) {
+      console.error("Error fetching status ID:", error);
+      statusId = uuid();
+      console.log("Generated fallback UUID for status due to error:", statusId);
+    }
   }
+
+  // Ensure we have a proper status object
+  status = {
+    id: statusId,
+    name: typeof job.status === 'object' ? job.status.name : (job.status || 'Active')
+  };
 
   return {
     ...job,
     id: uuid(),
     status, // Use standardized status object with valid UUID
+    statusId, // Include the status ID explicitly
     internalTitle,
     highRate,
     mediumRate,

@@ -12,7 +12,7 @@ interface FormActionsProps {
   job?: Job;
 }
 
-export function FormActions({ isEditing, job }: FormActionsProps) {
+export const FormActions = React.memo(function FormActions({ isEditing, job }: FormActionsProps) {
   const navigate = useNavigate();
   const { isSubmitting, resetSubmissionState } = useFormProcessorContext();
   
@@ -41,8 +41,8 @@ export function FormActions({ isEditing, job }: FormActionsProps) {
     };
   }, [isSubmitting, resetSubmissionState]);
   
-  // Explicitly log the submission state
-  console.log("FormActions render - isSubmitting:", isSubmitting);
+  // Reduced the frequency of logging to avoid console spam
+  // console.log("FormActions render - isSubmitting:", isSubmitting);
   
   return (
     <div className="flex justify-end gap-4">
@@ -70,4 +70,4 @@ export function FormActions({ isEditing, job }: FormActionsProps) {
       </Button>
     </div>
   );
-}
+});

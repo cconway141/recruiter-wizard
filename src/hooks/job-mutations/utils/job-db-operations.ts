@@ -11,6 +11,44 @@ export async function insertJob(job: Job): Promise<Job | null> {
   try {
     const jobData = mapJobToDatabase(job);
     
+    // Verify the status_id exists in job_statuses table before inserting
+    if (jobData.status_id) {
+      const { data: statusExists } = await supabase
+        .from('job_statuses')
+        .select('id')
+        .eq('id', jobData.status_id)
+        .single();
+      
+      if (!statusExists) {
+        console.warn(`Status ID ${jobData.status_id} not found in job_statuses table`);
+        
+        // Attempt to find a valid status by name instead
+        const { data: statusData } = await supabase
+          .from('job_statuses')
+          .select('id')
+          .eq('name', jobData.status)
+          .maybeSingle();
+        
+        if (statusData?.id) {
+          console.log(`Found valid status ID for "${jobData.status}": ${statusData.id}`);
+          jobData.status_id = statusData.id;
+        } else {
+          // No valid status found, we need to create one first
+          const { data: newStatus, error: statusError } = await supabase
+            .from('job_statuses')
+            .insert({ id: jobData.status_id, name: jobData.status })
+            .select()
+            .single();
+          
+          if (statusError) {
+            throw new Error(`Failed to create job status: ${statusError.message}`);
+          }
+          
+          console.log(`Created new status with ID ${newStatus.id} for "${jobData.status}"`);
+        }
+      }
+    }
+    
     const { data, error } = await supabase
       .from('jobs')
       .insert([jobData]) // Use an array here for the insert
