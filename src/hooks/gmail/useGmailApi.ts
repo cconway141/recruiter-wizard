@@ -1,9 +1,14 @@
-
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useOperationState } from "@/hooks/useOperationState";
+
+// Cache expiration time in milliseconds (2 minutes)
+const CACHE_EXPIRATION = 2 * 60 * 1000;
+
+// Local storage key for Gmail connection
+const GMAIL_CONNECTION_CACHE_KEY = 'gmail_connection_status';
 
 /**
  * Core hook for Gmail API operations
@@ -16,6 +21,7 @@ export const useGmailApi = (options: {
   const { showLoadingUI = true, onConnectionChange } = options;
   const { user } = useAuth();
   const { toast } = useToast();
+  const lastCheckRef = useRef<number>(0);
   
   // Use our enhanced operation state hook
   const {
@@ -29,9 +35,87 @@ export const useGmailApi = (options: {
     showLoadingUI
   });
 
-  // Check connection status
+  // Setup cache clearing on user change
+  useEffect(() => {
+    if (!user) {
+      // Clear connection cache when user logs out
+      localStorage.removeItem(GMAIL_CONNECTION_CACHE_KEY);
+      lastCheckRef.current = 0;
+    }
+  }, [user]);
+
+  // Helper to get cached connection status
+  const getCachedConnectionStatus = useCallback(() => {
+    try {
+      const cachedData = localStorage.getItem(GMAIL_CONNECTION_CACHE_KEY);
+      
+      if (cachedData) {
+        const { timestamp, connected } = JSON.parse(cachedData);
+        const now = Date.now();
+        
+        // Check if cache is still valid
+        if (now - timestamp < CACHE_EXPIRATION) {
+          console.log("Using cached Gmail connection status:", connected);
+          return { valid: true, connected };
+        }
+        
+        console.log("Gmail connection cache expired");
+      }
+    } catch (error) {
+      console.error("Error reading Gmail connection cache:", error);
+    }
+    
+    return { valid: false, connected: false };
+  }, []);
+
+  // Helper to set cached connection status
+  const setCachedConnectionStatus = useCallback((connected: boolean) => {
+    try {
+      localStorage.setItem(
+        GMAIL_CONNECTION_CACHE_KEY,
+        JSON.stringify({
+          timestamp: Date.now(),
+          connected
+        })
+      );
+    } catch (error) {
+      console.error("Error caching Gmail connection status:", error);
+    }
+  }, []);
+
+  // Check connection status with caching
   const checkConnection = useCallback(async () => {
     if (!user) return false;
+    
+    // Check if we have a valid cache entry
+    const { valid, connected } = getCachedConnectionStatus();
+    if (valid) {
+      // Notify about connection state from cache
+      if (onConnectionChange) {
+        onConnectionChange(connected);
+      }
+      return connected;
+    }
+    
+    // Throttle actual API checks
+    const now = Date.now();
+    if (now - lastCheckRef.current < 5000) {
+      console.log("Throttling Gmail connection check");
+      // Return last known status
+      try {
+        const cachedData = localStorage.getItem(GMAIL_CONNECTION_CACHE_KEY);
+        if (cachedData) {
+          const { connected } = JSON.parse(cachedData);
+          return connected;
+        }
+      } catch (e) {
+        // Ignore cache errors
+      }
+      return false;
+    }
+    
+    // Set last check time
+    lastCheckRef.current = now;
     
     try {
       console.log("useGmailApi: Checking Gmail connection for user", user.id);
@@ -46,16 +130,21 @@ export const useGmailApi = (options: {
       
       if (error) {
         console.error("Error checking Gmail connection:", error);
+        setCachedConnectionStatus(false);
         throw new Error(`Failed to check Gmail connection: ${error.message}`);
       }
       
       if (data?.error === 'Configuration error') {
         console.error("Gmail configuration error:", data.message);
+        setCachedConnectionStatus(false);
         throw new Error(data.message || "Missing Google API configuration");
       }
       
       const isConnected = !!data?.connected && !data?.expired;
       console.log("Gmail connection status:", isConnected);
+      
+      // Cache the result
+      setCachedConnectionStatus(isConnected);
       
       // Notify about connection state change
       if (onConnectionChange) {
@@ -65,9 +154,10 @@ export const useGmailApi = (options: {
       return isConnected;
     } catch (error) {
       console.error("Error checking Gmail connection:", error);
+      setCachedConnectionStatus(false);
       return false;
     }
-  }, [user, onConnectionChange]);
+  }, [user, onConnectionChange, getCachedConnectionStatus, setCachedConnectionStatus]);
 
   // Connect Gmail using OAuth flow
   const connectGmail = useCallback(async () => {
@@ -129,6 +219,9 @@ export const useGmailApi = (options: {
       console.log("Redirect URI:", data.redirectUri);
       console.log("About to redirect to Google's OAuth flow");
       
+      // Clear connection cache before redirecting
+      localStorage.removeItem(GMAIL_CONNECTION_CACHE_KEY);
+      
       // Redirect to Google's OAuth flow
       window.location.href = data.url;
       return data;
@@ -171,6 +264,10 @@ export const useGmailApi = (options: {
       sessionStorage.removeItem('gmailConnectionInProgress');
       sessionStorage.removeItem('gmailConnectionAttemptTime');
       
+      // Clear connection cache
+      localStorage.removeItem(GMAIL_CONNECTION_CACHE_KEY);
+      lastCheckRef.current = 0;
+      
       // Notify about connection change
       if (onConnectionChange) {
         onConnectionChange(false);
@@ -198,12 +295,19 @@ export const useGmailApi = (options: {
       });
       
       if (error) {
+        // Clear cache on token refresh error
+        localStorage.removeItem(GMAIL_CONNECTION_CACHE_KEY);
         throw new Error(`Failed to refresh Gmail token: ${error.message}`);
+      }
+      
+      // Update cache after successful refresh
+      if (data?.connected) {
+        setCachedConnectionStatus(true);
       }
       
       return true;
     });
-  }, [user, executeOperation]);
+  }, [user, executeOperation, setCachedConnectionStatus]);
 
   // Background connection check (without UI indicators)
   const silentCheckConnection = useCallback(async () => {
