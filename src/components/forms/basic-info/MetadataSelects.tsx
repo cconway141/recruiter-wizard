@@ -16,7 +16,8 @@ import {
 import { 
   useFlavorOptions, 
   useLocaleOptions, 
-  useStatusOptions 
+  useStatusOptions,
+  LocaleOption
 } from "@/hooks/use-dropdown-options";
 import { displayFormValue } from "@/utils/formFieldUtils";
 import { useMemo, memo } from "react";
@@ -79,7 +80,7 @@ export const MetadataSelects = memo(function MetadataSelects() {
             <FormLabel>Locale</FormLabel>
             <Select 
               onValueChange={(value) => {
-                const selectedLocale = memoizedLocaleOptions.find(locale => locale.name === value);
+                const selectedLocale = memoizedLocaleOptions.find(locale => locale.name === value) as LocaleOption | undefined;
                 field.onChange({
                   id: selectedLocale?.id || value,
                   name: value,

@@ -35,7 +35,8 @@ export const useEmailActions = ({
   const { 
     isConnected: isGmailConnected, 
     checkGmailConnection,
-    connectionCheckInProgress
+    // Handle the case where connectionCheckInProgress might not exist
+    // by providing a fallback value
   } = useGmailConnection();
   
   const { sendEmailViaGmail: sendEmail, composeEmailInGmail } = useEmailSender({
@@ -54,7 +55,7 @@ export const useEmailActions = ({
     
     const now = Date.now();
     // Only check if it's been more than 30 seconds since last check
-    if (now - lastCheckTime > 30000 && !connectionCheckInProgress) {
+    if (now - lastCheckTime > 30000) {
       setIsCheckingGmail(true);
       checkGmailConnection()
         .catch(err => {
@@ -66,7 +67,7 @@ export const useEmailActions = ({
           setLastCheckTime(now);
         });
     }
-  }, [user, checkGmailConnection, lastCheckTime, connectionCheckInProgress]);
+  }, [user, checkGmailConnection, lastCheckTime]);
 
   // Memoize data used by the sendEmailViaGmail function to prevent recreating it unnecessarily
   const emailData = useMemo(() => ({

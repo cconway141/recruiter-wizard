@@ -1,5 +1,5 @@
 
-import { Job, StatusObject, FlavorObject } from "@/types/job";
+import { Job, StatusObject, FlavorObject, LocaleObject } from "@/types/job";
 import { JobFormValues } from "@/components/forms/JobFormDetails";
 
 /**
@@ -14,7 +14,10 @@ export const mapJobToFormDefaults = (job: Job): JobFormValues => {
       compDesc: '',
       locale: {
         id: '',
-        name: ''
+        name: '',
+        abbreviation: '',
+        workDetails: '',
+        payDetails: ''
       },
       flavor: {
         id: '',
@@ -41,7 +44,7 @@ export const mapJobToFormDefaults = (job: Job): JobFormValues => {
   }
   
   // Ensure locale is an object with id and name properties
-  const locale = typeof job.locale === 'object' && job.locale !== null
+  const locale: LocaleObject = typeof job.locale === 'object' && job.locale !== null
     ? job.locale
     : { 
         id: job.localeId || '', 
