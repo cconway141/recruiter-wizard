@@ -1,4 +1,3 @@
-
 import { Job, StatusObject, FlavorObject, LocaleObject } from "@/types/job";
 import { JobFormValues } from "@/components/forms/JobFormDetails";
 
@@ -43,7 +42,7 @@ export const mapJobToFormDefaults = (job: Job): JobFormValues => {
     };
   }
   
-  // Ensure locale is an object with id and name properties
+  // Ensure locale is an object with all required properties
   const locale: LocaleObject = typeof job.locale === 'object' && job.locale !== null
     ? job.locale
     : { 
