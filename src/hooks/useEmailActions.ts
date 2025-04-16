@@ -32,11 +32,20 @@ export const useEmailActions = ({
   const [isCheckingGmail, setIsCheckingGmail] = useState(false);
   const [lastCheckTime, setLastCheckTime] = useState(0);
   
+  // Get connection status from localStorage if available to reduce API calls
+  const cachedConnection = localStorage.getItem('gmail_connected') === 'true';
+  const [hasCachedConnection, setHasCachedConnection] = useState(cachedConnection);
+  
   const { 
-    isConnected: isGmailConnected, 
+    isConnected: apiConnectionStatus, 
+    isLoading: isConnectionLoading,
     checkGmailConnection,
-    // We removed the non-existent property reference
-  } = useGmailConnection();
+  } = useGmailConnection({
+    showLoadingUI: false, // Prevent blocking UI with loading states
+  });
+  
+  // Use cached status or API status
+  const isGmailConnected = hasCachedConnection || apiConnectionStatus;
   
   const { sendEmailViaGmail: sendEmail, composeEmailInGmail } = useEmailSender({
     onSuccess
@@ -48,15 +57,27 @@ export const useEmailActions = ({
     selectedTemplate
   });
   
-  // Check Gmail connection on mount with throttling to prevent excessive checks
+  // Check Gmail connection on mount ONLY ONCE with significant throttling
   useEffect(() => {
     if (!user) return;
     
+    // If we already have a cached connection, skip the check
+    if (hasCachedConnection) {
+      return;
+    }
+    
     const now = Date.now();
-    // Only check if it's been more than 30 seconds since last check
-    if (now - lastCheckTime > 30000) {
+    // Only check if it's been more than 2 minutes since last check
+    if (now - lastCheckTime > 120000) {
       setIsCheckingGmail(true);
       checkGmailConnection()
+        .then(isConnected => {
+          if (isConnected) {
+            // Cache connection status to avoid future checks
+            localStorage.setItem('gmail_connected', 'true');
+            setHasCachedConnection(true);
+          }
+        })
         .catch(err => {
           console.error("Gmail connection check failed:", err);
           // Don't set error message for connection checks
@@ -66,7 +87,7 @@ export const useEmailActions = ({
           setLastCheckTime(now);
         });
     }
-  }, [user, checkGmailConnection, lastCheckTime]);
+  }, [user, checkGmailConnection, lastCheckTime, hasCachedConnection]);
 
   // Memoize data used by the sendEmailViaGmail function to prevent recreating it unnecessarily
   const emailData = useMemo(() => ({
@@ -153,7 +174,7 @@ export const useEmailActions = ({
     sendEmailViaGmail,
     composeEmailInGmail,
     isGmailConnected,
-    isLoading: isCheckingGmail,
+    isLoading: isCheckingGmail || isConnectionLoading,
     isSending,
     errorMessage, 
     checkGmailConnection,

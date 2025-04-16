@@ -23,13 +23,13 @@ export const useGmailConnectionStatus = ({
   
   // Enhanced rate limiting with a significant timeout
   const lastCheckRef = useRef<number>(0);
-  // Increase throttle to 2 minutes (previously 60s)
-  const checkThrottleMs = 120000; // 2 minutes minimum between checks
+  // Greatly increased throttle to 3 minutes
+  const checkThrottleMs = 180000; // 3 minutes minimum between checks
   const maxErrorsBeforeBackoff = 2; // Threshold to activate backoff
   const errorCountRef = useRef<number>(0);
   const backoffActiveRef = useRef<boolean>(false);
-  // Increase backoff time to 10 minutes (previously 5 minutes)
-  const backoffTimeMs = 600000; // 10 minutes of backoff time
+  // Increased backoff time to 15 minutes
+  const backoffTimeMs = 900000; // 15 minutes of backoff time
   
   // Add a check-in-progress flag to prevent simultaneous checks
   const checkInProgressRef = useRef<boolean>(false);
@@ -37,8 +37,16 @@ export const useGmailConnectionStatus = ({
   // Add localStorage caching
   const cachedStatusKey = user?.id ? `gmail_connection_${user.id}` : null;
   
+  // Check if we already have a cached status in localStorage
+  const localStorageConnected = localStorage.getItem('gmail_connected') === 'true';
+  
   // Function to get cached status
   const getCachedStatus = () => {
+    // First, check simple localStorage flag
+    if (localStorageConnected) {
+      return { connected: true, expired: false, hasRefreshToken: true };
+    }
+    
     if (!cachedStatusKey) return null;
     
     try {
@@ -48,8 +56,8 @@ export const useGmailConnectionStatus = ({
       const parsed = JSON.parse(cachedData);
       const cacheAge = Date.now() - (parsed.timestamp || 0);
       
-      // Use cache if it's less than 10 minutes old
-      if (cacheAge < 600000) {
+      // Use cache if it's less than 30 minutes old
+      if (cacheAge < 1800000) { // 30 minutes
         console.log(`Using cached Gmail connection status (${Math.round(cacheAge/1000)}s old)`);
         return parsed.data;
       }
@@ -71,6 +79,11 @@ export const useGmailConnectionStatus = ({
         timestamp: Date.now(),
         data
       }));
+      
+      // Also set the simple flag for faster checks
+      if (data?.connected && !data?.expired) {
+        localStorage.setItem('gmail_connected', 'true');
+      }
     } catch (err) {
       console.error("Error caching status:", err);
     }
@@ -80,7 +93,12 @@ export const useGmailConnectionStatus = ({
   const throttledCheck = async () => {
     const now = Date.now();
     
-    // First, check if we already have cached data we can use
+    // Check simple localStorage flag first for fastest response
+    if (localStorageConnected) {
+      return { connected: true, expired: false, hasRefreshToken: true };
+    }
+    
+    // Next, check detailed cached data
     const cachedData = getCachedStatus() || queryClient.getQueryData(['gmail-connection', user?.id]);
     
     // If a check is already in progress, use cached data
@@ -95,7 +113,7 @@ export const useGmailConnectionStatus = ({
       return cachedData || { connected: false, expired: false, hasRefreshToken: false };
     }
     
-    // Enhanced throttling with longer timeout
+    // Enhanced throttling with much longer timeout
     if (now - lastCheckRef.current < checkThrottleMs) {
       console.log(`Gmail connection check throttled (${Math.round((now - lastCheckRef.current)/1000)}s < ${checkThrottleMs/1000}s), using cached data`);
       return cachedData || { connected: false, expired: false, hasRefreshToken: false };
@@ -193,12 +211,12 @@ export const useGmailConnectionStatus = ({
     queryFn: throttledCheck,
     enabled: !!user,
     // Significantly increased caching parameters to reduce API calls
-    staleTime: 30 * 60 * 1000, // 30 minutes - keeps data fresh much longer (increased from 15 min)
-    refetchInterval: 60 * 60 * 1000, // 60 minutes - very infrequent background checks (increased from 30 min)
+    staleTime: 60 * 60 * 1000, // 60 minutes - keeps data fresh much longer
+    refetchInterval: 120 * 60 * 1000, // 120 minutes - very infrequent background checks
     refetchOnWindowFocus: false, // Prevents checks when tab regains focus
     retry: 0, // No retries to avoid cascading failures
-    gcTime: 120 * 60 * 1000, // 120 minutes to keep in cache (increased from 60 min)
-    refetchOnMount: false, // Changed from "always" to prevent excess calls
+    gcTime: 180 * 60 * 1000, // 180 minutes to keep in cache
+    refetchOnMount: false, // Prevents excess calls on component mounts
     initialData: getCachedStatus,
   });
 
@@ -258,7 +276,7 @@ export const useGmailConnectionStatus = ({
   };
 
   return {
-    isConnected: !!connectionInfo?.connected && !connectionInfo?.expired,
+    isConnected: localStorageConnected || (!!connectionInfo?.connected && !connectionInfo?.expired),
     isLoading: skipLoading ? false : isLoading,
     isExpired: !!connectionInfo?.expired,
     errorMessage,
