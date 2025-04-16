@@ -35,8 +35,7 @@ export const useEmailActions = ({
   const { 
     isConnected: isGmailConnected, 
     checkGmailConnection,
-    // Handle the case where connectionCheckInProgress might not exist
-    // by providing a fallback value
+    // We removed the non-existent property reference
   } = useGmailConnection();
   
   const { sendEmailViaGmail: sendEmail, composeEmailInGmail } = useEmailSender({

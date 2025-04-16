@@ -1,3 +1,4 @@
+
 import { Job, StatusObject, FlavorObject, LocaleObject } from "@/types/job";
 import { JobFormValues } from "@/components/forms/JobFormDetails";
 
