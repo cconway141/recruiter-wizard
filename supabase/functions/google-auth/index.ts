@@ -8,19 +8,32 @@ const GOOGLE_CLIENT_ID = Deno.env.get("GOOGLE_CLIENT_ID") || "";
 const GOOGLE_CLIENT_SECRET = Deno.env.get("GOOGLE_CLIENT_SECRET") || "";
 
 // Use dynamic redirect URI generation with fallback for consistency
-const getRedirectUri = (req: Request) => {
+const getRedirectUri = (req: Request, providedUri?: string) => {
+  // Use provided URI if available (safest option)
+  if (providedUri) {
+    console.log("Using provided redirect URI:", providedUri);
+    return providedUri;
+  }
+  
   // Extract the host from the request
   const url = new URL(req.url);
   const host = url.hostname;
   
+  // Get the origin
+  const origin = req.headers.get("origin") || url.origin;
+  console.log("Request origin detected:", origin);
+  
   // If we're in production, use the hardcoded value
   if (host.includes('theitbootcamp.com')) {
-    return "https://recruit.theitbootcamp.com/auth/gmail-callback";
+    const prodUri = "https://recruit.theitbootcamp.com/auth/gmail-callback";
+    console.log("Using production redirect URI:", prodUri);
+    return prodUri;
   }
   
   // For local development/testing, generate from request origin
-  const origin = req.headers.get("origin") || url.origin;
-  return `${origin}/auth/gmail-callback`;
+  const generatedUri = `${origin}/auth/gmail-callback`;
+  console.log("Using generated redirect URI:", generatedUri);
+  return generatedUri;
 };
 
 // Basic validation of required environment variables
@@ -74,6 +87,21 @@ function isRateLimited(ip: string): boolean {
   return data.count > RATE_LIMIT_MAX_REQUESTS;
 }
 
+// Enhanced error handling helper
+function createErrorResponse(message: string, status = 400, details: any = null) {
+  return new Response(
+    JSON.stringify({ 
+      error: message, 
+      timestamp: new Date().toISOString(),
+      details: details
+    }),
+    { 
+      status, 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    }
+  );
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -84,21 +112,15 @@ serve(async (req) => {
   const clientIp = req.headers.get('x-forwarded-for') || 'unknown';
   if (isRateLimited(clientIp)) {
     console.log(`Rate limit exceeded for IP: ${clientIp}`);
-    return new Response(
-      JSON.stringify({ error: 'Too many requests', message: 'Rate limit exceeded. Please try again later.' }),
-      { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return createErrorResponse('Too many requests. Please try again later.', 429);
   }
   
   try {
     // Check if required environment variables are set
     if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'Configuration error', 
-          message: 'Google OAuth credentials are not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in the Supabase Edge Function secrets.' 
-        }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      return createErrorResponse(
+        'Google OAuth credentials are not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in the Supabase Edge Function secrets.', 
+        500
       );
     }
     
@@ -121,19 +143,13 @@ serve(async (req) => {
         userId = requestBody?.userId;
       } catch (error) {
         console.error("Error parsing request body:", error);
-        return new Response(
-          JSON.stringify({ error: 'Invalid JSON in request body' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return createErrorResponse('Invalid JSON in request body', 400);
       }
     }
     
     if (!action) {
       console.error("No action specified");
-      return new Response(
-        JSON.stringify({ error: 'Missing action parameter' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return createErrorResponse('Missing action parameter', 400);
     }
     
     console.log(`Processing action: ${action} for user: ${userId || 'not specified'}`);
@@ -141,10 +157,7 @@ serve(async (req) => {
     // Route for getting the authorization URL for Gmail
     if (action === 'get-auth-url') {
       if (!userId) {
-        return new Response(
-          JSON.stringify({ error: 'User ID is required' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return createErrorResponse('User ID is required', 400);
       }
       
       // Use provided redirect URI or generate from request
@@ -153,7 +166,13 @@ serve(async (req) => {
       
       // Generate a state parameter to prevent CSRF attacks
       // This will include the user ID so we can associate the tokens with the correct user
-      const state = btoa(JSON.stringify({ userId, timestamp: Date.now(), action: 'gmail' }));
+      const state = btoa(JSON.stringify({ 
+        userId, 
+        timestamp: Date.now(), 
+        action: 'gmail',
+        // Add a random component for additional security
+        nonce: Math.random().toString(36).substring(2, 15)
+      }));
       
       // Build the authorization URL with correct redirect URI
       const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
@@ -162,15 +181,14 @@ serve(async (req) => {
       authUrl.searchParams.append('response_type', 'code');
       authUrl.searchParams.append('scope', 'https://www.googleapis.com/auth/gmail.send');
       authUrl.searchParams.append('access_type', 'offline');
-      authUrl.searchParams.append('prompt', 'consent');
+      authUrl.searchParams.append('prompt', 'consent'); // Always ask for consent to ensure we get refresh token
       authUrl.searchParams.append('state', state);
       
       // Enhanced logging for debugging
       console.log(`=== GMAIL AUTH DEBUG INFO ===`);
       console.log(`Client ID: ${GOOGLE_CLIENT_ID.substring(0, 10)}...`);
       console.log(`Redirect URI: ${redirectUri}`);
-      console.log(`Full auth URL: ${authUrl.toString()}`);
-      console.log(`State parameter: ${state}`);
+      console.log(`State parameter includes userId: ${userId}`);
       console.log(`===========================`);
       
       return new Response(
@@ -188,10 +206,7 @@ serve(async (req) => {
       const { code, state } = requestBody || {};
       
       if (!code || !state) {
-        return new Response(
-          JSON.stringify({ error: 'Code and state are required' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return createErrorResponse('Code and state are required', 400);
       }
       
       // Decode and validate the state
@@ -203,24 +218,25 @@ serve(async (req) => {
         if (Date.now() - stateData.timestamp > 10 * 60 * 1000) {
           throw new Error('State is expired');
         }
+        
+        // Validate required fields
+        if (!stateData.userId || !stateData.timestamp) {
+          throw new Error('Invalid state structure');
+        }
       } catch (error) {
         console.error('Error parsing state:', error);
-        return new Response(
-          JSON.stringify({ error: 'Invalid state parameter' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return createErrorResponse('Invalid state parameter', 400);
       }
       
-      const userId = stateData.userId;
-      const action = stateData.action || 'gmail'; // Default to gmail if not specified
+      userId = stateData.userId;
       
       // Use the same redirect URI logic for consistency
-      const redirectUri = getRedirectUri(req);
+      const redirectUri = getRedirectUri(req, requestBody?.redirectUri);
       
       console.log(`Exchanging code for tokens:`);
       console.log(`- Redirect URI: ${redirectUri}`);
       console.log(`- Code length: ${code.length} characters`);
-      console.log(`- State data: ${JSON.stringify(stateData)}`);
+      console.log(`- State data: ${JSON.stringify({...stateData, nonce: '***'})}`);
       
       // Exchange the code for tokens
       const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
@@ -246,98 +262,88 @@ serve(async (req) => {
         console.log(`- Redirect URI: ${redirectUri}`);
         console.log(`- Code length: ${code.length} characters`);
         
-        return new Response(
-          JSON.stringify({ 
-            error: 'Failed to exchange code for tokens', 
-            details: tokenData,
-            redirectUriUsed: redirectUri,
-            requestDetails: {
-              clientIdPrefix: GOOGLE_CLIENT_ID.substring(0, 10) + '...',
-              codeLength: code.length,
-              timestamp: new Date().toISOString()
-            }
-          }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return createErrorResponse('Failed to exchange code for tokens', 400, {
+          details: tokenData,
+          redirectUriUsed: redirectUri,
+          requestDetails: {
+            clientIdPrefix: GOOGLE_CLIENT_ID.substring(0, 10) + '...',
+            codeLength: code.length,
+            timestamp: new Date().toISOString()
+          }
+        });
       }
       
       console.log("Token exchange successful for user:", userId);
       
-      // Store the tokens in Supabase
-      if (action === 'gmail') {
-        try {
-          // First delete any existing tokens to ensure clean state
-          console.log("Deleting any existing tokens for user:", userId);
-          await supabase
-            .from('gmail_tokens')
-            .delete()
-            .eq('user_id', userId);
-            
-          // Then insert the new tokens
-          console.log("Inserting new tokens for user:", userId);
-          
-          const expiresAt = new Date(Date.now() + tokenData.expires_in * 1000).toISOString();
-          console.log(`Token will expire at: ${expiresAt}`);
-          
-          const insertData = {
-            user_id: userId,
-            access_token: tokenData.access_token,
-            refresh_token: tokenData.refresh_token,
-            expires_at: expiresAt,
-            token_type: tokenData.token_type,
-            scope: tokenData.scope,
-          };
-          
-          const { error: insertError } = await supabase
-            .from('gmail_tokens')
-            .insert(insertData);
-          
-          if (insertError) {
-            console.error('Error storing tokens:', insertError);
-            throw insertError;
-          }
-          
-          // Verify tokens were stored successfully
-          const { data: verifyData, error: verifyError } = await supabase
-            .from('gmail_tokens')
-            .select('*')
-            .eq('user_id', userId)
-            .single();
-            
-          if (verifyError || !verifyData) {
-            console.error('Error verifying tokens were stored:', verifyError);
-            throw new Error('Failed to verify tokens were stored');
-          }
-          
-          console.log("Tokens stored and verified for user:", userId);
-          
-          return new Response(
-            JSON.stringify({ success: true, message: 'Gmail connected successfully' }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        } catch (storageError) {
-          console.error('Error in token storage process:', storageError);
-          return new Response(
-            JSON.stringify({ error: 'Failed to store tokens', details: storageError.message }),
-            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
+      if (!tokenData.refresh_token) {
+        console.warn("No refresh token received! This might cause issues with token renewal.");
       }
       
-      // This could be enhanced for other Google services in the future
-      return new Response(
-        JSON.stringify({ success: true, message: 'Google service connected successfully' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      // Store the tokens in Supabase
+      try {
+        // First delete any existing tokens to ensure clean state
+        console.log("Deleting any existing tokens for user:", userId);
+        await supabase
+          .from('gmail_tokens')
+          .delete()
+          .eq('user_id', userId);
+          
+        // Then insert the new tokens
+        console.log("Inserting new tokens for user:", userId);
+        
+        const expiresAt = new Date(Date.now() + tokenData.expires_in * 1000).toISOString();
+        console.log(`Token will expire at: ${expiresAt}`);
+        
+        const insertData = {
+          user_id: userId,
+          access_token: tokenData.access_token,
+          refresh_token: tokenData.refresh_token,
+          expires_at: expiresAt,
+          token_type: tokenData.token_type,
+          scope: tokenData.scope,
+        };
+        
+        const { error: insertError } = await supabase
+          .from('gmail_tokens')
+          .insert(insertData);
+        
+        if (insertError) {
+          console.error('Error storing tokens:', insertError);
+          throw insertError;
+        }
+        
+        // Verify tokens were stored successfully
+        const { data: verifyData, error: verifyError } = await supabase
+          .from('gmail_tokens')
+          .select('id, created_at')
+          .eq('user_id', userId)
+          .single();
+          
+        if (verifyError || !verifyData) {
+          console.error('Error verifying tokens were stored:', verifyError);
+          throw new Error('Failed to verify tokens were stored');
+        }
+        
+        console.log("Tokens stored and verified for user:", userId);
+        
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            message: 'Gmail connected successfully',
+            tokenId: verifyData.id
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } catch (storageError) {
+        console.error('Error in token storage process:', storageError);
+        return createErrorResponse('Failed to store tokens', 500, storageError);
+      }
     }
     
     // Route for refreshing an expired access token
     if (action === 'refresh-token') {
       if (!userId) {
-        return new Response(
-          JSON.stringify({ error: 'User ID is required' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return createErrorResponse('User ID is required', 400);
       }
       
       // Get the refresh token for this user
@@ -349,16 +355,18 @@ serve(async (req) => {
       
       if (tokenError || !tokenData?.refresh_token) {
         console.error('Error fetching refresh token:', tokenError);
-        return new Response(
-          JSON.stringify({ error: 'No Gmail connection found for this user' }),
-          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return createErrorResponse('No Gmail connection found for this user', 404);
       }
       
       // Check if current token is still valid
       if (new Date(tokenData.expires_at) > new Date()) {
         return new Response(
-          JSON.stringify({ success: true, message: 'Token is still valid' }),
+          JSON.stringify({ 
+            success: true, 
+            message: 'Token is still valid',
+            connected: true,
+            expired: false
+          }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -379,10 +387,25 @@ serve(async (req) => {
       
       if (newTokenData.error) {
         console.error('Token refresh error:', newTokenData);
-        return new Response(
-          JSON.stringify({ error: 'Failed to refresh token', details: newTokenData }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        
+        // Special handling for invalid_grant errors, which likely mean the refresh token is invalid
+        if (newTokenData.error === 'invalid_grant') {
+          console.error('Refresh token is invalid or has been revoked');
+          
+          // Delete the invalid token
+          await supabase
+            .from('gmail_tokens')
+            .delete()
+            .eq('user_id', userId);
+            
+          return createErrorResponse(
+            'Gmail authorization has expired. Please reconnect your account.',
+            401, 
+            { error: 'invalid_refresh_token' }
+          );
+        }
+        
+        return createErrorResponse('Failed to refresh token', 400, newTokenData);
       }
       
       // Update the token in Supabase
@@ -391,19 +414,22 @@ serve(async (req) => {
         .update({
           access_token: newTokenData.access_token,
           expires_at: new Date(Date.now() + newTokenData.expires_in * 1000).toISOString(),
+          updated_at: new Date().toISOString()
         })
         .eq('user_id', userId);
       
       if (updateError) {
         console.error('Error updating token:', updateError);
-        return new Response(
-          JSON.stringify({ error: 'Failed to update token', details: updateError }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return createErrorResponse('Failed to update token in database', 500, updateError);
       }
       
       return new Response(
-        JSON.stringify({ success: true, message: 'Token refreshed successfully' }),
+        JSON.stringify({ 
+          success: true, 
+          message: 'Token refreshed successfully',
+          connected: true,
+          expired: false
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -411,10 +437,7 @@ serve(async (req) => {
     // Route for checking if a user has connected Gmail
     if (action === 'check-connection') {
       if (!userId) {
-        return new Response(
-          JSON.stringify({ error: 'User ID is required' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return createErrorResponse('User ID is required', 400);
       }
       
       console.log("Checking Gmail connection for user:", userId);
@@ -428,10 +451,7 @@ serve(async (req) => {
       
       if (error) {
         console.error('Error checking connection:', error);
-        return new Response(
-          JSON.stringify({ error: 'Failed to check connection', details: error }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return createErrorResponse('Failed to check connection', 500, error);
       }
       
       const isConnected = !!data && !!data.access_token;
@@ -445,14 +465,118 @@ serve(async (req) => {
         needsRefresh: isConnected && isExpired
       });
       
-      if (isConnected) {
-        // Additional token details for debugging
-        console.log(`Token expires at: ${data.expires_at}`);
-        console.log(`Current time: ${new Date().toISOString()}`);
-        console.log(`Token is ${isExpired ? 'expired' : 'valid'}`);
-        console.log(`Has refresh token: ${hasRefreshToken}`);
+      // If token is expired but has refresh token, automatically refresh it
+      if (isConnected && isExpired && hasRefreshToken) {
+        console.log("Token is expired, attempting to refresh automatically");
+        
+        try {
+          // Exchange the refresh token for a new access token
+          const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+              client_id: GOOGLE_CLIENT_ID,
+              client_secret: GOOGLE_CLIENT_SECRET,
+              refresh_token: data.refresh_token,
+              grant_type: 'refresh_token'
+            }).toString()
+          });
+          
+          const newTokenData = await tokenResponse.json();
+          
+          if (newTokenData.error) {
+            console.error('Auto-refresh error:', newTokenData);
+            
+            // Special handling for invalid_grant errors
+            if (newTokenData.error === 'invalid_grant') {
+              console.error('Refresh token is invalid or has been revoked');
+              
+              // Delete the invalid token
+              await supabase
+                .from('gmail_tokens')
+                .delete()
+                .eq('user_id', userId);
+                
+              return new Response(
+                JSON.stringify({ 
+                  connected: false,
+                  expired: true,
+                  hasRefreshToken: false,
+                  refreshError: 'token_revoked'
+                }),
+                { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+              );
+            }
+            
+            // Return the connection state with refresh error
+            return new Response(
+              JSON.stringify({ 
+                connected: isConnected,
+                expired: isExpired,
+                hasRefreshToken: hasRefreshToken,
+                needsRefresh: true,
+                refreshError: newTokenData.error
+              }),
+              { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+          
+          // Update the token in Supabase
+          const { error: updateError } = await supabase
+            .from('gmail_tokens')
+            .update({
+              access_token: newTokenData.access_token,
+              expires_at: new Date(Date.now() + newTokenData.expires_in * 1000).toISOString(),
+              updated_at: new Date().toISOString()
+            })
+            .eq('user_id', userId);
+          
+          if (updateError) {
+            console.error('Error updating token during auto-refresh:', updateError);
+            
+            // Return the error but with the connection status
+            return new Response(
+              JSON.stringify({ 
+                connected: isConnected,
+                expired: isExpired,
+                hasRefreshToken: hasRefreshToken,
+                needsRefresh: true,
+                updateError: updateError.message
+              }),
+              { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+          
+          console.log("Token automatically refreshed for user:", userId);
+          
+          // Return updated connection status
+          return new Response(
+            JSON.stringify({ 
+              connected: true,
+              expired: false,
+              hasRefreshToken: true,
+              autoRefreshed: true
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        } catch (refreshError) {
+          console.error("Error in auto-refresh process:", refreshError);
+          
+          // Return original connection status with refresh error
+          return new Response(
+            JSON.stringify({ 
+              connected: isConnected,
+              expired: isExpired,
+              hasRefreshToken: hasRefreshToken,
+              needsRefresh: true,
+              refreshError: refreshError instanceof Error ? refreshError.message : 'Unknown refresh error'
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
       }
       
+      // Standard response for non-expired tokens
       return new Response(
         JSON.stringify({ 
           connected: isConnected,
@@ -467,10 +591,7 @@ serve(async (req) => {
     // Route for revoking tokens
     if (action === 'revoke-token') {
       if (!userId) {
-        return new Response(
-          JSON.stringify({ error: 'User ID is required' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return createErrorResponse('User ID is required', 400);
       }
       
       // Get the token for this user
@@ -482,10 +603,7 @@ serve(async (req) => {
       
       if (tokenError || !tokenData) {
         console.error('Error fetching token:', tokenError);
-        return new Response(
-          JSON.stringify({ error: 'No Gmail connection found for this user' }),
-          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return createErrorResponse('No Gmail connection found for this user', 404);
       }
       
       // Revoke the token
@@ -511,27 +629,28 @@ serve(async (req) => {
         
       if (deleteError) {
         console.error('Error deleting token:', deleteError);
-        return new Response(
-          JSON.stringify({ error: 'Failed to delete token', details: deleteError }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return createErrorResponse('Failed to delete token from database', 500, deleteError);
       }
       
       return new Response(
-        JSON.stringify({ success: true, message: 'Token revoked and deleted successfully' }),
+        JSON.stringify({ 
+          success: true, 
+          message: 'Token revoked and deleted successfully' 
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
     
-    return new Response(
-      JSON.stringify({ error: 'Invalid action' }),
-      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return createErrorResponse('Invalid action', 400);
   } catch (error) {
     console.error('Error in google-auth function:', error);
-    return new Response(
-      JSON.stringify({ error: 'Internal server error', details: error.message, stack: error.stack }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    return createErrorResponse(
+      'Internal server error', 
+      500, 
+      { 
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      }
     );
   }
 });
