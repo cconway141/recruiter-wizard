@@ -15,7 +15,6 @@ export const mapJobToFormDefaults = (job: Job): JobFormValues => {
       locale: {
         id: '',
         name: '',
-        abbreviation: '',
         workDetails: '',
         payDetails: ''
       },
@@ -49,13 +48,8 @@ export const mapJobToFormDefaults = (job: Job): JobFormValues => {
     : { 
         id: job.localeId || '', 
         name: typeof job.locale === 'string' ? job.locale : '',
-        ...(job.workDetails || job.payDetails ? {
-          workDetails: job.workDetails || '',
-          payDetails: job.payDetails || ''
-        } : {}),
-        ...(job.locale && typeof job.locale === 'object' && 'abbreviation' in job.locale 
-          ? { abbreviation: (job.locale as any).abbreviation } 
-          : {})
+        workDetails: job.workDetails || '',
+        payDetails: job.payDetails || ''
       };
   
   // Ensure flavor is an object with id and name properties
