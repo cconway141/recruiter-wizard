@@ -30,18 +30,13 @@ export const useGmailThread = ({
         const storedMessageId = await getMessageId(candidateId, jobId);
         console.log("Retrieved message ID for threading:", storedMessageId);
         setMessageId(storedMessageId);
-        
-        // Get full thread info for additional debug info
-        const threadInfo = await getThreadInfo(candidateId, jobId);
-        console.log("FULL THREAD INFO:", threadInfo);
       }
     };
     
     fetchMessageId();
-  }, [threadId, candidateId, jobId, getMessageId, getThreadInfo]);
+  }, [threadId, candidateId, jobId, getMessageId]);
 
   const handleOpenThreadInGmail = useCallback((subject: string) => {
-    console.log("Opening thread in Gmail with subject search:", subject);
     const searchQuery = encodeURIComponent(`subject:(${subject})`);
     window.open(`https://mail.google.com/mail/u/0/#search/${searchQuery}`, "_blank");
   }, []);

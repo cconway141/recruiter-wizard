@@ -1,10 +1,10 @@
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useGmailConnection } from "@/hooks/gmail";
 import { useEmailSender } from "@/hooks/email/useEmailSender";
 import { useEmailContent } from "@/hooks/useEmailContent";
-import { useGmailConnection } from "@/contexts/GmailConnectionContext";
 
 interface UseEmailActionsProps {
   candidateName?: string;
@@ -29,13 +29,9 @@ export const useEmailActions = ({
   const { toast } = useToast();
   const [isSending, setIsSending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isCheckingGmail, setIsCheckingGmail] = useState(false);
   
-  // Get connection status from our centralized context
-  const { 
-    isConnected: isGmailConnected,
-    isLoading: isCheckingGmail,
-    checkConnection: checkGmailConnection,
-  } = useGmailConnection();
+  const { isConnected: isGmailConnected, checkGmailConnection } = useGmailConnection();
   
   const { sendEmailViaGmail: sendEmail, composeEmailInGmail } = useEmailSender({
     onSuccess
@@ -47,46 +43,24 @@ export const useEmailActions = ({
     selectedTemplate
   });
   
-  // Do a single check on mount to ensure connection status is current
+  // Check Gmail connection on mount
   useEffect(() => {
     if (user) {
-      checkGmailConnection().catch(err => {
-        console.error("Email component Gmail check failed:", err);
-        // Don't set error message for background checks
+      setIsCheckingGmail(true);
+      checkGmailConnection().finally(() => {
+        setIsCheckingGmail(false);
       });
     }
-  }, [user, checkGmailConnection]);
-
-  // Memoize data used by the sendEmailViaGmail function
-  const emailData = useMemo(() => ({
-    candidateEmail,
-    candidateName,
-    isGmailConnected,
-    jobTitle
-  }), [candidateEmail, candidateName, isGmailConnected, jobTitle]);
+  }, [checkGmailConnection, user]);
 
   const sendEmailViaGmail = useCallback(async () => {
-    const { candidateEmail, candidateName, isGmailConnected, jobTitle } = emailData;
-    
     if (!candidateEmail) {
-      const noEmailError = "No email address provided for this candidate";
-      setErrorMessage(noEmailError);
-      toast({
-        title: "Email Error",
-        description: noEmailError,
-        variant: "destructive"
-      });
+      setErrorMessage("No email address provided for this candidate");
       return null;
     }
     
     if (!isGmailConnected) {
-      const notConnectedError = "Gmail is not connected. Please connect your Gmail account first.";
-      setErrorMessage(notConnectedError);
-      toast({
-        title: "Gmail Not Connected",
-        description: notConnectedError,
-        variant: "destructive"
-      });
+      setErrorMessage("Gmail is not connected. Please connect your Gmail account first.");
       return null;
     }
     
@@ -107,36 +81,24 @@ export const useEmailActions = ({
       );
     } catch (error) {
       console.error("Error sending email:", error);
-      const errorMsg = error instanceof Error ? error.message : "Failed to send email";
-      setErrorMessage(errorMsg);
-      toast({
-        title: "Email Error",
-        description: errorMsg,
-        variant: "destructive"
-      });
+      setErrorMessage(error instanceof Error ? error.message : "Failed to send email");
       return null;
     } finally {
       setIsSending(false);
     }
   }, [
-    emailData,
+    candidateEmail,
+    candidateName,
+    checkGmailConnection,
+    composeEmailInGmail,
     getEmailContent,
+    isGmailConnected,
+    jobTitle,
+    onSuccess,
     selectedTemplate,
     sendEmail,
-    threadId,
-    toast
+    threadId
   ]);
-
-  // Clean up any state or listeners on unmount
-  useEffect(() => {
-    return () => {
-      // Cancel any pending operations if component unmounts during send
-      if (isSending) {
-        console.log("Component unmounted during email send - cleaning up");
-        setIsSending(false);
-      }
-    };
-  }, [isSending]);
 
   return {
     sendEmailViaGmail,
@@ -145,8 +107,7 @@ export const useEmailActions = ({
     isLoading: isCheckingGmail,
     isSending,
     errorMessage, 
-    checkGmailConnection,
-    emailTemplates
+    checkGmailConnection
   };
 };
 
