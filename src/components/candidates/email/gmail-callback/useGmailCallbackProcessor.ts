@@ -80,136 +80,115 @@ export const useGmailCallbackProcessor = () => {
         }
 
         console.log("Received code and state from Google OAuth flow");
-        console.log("Decoded state:", atob(state));
-        console.log("Exchanging code for Gmail API access tokens...");
         
-        // Exchange the code for tokens with retry logic
-        let retryCount = 0;
-        const maxRetries = 3;
-        let success = false;
-        
-        while (retryCount < maxRetries && !success) {
-          try {
-            const { data, error } = await supabase.functions.invoke('google-auth', {
-              body: { action: 'exchange-code', code, state }
-            });
-
-            if (error) {
-              console.error(`Attempt ${retryCount + 1}: Error exchanging code:`, error);
-              retryCount++;
-              
-              if (retryCount < maxRetries) {
-                console.log(`Retrying in 1 second... (${retryCount}/${maxRetries})`);
-                await new Promise(resolve => setTimeout(resolve, 1000));
-              }
-              continue;
-            }
-
-            if (data?.error === 'Configuration error') {
-              setError(data.message || 'Google OAuth is not properly configured');
-              setStatus('error');
-              setIsProcessing(false);
-              return;
-            }
-            
-            // If we received error details about redirect URI mismatch
-            if (data?.error && (data?.redirectUriUsed || data?.requestDetails)) {
-              setErrorDetails({ 
-                error: data.error,
-                redirectUriUsed: data.redirectUriUsed,
-                requestDetails: data.requestDetails,
-                details: data.details 
-              });
-              throw new Error(`Failed to exchange code: ${data.error}`);
-            }
-            
-            console.log(`Attempt ${retryCount + 1}: Token exchange successful:`, data);
-            success = true;
-            
-            // Force immediate refresh of all Gmail connection queries
-            queryClient.invalidateQueries({ queryKey: ['gmail-connection'] });
-            queryClient.invalidateQueries({ queryKey: ['gmail-connection', user.id] });
-            
-            // Mark a successful connection in sessionStorage for UI feedback
-            sessionStorage.setItem('gmailConnectionSuccess', 'true');
-            sessionStorage.setItem('gmailConnectionTimestamp', Date.now().toString());
-            
-            // Verify the tokens were saved by checking the connection
-            console.log("Verifying connection after token exchange...");
-            const { data: checkData, error: checkError } = await supabase.functions.invoke('google-auth', {
-              body: { action: 'check-connection', userId: user.id }
-            });
-            
-            if (checkError) {
-              console.error("Error verifying connection:", checkError);
-              throw new Error("Failed to verify connection after token exchange");
-            }
-            
-            console.log("Connection verification:", checkData);
-            
-            if (!checkData.connected) {
-              console.error("Token saved but connection check failed");
-              throw new Error("Failed to verify Gmail connection after saving tokens");
-            }
-            
-            setStatus('success');
-            
-            toast({
-              title: "Gmail Connected",
-              description: "Your Gmail account has been successfully connected for sending emails.",
-            });
-
-            // Wait a moment before redirecting to ensure tokens are saved
-            setTimeout(() => {
-              navigate("/profile");
-            }, 2000);
-            
-            return;
-          } catch (retryError) {
-            console.error(`Attempt ${retryCount + 1} failed:`, retryError);
-            retryCount++;
-            
-            if (retryCount < maxRetries) {
-              console.log(`Retrying in 1 second... (${retryCount}/${maxRetries})`);
-              await new Promise(resolve => setTimeout(resolve, 1000));
-            }
+        try {
+          // Try to decode state to ensure it's valid
+          const decodedState = JSON.parse(atob(state));
+          console.log("Decoded state:", decodedState);
+          
+          // Validate state to prevent CSRF attacks
+          if (!decodedState.userId || !decodedState.timestamp) {
+            throw new Error("Invalid state parameter");
           }
-        }
-        
-        if (!success) {
-          setError(`Failed to exchange code after ${maxRetries} attempts`);
+          
+          // Check if state is expired (10 minutes)
+          if (Date.now() - decodedState.timestamp > 10 * 60 * 1000) {
+            throw new Error("Authorization request expired");
+          }
+        } catch (stateError) {
+          console.error("Error validating state:", stateError);
+          setError("Invalid state parameter in callback");
           setStatus('error');
           setIsProcessing(false);
-          
-          // Store error for debugging
-          sessionStorage.setItem('gmailConnectionError', JSON.stringify({
-            message: `Failed to exchange code after ${maxRetries} attempts`,
-            timestamp: Date.now(),
-            params: paramObj
-          }));
+          return;
         }
-      } catch (err: any) {
-        console.error("Error processing callback:", err);
-        setError("An unexpected error occurred while connecting Gmail");
-        setStatus('error');
-        setIsProcessing(false);
         
-        // Store error for debugging
-        sessionStorage.setItem('gmailConnectionError', JSON.stringify({
-          message: err.message,
-          timestamp: Date.now(),
-          params: paramObj
-        }));
+        console.log("Exchanging code for Gmail API access tokens...");
+        
+        // Exchange the code for tokens with improved error handling
+        const { data, error } = await supabase.functions.invoke('google-auth', {
+          body: { action: 'exchange-code', code, state }
+        });
+
+        if (error) {
+          console.error("Error exchanging code:", error);
+          setError(`Failed to exchange authorization code: ${error.message}`);
+          setStatus('error');
+          setIsProcessing(false);
+          return;
+        }
+
+        if (data?.error) {
+          console.error("Error in token exchange:", data.error);
+          
+          // Capture detailed error information
+          if (data.redirectUriUsed || data.requestDetails) {
+            setErrorDetails({ 
+              error: data.error,
+              redirectUriUsed: data.redirectUriUsed,
+              requestDetails: data.requestDetails,
+              details: data.details 
+            });
+          }
+          
+          setError(`Failed to complete Gmail connection: ${data.error}`);
+          setStatus('error');
+          setIsProcessing(false);
+          return;
+        }
+
+        console.log("Token exchange successful:", data);
+        
+        // Force immediate refresh of all Gmail connection queries
+        queryClient.invalidateQueries({ queryKey: ['gmail-connection'] });
+        queryClient.invalidateQueries({ queryKey: ['gmail-connection', user.id] });
+        
+        // Update connection status in all storage mechanisms
+        sessionStorage.setItem('gmail_connection_status', 'true');
+        sessionStorage.setItem('gmail_connection_timestamp', Date.now().toString());
+        localStorage.setItem('gmail_connected', 'true');
+        
+        // Clean up connection attempt flags
+        sessionStorage.removeItem('gmailConnectionInProgress');
+        sessionStorage.removeItem('gmailConnectionAttemptTime');
+        
+        setStatus('success');
+        
+        toast({
+          title: "Gmail Connected",
+          description: "Your Gmail account has been successfully connected for sending emails.",
+        });
+
+        // Give user a moment to see success message before redirecting
+        setTimeout(() => {
+          navigate("/profile", { 
+            state: { gmailConnected: true }
+          });
+        }, 2000);
+        
+      } catch (error) {
+        console.error("Error in Gmail callback processor:", error);
+        
+        // Comprehensive error message
+        const errorMessage = error instanceof Error 
+          ? error.message 
+          : "Failed to complete the Gmail connection process";
+        
+        setError(errorMessage);
+        setStatus('error');
+        
+        // Clean up connection attempt flags
+        sessionStorage.removeItem('gmailConnectionInProgress');
+        sessionStorage.removeItem('gmailConnectionAttemptTime');
       } finally {
         setIsProcessing(false);
       }
     };
 
     processCallback();
-  }, [location, navigate, user, toast, queryClient]);
+  }, [location.search, user, navigate, toast, queryClient]);
 
   return {
-    isProcessing,
     status,
     error,
     errorDetails,

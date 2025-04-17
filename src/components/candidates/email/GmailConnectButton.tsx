@@ -1,10 +1,10 @@
 
 import React, { useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { useGmailConnection } from "@/hooks/gmail";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { ConfigErrorButton } from "./ConfigErrorButton";
+import { useGmailConnection } from "@/contexts/GmailConnectionContext";
 
 interface GmailConnectButtonProps {
   className?: string;
@@ -18,38 +18,29 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
   const { user } = useAuth();
   const { toast } = useToast();
   
-  // Check local storage first for saved connection status
-  const savedConnectionStatus = localStorage.getItem('gmail_connected') === 'true';
-  
-  // Use our enhanced hook with explicit loading UI control
+  // Use our centralized context instead of the hook
   const { 
-    isConnected: apiConnectionStatus, 
-    isLoading: isCheckingGmail,
-    connectGmail, // This function initiates the OAuth flow
-    disconnectGmail
-  } = useGmailConnection({ 
-    onConnectionChange,
-    showLoadingUI: false // Prevent blocking UI with loading states
-  });
-  
-  // Use saved status or API status, giving preference to saved status
-  const isGmailConnected = savedConnectionStatus || apiConnectionStatus;
+    isConnected, 
+    isLoading,
+    connectGmail,
+    disconnectGmail,
+    error
+  } = useGmailConnection();
 
   // Improved logging for debugging
   console.debug("GmailConnectButton: Component rendered", { 
-    isGmailConnected, 
-    savedConnectionStatus,
-    apiConnectionStatus,
-    isCheckingGmail,
-    connectGmailType: typeof connectGmail
+    isConnected, 
+    isLoading,
+    hasError: !!error,
+    hasUser: !!user
   });
 
   // Notify parent component when connection status changes
   useEffect(() => {
     if (onConnectionChange) {
-      onConnectionChange(isGmailConnected);
+      onConnectionChange(isConnected);
     }
-  }, [isGmailConnected, onConnectionChange]);
+  }, [isConnected, onConnectionChange]);
 
   useEffect(() => {
     // Check if we just completed a connection process and clean up
@@ -63,9 +54,6 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
       // Clear connection attempt flags
       sessionStorage.removeItem('gmailConnectionInProgress');
       sessionStorage.removeItem('gmailConnectionAttemptTime');
-      
-      // Save successful connection to localStorage for persistence
-      localStorage.setItem('gmail_connected', 'true');
       
       toast({
         title: "Gmail Connected",
@@ -97,26 +85,6 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
     }
   }, [toast, onConnectionChange]);
 
-  // Handle Gmail disconnection
-  const handleDisconnect = async () => {
-    try {
-      await disconnectGmail();
-      // Remove saved connection status
-      localStorage.removeItem('gmail_connected');
-      
-      toast({
-        title: "Gmail Disconnected",
-        description: "Your Gmail account has been disconnected.",
-      });
-      
-      if (onConnectionChange) {
-        onConnectionChange(false);
-      }
-    } catch (error) {
-      console.error("Error disconnecting Gmail:", error);
-    }
-  };
-
   // Critical fix: Create a proper click handler function
   const handleConnectClick = () => {
     console.debug("Connect Gmail button clicked in GmailConnectButton");
@@ -132,9 +100,8 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
     
     try {
       console.debug("Executing connectGmail function");
-      connectGmail().then(() => {
-        // Save connection attempt to localStorage
-        localStorage.setItem('gmail_connecting', 'true');
+      connectGmail().catch(error => {
+        console.error("Error connecting to Gmail:", error);
       });
     } catch (error) {
       console.error("Error executing connectGmail:", error);
@@ -146,13 +113,13 @@ export const GmailConnectButton: React.FC<GmailConnectButtonProps> = ({
     }
   };
 
-  // Use ConfigErrorButton component with proper onClick handler for the connect button
   return (
     <ConfigErrorButton
-      isConnected={isGmailConnected}
-      onClick={handleConnectClick} // Using our wrapped handler function
-      onDisconnect={handleDisconnect}
+      isConnected={isConnected}
+      onClick={handleConnectClick}
+      onDisconnect={disconnectGmail}
       className={className}
+      isLoading={isLoading}
     />
   );
 };
