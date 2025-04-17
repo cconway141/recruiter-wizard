@@ -1,10 +1,18 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-// Interface for a dropdown option
+// Base interface for a dropdown option
 export interface DropdownOption {
   id: string;
   name: string;
+}
+
+// Extended interface for locale options
+export interface LocaleOption extends DropdownOption {
+  abbreviation?: string | null;
+  workDetails?: string | null;
+  payDetails?: string | null;
 }
 
 // Interface for user profiles
@@ -45,7 +53,7 @@ export function useLocaleOptions() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('locales')
-        .select('id, name')
+        .select('id, name, abbreviation, work_details, pay_details')
         .order('name');
 
       if (error) {
@@ -53,7 +61,14 @@ export function useLocaleOptions() {
         throw new Error(error.message);
       }
       
-      return data as DropdownOption[];
+      // Transform the data to match our LocaleOption interface
+      return data.map(locale => ({
+        id: locale.id,
+        name: locale.name,
+        abbreviation: locale.abbreviation,
+        workDetails: locale.work_details,
+        payDetails: locale.pay_details
+      })) as LocaleOption[];
     }
   });
 }

@@ -255,8 +255,6 @@ async function getGmailTokens(userId: string) {
   return { tokenData };
 }
 
-// ------- Main Request Handler -------
-
 // Main request handler
 serve(async (req) => {
   // Handle CORS preflight

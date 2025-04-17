@@ -16,12 +16,13 @@ import {
 import { 
   useFlavorOptions, 
   useLocaleOptions, 
-  useStatusOptions 
+  useStatusOptions,
+  LocaleOption
 } from "@/hooks/use-dropdown-options";
 import { displayFormValue } from "@/utils/formFieldUtils";
-import { useMemo } from "react";
+import { useMemo, memo } from "react";
 
-export function MetadataSelects() {
+export const MetadataSelects = memo(function MetadataSelects() {
   const form = useFormContext();
   const { data: flavorOptions, isLoading: flavorLoading } = useFlavorOptions();
   const { data: localeOptions, isLoading: localeLoading } = useLocaleOptions();
@@ -79,10 +80,13 @@ export function MetadataSelects() {
             <FormLabel>Locale</FormLabel>
             <Select 
               onValueChange={(value) => {
-                const selectedLocale = memoizedLocaleOptions.find(locale => locale.name === value);
+                const selectedLocale = memoizedLocaleOptions.find(locale => locale.name === value) as LocaleOption | undefined;
                 field.onChange({
                   id: selectedLocale?.id || value,
-                  name: value
+                  name: value,
+                  abbreviation: selectedLocale?.abbreviation || '',
+                  workDetails: selectedLocale?.workDetails || '',
+                  payDetails: selectedLocale?.payDetails || ''
                 });
               }} 
               value={field.value?.name || ''}
@@ -146,4 +150,4 @@ export function MetadataSelects() {
       />
     </div>
   );
-}
+});

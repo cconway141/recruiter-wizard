@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, ReactNode, useState, useCallback } from "react";
+import React, { createContext, useContext, ReactNode, useState, useCallback, useMemo } from "react";
 import { Job } from "@/types/job";
 import { JobFormValues } from "../JobFormDetails";
 import { useFormProcessor } from "./FormProcessor";
@@ -39,7 +39,7 @@ export function FormProcessorProvider({
   }, []);
 
   // The handleSubmit function is a simple wrapper around processJobForm
-  const handleSubmit = (values: JobFormValues) => {
+  const handleSubmit = useCallback((values: JobFormValues) => {
     console.log("FormProcessorContext handleSubmit called with values", values);
     
     // Check if we're already submitting to prevent double submissions
@@ -57,20 +57,19 @@ export function FormProcessorProvider({
       // Always ensure we reset state on errors
       setIsSubmitting(false);
     });
-  };
+  }, [isSubmitting, processJobForm]);
 
-  console.log("FormProcessorProvider - isSubmitting state:", isSubmitting);
+  // Memoize the context value to prevent unnecessary re-renders
+  const contextValue = useMemo(() => ({ 
+    handleSubmit, 
+    isSubmitting, 
+    resetSubmissionState,
+    job, 
+    isEditing 
+  }), [handleSubmit, isSubmitting, resetSubmissionState, job, isEditing]);
 
   return (
-    <FormProcessorContext.Provider 
-      value={{ 
-        handleSubmit, 
-        isSubmitting, 
-        resetSubmissionState,
-        job, 
-        isEditing 
-      }}
-    >
+    <FormProcessorContext.Provider value={contextValue}>
       {children}
     </FormProcessorContext.Provider>
   );

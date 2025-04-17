@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -26,9 +26,10 @@ interface ProfileContentProps {
 
 export const ProfileContent = ({ setError }: ProfileContentProps) => {
   const { user, isGoogleLinked } = useAuth();
+  const [localError, setLocalError] = useState<string | null>(null);
 
   // Get profile data with optimized settings - but NEVER block rendering on this
-  const { data: profile, error: profileError } = useQuery({
+  const { data: profile, error: profileError, isLoading } = useQuery({
     queryKey: ['profile', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
@@ -44,6 +45,7 @@ export const ProfileContent = ({ setError }: ProfileContentProps) => {
         return data as Profile;
       } catch (err: any) {
         console.error("Error fetching profile:", err);
+        setLocalError(err.message || "Failed to load profile");
         setError(err.message || "Failed to load profile");
         return null;
       }
@@ -57,12 +59,16 @@ export const ProfileContent = ({ setError }: ProfileContentProps) => {
   });
 
   // Handle errors but don't block rendering
-  if (profileError) {
+  if (profileError && !localError) {
     console.error("Profile fetch error:", profileError);
-    // We don't return or block rendering here - just log the error
+    setLocalError(profileError instanceof Error ? profileError.message : "Failed to load profile");
+    setError(profileError instanceof Error ? profileError.message : "Failed to load profile");
   }
 
-  const isProfileGoogleLinked = profile?.google_linked || isGoogleLinked;
+  const isProfileGoogleLinked = useMemo(() => 
+    profile?.google_linked || isGoogleLinked, 
+    [profile?.google_linked, isGoogleLinked]
+  );
 
   // Always render content immediately - even during profile loading
   // This ensures the page doesn't remain blank

@@ -41,10 +41,27 @@ export const CandidateListItem: React.FC<CandidateListItemProps> = ({
 
   // Get thread ID for the current job using standardized format
   const getThreadIdForJob = (): string | null => {
+    console.log("GET THREAD ID DEBUG:", {
+      candidateId: candidate.id,
+      candidateName: candidate.name,
+      jobId,
+      hasThreadIds: !!candidate.threadIds,
+      threadIdsType: candidate.threadIds ? typeof candidate.threadIds : 'undefined',
+      threadInfoForJob: candidate.threadIds?.[jobId]
+    });
+    
     if (!candidate.threadIds || !jobId) return null;
     
     const threadInfo = candidate.threadIds[jobId] as EmailThreadInfo | undefined;
-    return threadInfo?.threadId || null;
+    const threadId = threadInfo?.threadId || null;
+    
+    console.log("EXTRACTED THREAD ID:", {
+      threadId,
+      isValid: !!threadId && threadId.trim() !== '',
+      threadIdLength: threadId?.length
+    });
+    
+    return threadId;
   };
 
   // Get message ID for the current job
@@ -52,7 +69,15 @@ export const CandidateListItem: React.FC<CandidateListItemProps> = ({
     if (!candidate.threadIds || !jobId) return null;
     
     const threadInfo = candidate.threadIds[jobId] as EmailThreadInfo | undefined;
-    return threadInfo?.messageId || null;
+    const messageId = threadInfo?.messageId || null;
+    
+    console.log("EXTRACTED MESSAGE ID:", {
+      messageId,
+      isValid: !!messageId && messageId.trim() !== '',
+      messageIdLength: messageId?.length
+    });
+    
+    return messageId;
   };
 
   return (

@@ -1,5 +1,5 @@
 
-import { Job, StatusObject, FlavorObject } from "@/types/job";
+import { Job, StatusObject, FlavorObject, LocaleObject } from "@/types/job";
 import { JobFormValues } from "@/components/forms/JobFormDetails";
 
 /**
@@ -14,7 +14,10 @@ export const mapJobToFormDefaults = (job: Job): JobFormValues => {
       compDesc: '',
       locale: {
         id: '',
-        name: ''
+        name: '',
+        abbreviation: '',
+        workDetails: '',
+        payDetails: ''
       },
       flavor: {
         id: '',
@@ -40,35 +43,50 @@ export const mapJobToFormDefaults = (job: Job): JobFormValues => {
     };
   }
   
+  // Ensure locale is an object with all required properties
+  const locale: LocaleObject = typeof job.locale === 'object' && job.locale !== null
+    ? job.locale
+    : { 
+        id: job.localeId || '', 
+        name: typeof job.locale === 'string' ? job.locale : '',
+        ...(job.workDetails || job.payDetails ? {
+          workDetails: job.workDetails || '',
+          payDetails: job.payDetails || ''
+        } : {}),
+        ...(job.locale && typeof job.locale === 'object' && 'abbreviation' in job.locale 
+          ? { abbreviation: (job.locale as any).abbreviation } 
+          : {})
+      };
+  
   // Ensure flavor is an object with id and name properties
-  const flavor: FlavorObject = typeof job.flavor === 'object'
+  const flavor: FlavorObject = typeof job.flavor === 'object' && job.flavor !== null
     ? job.flavor
-    : { id: job.flavorId || job.flavor || '', name: job.flavor || '' };
+    : { id: job.flavorId || (typeof job.flavor === 'string' ? job.flavor : ''), name: typeof job.flavor === 'string' ? job.flavor : '' };
   
   // Ensure status is an object
-  const status: StatusObject = job.status && typeof job.status === 'object'
+  const status: StatusObject = typeof job.status === 'object' && job.status !== null
     ? job.status
     : { id: job.statusId || '', name: typeof job.status === 'string' ? job.status : 'Active' };
   
   return {
-    candidateFacingTitle: job.candidateFacingTitle,
-    client: job.client,
-    compDesc: job.compDesc,
-    locale: job.locale,
+    candidateFacingTitle: job.candidateFacingTitle || '',
+    client: job.client || '',
+    compDesc: job.compDesc || '',
+    locale: locale,
     flavor: flavor,
     status: status,
-    rate: job.rate,
-    jd: job.jd,
-    skillsSought: job.skillsSought,
-    minSkills: job.minSkills,
-    owner: job.owner,
-    videoQuestions: job.videoQuestions,
-    screeningQuestions: job.screeningQuestions,
-    workDetails: job.workDetails,
-    payDetails: job.payDetails,
-    other: job.other,
-    m1: job.m1,
-    m2: job.m2,
-    m3: job.m3,
+    rate: typeof job.rate === 'number' ? job.rate : 0,
+    jd: job.jd || '',
+    skillsSought: job.skillsSought || '',
+    minSkills: job.minSkills || '',
+    owner: job.owner || '',
+    videoQuestions: job.videoQuestions || '',
+    screeningQuestions: job.screeningQuestions || '',
+    workDetails: job.workDetails || '',
+    payDetails: job.payDetails || '',
+    other: job.other || '',
+    m1: job.m1 || '',
+    m2: job.m2 || '',
+    m3: job.m3 || '',
   };
 };
