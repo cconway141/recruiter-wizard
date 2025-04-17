@@ -1,6 +1,6 @@
 
 import { uuid } from "@/utils/uuid";
-import { Job, LocaleObject, StatusObject } from "@/types/job";
+import { Job, LocaleObject, StatusObject, FlavorObject } from "@/types/job";
 import { calculateRates } from "@/utils/rateUtils";
 import { generateInternalTitle } from "@/utils/titleUtils";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,11 +20,24 @@ export const prepareJobForCreate = async (
   const now = new Date();
   const date = now.toISOString().split("T")[0]; // YYYY-MM-DD
 
+  // Ensure flavor is a valid object
+  let flavor: FlavorObject;
+  if (typeof job.flavor === 'string') {
+    // Handle case when flavor is passed as a string (legacy format)
+    flavor = {
+      id: job.flavor,
+      name: job.flavor
+    };
+  } else {
+    // It's already an object
+    flavor = job.flavor as FlavorObject;
+  }
+
   // Generate the internal title using the correct format: ClientAbbr RoleAbbr - Flavor LocaleAbbr
   const internalTitle = await generateInternalTitle(
     job.client,
     job.candidateFacingTitle,
-    job.flavor,
+    flavor, // Pass the standardized flavor object
     job.locale
   );
   
@@ -45,7 +58,7 @@ export const prepareJobForCreate = async (
         .from('job_statuses')
         .select('id')
         .eq('name', statusName)
-        .single();
+        .maybeSingle();
       
       if (statusData?.id) {
         console.log(`Found existing status ID for "${statusName}": ${statusData.id}`);
@@ -73,6 +86,8 @@ export const prepareJobForCreate = async (
     id: uuid(),
     status, // Use standardized status object with valid UUID
     statusId, // Include the status ID explicitly
+    flavor, // Use standardized flavor object
+    flavorId: flavor.id, // Include the flavor ID explicitly
     internalTitle,
     highRate,
     mediumRate,
@@ -92,6 +107,10 @@ export const mapJobToDatabase = (job: Job) => {
   // Extract status name and ID for database, ensure ID is never empty string
   const statusName = jobStatus.name;
   const statusId = jobStatus.id || null; // Convert empty string to null
+  
+  // Ensure flavor is properly handled as object or string
+  const flavorId = typeof job.flavor === 'object' ? job.flavor.id : job.flavor;
+  const flavorName = typeof job.flavor === 'object' ? job.flavor.name : job.flavor;
   
   // Clean foreign key references - null is better than empty string for UUID fields
   const cleanForeignKey = (id: string | undefined | null) => 
@@ -125,8 +144,8 @@ export const mapJobToDatabase = (job: Job) => {
     other: job.other || "",
     video_questions: job.videoQuestions || "",
     screening_questions: job.screeningQuestions || "",
-    flavor: typeof job.flavor === 'object' ? job.flavor.id : job.flavor,
-    flavor_id: cleanForeignKey(job.flavorId),
+    flavor: flavorName, // Store flavor name for backward compatibility
+    flavor_id: cleanForeignKey(flavorId),
     m1: job.m1 || "",
     m2: job.m2 || "",
     m3: job.m3 || "",
@@ -150,6 +169,12 @@ export const mapDatabaseToJob = (dbJob: any): Job => {
   const statusObject: StatusObject = {
     id: dbJob.status_id || '',
     name: dbJob.status || 'Active'
+  };
+
+  // Create standardized flavor object
+  const flavorObject: FlavorObject = {
+    id: dbJob.flavor_id || dbJob.flavor || '',
+    name: dbJob.flavor || ''
   };
 
   return {
@@ -183,7 +208,7 @@ export const mapDatabaseToJob = (dbJob: any): Job => {
     other: dbJob.other || "",
     videoQuestions: dbJob.video_questions,
     screeningQuestions: dbJob.screening_questions,
-    flavor: dbJob.flavor,
+    flavor: flavorObject, // Always return a flavor object
     flavorId: dbJob.flavor_id,
   };
 };
