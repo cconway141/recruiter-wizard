@@ -1,11 +1,6 @@
-
 import { Job, StatusObject, FlavorObject, LocaleObject } from "@/types/job";
 import { JobFormValues } from "@/components/forms/JobFormDetails";
 
-/**
- * Maps a Job object to the correct format for JobFormValues
- * This ensures all fields match the expected types for the form
- */
 export const mapJobToFormDefaults = (job: Job): JobFormValues => {
   if (!job) {
     return {
@@ -15,8 +10,6 @@ export const mapJobToFormDefaults = (job: Job): JobFormValues => {
       locale: {
         id: '',
         name: '',
-        workDetails: '',
-        payDetails: ''
       },
       flavor: {
         id: '',
@@ -33,8 +26,8 @@ export const mapJobToFormDefaults = (job: Job): JobFormValues => {
       owner: '',
       videoQuestions: '',
       screeningQuestions: '',
-      workDetails: '',
-      payDetails: '',
+      workDetails: job.workDetails || '',  // Add this line
+      payDetails: job.payDetails || '',    // Add this line
       other: '',
       m1: '',
       m2: '',
@@ -42,14 +35,15 @@ export const mapJobToFormDefaults = (job: Job): JobFormValues => {
     };
   }
   
-  // Ensure locale is an object with all required properties
-  const locale: LocaleObject = typeof job.locale === 'object' && job.locale !== null
-    ? job.locale
+  // Ensure locale is an object with required properties
+  const locale: { id: string; name: string } = typeof job.locale === 'object' && job.locale !== null
+    ? { 
+        id: job.locale.id || '', 
+        name: job.locale.name || '',
+      }
     : { 
         id: job.localeId || '', 
         name: typeof job.locale === 'string' ? job.locale : '',
-        workDetails: job.workDetails || '',
-        payDetails: job.payDetails || ''
       };
   
   // Ensure flavor is an object with id and name properties
@@ -62,7 +56,7 @@ export const mapJobToFormDefaults = (job: Job): JobFormValues => {
     ? job.status
     : { id: job.statusId || '', name: typeof job.status === 'string' ? job.status : 'Active' };
   
-  return {
+  const existingMapping = {
     candidateFacingTitle: job.candidateFacingTitle || '',
     client: job.client || '',
     compDesc: job.compDesc || '',
@@ -76,11 +70,14 @@ export const mapJobToFormDefaults = (job: Job): JobFormValues => {
     owner: job.owner || '',
     videoQuestions: job.videoQuestions || '',
     screeningQuestions: job.screeningQuestions || '',
-    workDetails: job.workDetails || '',
-    payDetails: job.payDetails || '',
     other: job.other || '',
     m1: job.m1 || '',
     m2: job.m2 || '',
     m3: job.m3 || '',
+  };
+  return {
+    ...existingMapping,
+    workDetails: job.workDetails || '',
+    payDetails: job.payDetails || '',
   };
 };
