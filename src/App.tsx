@@ -17,7 +17,6 @@ import Candidates from "@/pages/Candidates";
 import CandidateDetails from "@/pages/CandidateDetails";
 import TestLogin from "@/pages/TestLogin";
 import { GmailCallback } from "@/components/candidates/email/GmailCallback";
-import Index from "@/pages/Index";
 
 // Create a client
 const queryClient = new QueryClient({
@@ -38,8 +37,7 @@ function App() {
           <AuthProvider>
             <GmailConnectionProvider>
               <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/" element={<Dashboard />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/jobs" element={<Jobs />} />

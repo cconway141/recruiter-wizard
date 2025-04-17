@@ -1,13 +1,12 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, CheckCircle, Loader2 } from "lucide-react";
+import { AlertCircle, CheckCircle } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface ConfigErrorButtonProps {
   className?: string;
   isConnected: boolean;
-  isLoading?: boolean;
   onClick?: () => void;
   onDisconnect?: () => void;
 }
@@ -15,14 +14,12 @@ interface ConfigErrorButtonProps {
 export const ConfigErrorButton: React.FC<ConfigErrorButtonProps> = ({
   className = "",
   isConnected,
-  isLoading = false,
   onClick,
   onDisconnect
 }) => {
   // Add debug logging
   console.debug("ConfigErrorButton render:", { 
     isConnected, 
-    isLoading,
     hasOnClick: !!onClick, 
     hasOnDisconnect: !!onDisconnect 
   });
@@ -48,16 +45,8 @@ export const ConfigErrorButton: React.FC<ConfigErrorButtonProps> = ({
             size="sm"
             className="text-xs text-muted-foreground"
             onClick={onDisconnect}
-            disabled={isLoading}
           >
-            {isLoading ? (
-              <>
-                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                Disconnecting...
-              </>
-            ) : (
-              "Disconnect Gmail"
-            )}
+            Disconnect Gmail
           </Button>
         )}
       </div>
@@ -84,13 +73,8 @@ export const ConfigErrorButton: React.FC<ConfigErrorButtonProps> = ({
             variant="outline"
             className={`flex items-center gap-2 bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 hover:text-amber-800 ${className}`}
             onClick={handleClick} // Using our handler function with debug logging
-            disabled={isLoading}
           >
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <AlertCircle className="h-4 w-4" />
-            )}
+            <AlertCircle className="h-4 w-4" />
             <span>Gmail Setup Required</span>
           </Button>
         </TooltipTrigger>
