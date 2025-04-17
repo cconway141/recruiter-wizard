@@ -84,14 +84,15 @@ export const useEmailSending = ({
       // For replies, don't pass subject - Gmail will use the thread's subject
       const emailSubject = isNewThread ? subject : "";
       
-      // Updated to match function signature
+      // Always pass threadId and messageId when available - critical for threading
       const result = await sendEmailViaGmail(
         candidateEmail,
         emailSubject,
         body,
         candidateName,
         candidateFacingTitle || "",
-        threadId
+        threadId,
+        messageId
       );
 
       if (result?.threadId && candidateId && jobId) {
@@ -142,11 +143,12 @@ export const useEmailSending = ({
       return;
     }
 
-    // Updated to match function signature
     composeEmailInGmail(
       candidateEmail,
       subject,
-      body
+      body,
+      candidateName,
+      candidateFacingTitle || ""
     );
 
     onClose();
