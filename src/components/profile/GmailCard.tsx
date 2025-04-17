@@ -11,25 +11,28 @@ import {
 } from "@/components/ui/card";
 import { GmailConnectButton } from "@/components/candidates/email/GmailConnectButton";
 import { GmailDisconnectButton } from "./gmail/GmailDisconnectButton";
-import { useGmailConnection } from "@/contexts/GmailConnectionContext";
+import { useGmailConnection } from "@/hooks/gmail";
 import { useAuth } from "@/contexts/AuthContext";
 import { LoadingIndicator } from "@/components/ui/loading-indicator";
 
 export const GmailCard: React.FC = () => {
   const { user } = useAuth();
-  // Using our centralized context
+  // Using our enhanced hook for Gmail connection management
   const { 
     isConnected: isGmailConnected, 
     isLoading: isCheckingConnection,
-    checkConnection: silentCheckConnection,
-    error
-  } = useGmailConnection();
+    disconnectGmail,
+    silentCheckConnection,
+    connectGmail
+  } = useGmailConnection({ 
+    showLoadingUI: true
+  });
   
   // Add logging for debugging
   console.debug("GmailCard rendered:", { 
     isGmailConnected, 
     isCheckingConnection, 
-    hasError: !!error,
+    hasConnectGmail: !!connectGmail,
     hasUser: !!user
   });
   
@@ -46,6 +49,11 @@ export const GmailCard: React.FC = () => {
       });
     }
   }, [user?.id, silentCheckConnection]);
+  
+  // Create a void version of the disconnect function to fix the TypeScript error
+  const handleDisconnect = async () => {
+    await disconnectGmail();
+  };
   
   // Add a handler for connection change
   const handleConnectionChange = (connected: boolean) => {
@@ -75,27 +83,26 @@ export const GmailCard: React.FC = () => {
           </div>
         )}
         
-        {/* Error message if present */}
-        {error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-md mb-4">
-            <p className="text-red-700 text-sm">{error.message}</p>
-          </div>
-        )}
-        
         {/* Loading indicator for any Gmail operations */}
-        {isCheckingConnection && (
-          <LoadingIndicator 
-            id="gmail-connection-check" 
-            className="mb-2"
-            size="sm"
-            text="Checking connection status..."
-          />
-        )}
+        <LoadingIndicator 
+          id="gmail-connection-check" 
+          className="mb-2"
+          size="sm"
+          text="Checking connection status..."
+        />
         
         {/* Show either connect or disconnect button based on connection status */}
-        <div className="mb-2">
-          <GmailConnectButton onConnectionChange={handleConnectionChange} />
-        </div>
+        {isGmailConnected ? (
+          <GmailDisconnectButton 
+            onDisconnect={handleDisconnect}
+            isLoading={isCheckingConnection}
+          />
+        ) : (
+          <div className="mb-2">
+            {/* Using GmailConnectButton which properly handles the OAuth flow */}
+            <GmailConnectButton onConnectionChange={handleConnectionChange} />
+          </div>
+        )}
       </CardContent>
       <CardFooter className="text-xs text-muted-foreground">
         <p>

@@ -1,58 +1,107 @@
 
-import React from "react";
-import { Routes, Route, BrowserRouter } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { AuthProvider } from "@/contexts/AuthContext";
-import { Toaster } from "@/components/ui/toaster";
-import { GmailConnectionProvider } from "@/contexts/GmailConnectionContext";
-import { ThemeProvider } from "@/contexts/ThemeContext";
-
-// Pages
-import Dashboard from "@/pages/Dashboard";
-import Profile from "@/pages/Profile";
-import Auth from "@/pages/Auth";
-import Jobs from "@/pages/Jobs";
-import JobDetails from "@/pages/JobDetails";
-import Candidates from "@/pages/Candidates";
-import CandidateDetails from "@/pages/CandidateDetails";
-import TestLogin from "@/pages/TestLogin";
-import { GmailCallback } from "@/components/candidates/email/GmailCallback";
-
-// Create a client
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-      retry: 1,
-      staleTime: 300000, // 5 minutes
-    },
-  },
-});
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Index from "./pages/Index";
+import NotFound from "./pages/NotFound";
+import Auth from "./pages/Auth";
+import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import { AuthProvider } from "./contexts/AuthContext";
+import { JobProvider } from "./contexts/JobContext";
+import { LoadingProvider } from "./contexts/LoadingContext";
+import AddJob from "./pages/AddJob";
+import EditJob from "./pages/EditJob";
+import ViewJob from "./pages/ViewJob";
+import Settings from "./pages/Settings";
+import MessageTemplates from "./pages/MessageTemplates";
+import Profile from "./pages/Profile";
+import { Toaster } from "./components/ui/toaster";
+import { GmailCallback } from "./components/candidates/email/GmailCallback";
+import { GoogleCallback } from "./components/auth/GoogleCallback";
+import TestLogin from "./pages/admin/TestLogin";
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <ThemeProvider>
-          <AuthProvider>
-            <GmailConnectionProvider>
-              <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/jobs" element={<Jobs />} />
-                <Route path="/jobs/:id" element={<JobDetails />} />
-                <Route path="/candidates" element={<Candidates />} />
-                <Route path="/candidates/:id" element={<CandidateDetails />} />
+    <Router>
+      <AuthProvider>
+        <LoadingProvider>
+          <JobProvider>
+            <Routes>
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/auth/callback" element={<GoogleCallback />} />
+              <Route path="/auth/gmail-callback" element={<GmailCallback />} />
+              {process.env.NODE_ENV !== 'production' && (
                 <Route path="/admin/test-login" element={<TestLogin />} />
-                <Route path="/auth/gmail-callback" element={<GmailCallback />} />
-              </Routes>
-              <Toaster />
-            </GmailConnectionProvider>
-          </AuthProvider>
-        </ThemeProvider>
-      </BrowserRouter>
-    </QueryClientProvider>
+              )}
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute>
+                    <Index />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/jobs/add"
+                element={
+                  <ProtectedRoute>
+                    <AddJob />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/jobs/new"
+                element={
+                  <ProtectedRoute>
+                    <AddJob />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/jobs/edit/:id"
+                element={
+                  <ProtectedRoute>
+                    <EditJob />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/jobs/:id"
+                element={
+                  <ProtectedRoute>
+                    <ViewJob />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/settings"
+                element={
+                  <ProtectedRoute>
+                    <Settings />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/message-templates"
+                element={
+                  <ProtectedRoute>
+                    <MessageTemplates />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+            <Toaster />
+          </JobProvider>
+        </LoadingProvider>
+      </AuthProvider>
+    </Router>
   );
 }
 
