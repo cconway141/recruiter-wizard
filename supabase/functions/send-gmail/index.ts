@@ -220,24 +220,18 @@ async function sendGmailMessage(
 
 // Build email headers including threading headers if applicable
 function buildEmailHeaders(to: string, cc: string, subject: string, messageId?: string): string {
-  // Start with basic headers
-  let headers = `To: ${to}\r\n`;
-  if (cc) headers += `Cc: ${cc}\r\n`;
-  if (subject) headers += `Subject: ${subject}\r\n`;
-  
-  // Add threading headers if this is a reply (messageId is provided)
-  // These headers are CRITICAL for threading to work properly
-  if (messageId && messageId.trim()) {
-    console.log("Adding threading headers with messageId:", messageId);
-    headers += `In-Reply-To: <${messageId}>\r\n`;
-    headers += `References: <${messageId}>\r\n`;
-  } else {
-    console.log("No messageId provided, creating new thread (no threading headers)");
-  }
-  
-  headers += 'MIME-Version: 1.0\r\n';
-  headers += 'Content-Type: text/html; charset=utf-8\r\n\r\n';
-  return headers;
+  const headers = [
+    `To: ${to}`,
+    cc ? `Cc: ${cc}` : null,
+    subject ? `Subject: ${subject}` : null,
+    `Date: ${new Date().toUTCString()}`,
+    'MIME-Version: 1.0',
+    'Content-Type: text/html; charset=UTF-8'
+  ]
+  .filter(Boolean)
+  .join('\r\n');
+
+  return headers + '\r\n\r\n';
 }
 
 // Handle Gmail API errors
