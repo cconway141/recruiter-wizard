@@ -2,22 +2,12 @@ import React, { useState } from "react";
 import { getThreadMeta } from "@/hooks/email/useCandidateThreads";
 import { Button } from "@/components/ui/button";
 import { Trash } from "lucide-react";
-import { Candidate, EmailThreadInfo } from "./types";
+import { Candidate } from "./types";
 import { StatusCheckbox } from "./status/StatusCheckbox";
 import { EmailButton } from "./email/EmailButton";
 import { LinkedinButton } from "./social/LinkedinButton";
 import { EmailDialog } from "./email/EmailDialog";
-import { 
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger
-} from "@/components/ui/alert-dialog";
+import { AlertDialog } from "@/components/ui/alert-dialog";
 
 interface CandidateListItemProps {
   candidate: Candidate;
@@ -33,50 +23,15 @@ export const CandidateListItem: React.FC<CandidateListItemProps> = ({
   jobId 
 }) => {
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [initialThreadId, setInitialThreadId] = useState<string | null>(null);
+  const [initialMessageId, setInitialMessageId] = useState<string | null>(null);
 
   const handleEmailClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
     const { threadId, rfcMessageId } = await getThreadMeta(candidate.id, jobId);
+    setInitialThreadId(threadId ?? null);
+    setInitialMessageId(rfcMessageId ?? null);
     setEmailDialogOpen(true);
-  };
-
-  const getThreadIdForJob = (): string | null => {
-    console.log("GET THREAD ID DEBUG:", {
-      candidateId: candidate.id,
-      candidateName: candidate.name,
-      jobId,
-      hasThreadIds: !!candidate.threadIds,
-      threadIdsType: candidate.threadIds ? typeof candidate.threadIds : 'undefined',
-      threadInfoForJob: candidate.threadIds?.[jobId]
-    });
-    
-    if (!candidate.threadIds || !jobId) return null;
-    
-    const threadInfo = candidate.threadIds[jobId] as EmailThreadInfo | undefined;
-    const threadId = threadInfo?.threadId || null;
-    
-    console.log("EXTRACTED THREAD ID:", {
-      threadId,
-      isValid: !!threadId && threadId.trim() !== '',
-      threadIdLength: threadId?.length
-    });
-    
-    return threadId;
-  };
-
-  const getMessageIdForJob = (): string | null => {
-    if (!candidate.threadIds || !jobId) return null;
-    
-    const threadInfo = candidate.threadIds[jobId] as EmailThreadInfo | undefined;
-    const messageId = threadInfo?.messageId || null;
-    
-    console.log("EXTRACTED MESSAGE ID:", {
-      messageId,
-      isValid: !!messageId && messageId.trim() !== '',
-      messageIdLength: messageId?.length
-    });
-    
-    return messageId;
   };
 
   return (
@@ -147,8 +102,8 @@ export const CandidateListItem: React.FC<CandidateListItemProps> = ({
         candidateEmail={candidate.email}
         jobId={jobId}
         candidateId={candidate.id}
-        threadId={getThreadIdForJob()}
-        messageId={getMessageIdForJob()}
+        threadId={initialThreadId}
+        messageId={initialMessageId}
       />
     </>
   );

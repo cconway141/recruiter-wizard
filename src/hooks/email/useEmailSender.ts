@@ -1,15 +1,15 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { useGmailConnection } from "@/hooks/gmail";
-import { EmailResult } from "@/hooks/email/types";
+import { EmailResult } from "./types";
 
 interface UseEmailSenderProps {
-  onSuccess?: () => void;
+  onSuccess: () => void;
 }
 
-export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
+export const useEmailSender = ({ onSuccess }: UseEmailSenderProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSending, setIsSending] = useState(false);
