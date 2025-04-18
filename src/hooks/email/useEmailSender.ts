@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { FunctionsHttpError } from "@supabase/supabase-js";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGmailConnection } from "@/hooks/gmail";
@@ -111,26 +112,6 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps) => {
         const { data } = await supabase.functions.invoke("send-gmail", {
           body: payload
         });
-        
-        if (data?.status) {
-          throw new Error(
-            `send-gmail returned ${data.status}: ${data.details || data.error}`
-          );
-        }
-        
-        if (data?.error) {
-          console.error("Error from send-gmail function:", data.error);
-          if (data.error.includes("token expired") || data.error.includes("not connected")) {
-            connectionCheckedRef.current = false;
-            
-            const refreshed = await refreshGmailToken();
-            if (refreshed) {
-              return sendEmailViaGmail(to, subject, body, candidateName, jobTitle, threadId, messageId);
-            }
-          }
-          
-          throw new Error(data.error);
-        }
         
         const result: EmailResult = {
           threadId: data?.threadId || '',
