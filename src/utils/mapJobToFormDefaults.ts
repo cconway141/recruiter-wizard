@@ -1,4 +1,3 @@
-
 import { Job, StatusObject, FlavorObject, LocaleObject } from "@/types/job";
 import { JobFormValues } from "@/components/forms/JobFormDetails";
 
@@ -15,9 +14,6 @@ export const mapJobToFormDefaults = (job: Job): JobFormValues => {
       locale: {
         id: '',
         name: '',
-        abbreviation: '',
-        workDetails: '',
-        payDetails: ''
       },
       flavor: {
         id: '',
@@ -45,19 +41,20 @@ export const mapJobToFormDefaults = (job: Job): JobFormValues => {
   
   // Ensure locale is an object with all required properties
   const locale: LocaleObject = typeof job.locale === 'object' && job.locale !== null
-    ? job.locale
+    ? {
+        id: job.locale.id || '',
+        name: job.locale.name || '',
+        ...(job.locale.abbreviation && { abbreviation: job.locale.abbreviation }),
+        ...(job.locale.workDetails && { workDetails: job.locale.workDetails }),
+        ...(job.locale.payDetails && { payDetails: job.locale.payDetails })
+      }
     : { 
         id: job.localeId || '', 
         name: typeof job.locale === 'string' ? job.locale : '',
-        ...(job.workDetails || job.payDetails ? {
-          workDetails: job.workDetails || '',
-          payDetails: job.payDetails || ''
-        } : {}),
-        ...(job.locale && typeof job.locale === 'object' && 'abbreviation' in job.locale 
-          ? { abbreviation: (job.locale as any).abbreviation } 
-          : {})
+        ...(job.workDetails && { workDetails: job.workDetails }),
+        ...(job.payDetails && { payDetails: job.payDetails })
       };
-  
+
   // Ensure flavor is an object with id and name properties
   const flavor: FlavorObject = typeof job.flavor === 'object' && job.flavor !== null
     ? job.flavor

@@ -1,4 +1,3 @@
-
 export type JobStatus = "Active" | "Aquarium" | "Inactive" | "Closed";
 export type Locale = "Onshore" | "Nearshore" | "Offshore";
 export type Flavor = "FE" | "BE" | "FS" | "DevOps" | "Data" | "ML" | "Mobile" | "Other";
@@ -7,8 +6,11 @@ export type Flavor = "FE" | "BE" | "FS" | "DevOps" | "Data" | "ML" | "Mobile" | 
 export interface LocaleObject {
   id: string;
   name: string;
-  abbreviation?: string;  // Made optional with '?'
+  /** Two-letter code, e.g. "US" */
+  abbreviation?: string;
+  /** Default "work details" text for this locale */
   workDetails?: string;
+  /** Default "pay details" text for this locale */
   payDetails?: string;
 }
 
