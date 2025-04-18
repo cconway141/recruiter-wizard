@@ -1,4 +1,3 @@
-
 import { uuid } from "@/utils/uuid";
 import { Job, LocaleObject, StatusObject, FlavorObject } from "@/types/job";
 import { calculateRates } from "@/utils/rateUtils";
@@ -156,11 +155,15 @@ export const mapJobToDatabase = (job: Job) => {
  * Map database job to Job object
  */
 export const mapDatabaseToJob = (dbJob: any): Job => {
-  // Create a properly structured locale object
+  // Create a properly structured locale object with fallback for abbreviation
+  const localeAbbr = dbJob.locale_abbreviation?.trim() 
+    || dbJob.locale?.slice(0,2).toUpperCase()
+    || '';
+
   const localeObject: LocaleObject = {
-    id: dbJob.locale || '',
+    id: dbJob.locale_id || '',
     name: dbJob.locale || '',
-    abbreviation: dbJob.locale_abbreviation || '',
+    abbreviation: localeAbbr,
     workDetails: dbJob.work_details || '',
     payDetails: dbJob.pay_details || ''
   };
