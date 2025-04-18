@@ -107,48 +107,55 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps) => {
         console.log("Using cached Gmail token status - skipping redundant check");
       }
       
-      const { data, error } = await supabase.functions.invoke("send-gmail", {
-        body: payload
-      });
-      
-      if (error) {
-        console.error("Error sending email via function:", error);
-        throw new Error(error.message || "Failed to send email");
-      }
-      
-      if (data?.status) {
-        throw new Error(
-          `send-gmail returned ${data.status}: ${data.details || data.error}`
-        );
-      }
-      
-      if (data?.error) {
-        console.error("Error from send-gmail function:", data.error);
-        if (data.error.includes("token expired") || data.error.includes("not connected")) {
-          connectionCheckedRef.current = false;
-          
-          const refreshed = await refreshGmailToken();
-          if (refreshed) {
-            return sendEmailViaGmail(to, subject, body, candidateName, jobTitle, threadId, messageId);
-          }
+      try {
+        const { data } = await supabase.functions.invoke("send-gmail", {
+          body: payload
+        });
+        
+        if (data?.status) {
+          throw new Error(
+            `send-gmail returned ${data.status}: ${data.details || data.error}`
+          );
         }
         
-        throw new Error(data.error);
+        if (data?.error) {
+          console.error("Error from send-gmail function:", data.error);
+          if (data.error.includes("token expired") || data.error.includes("not connected")) {
+            connectionCheckedRef.current = false;
+            
+            const refreshed = await refreshGmailToken();
+            if (refreshed) {
+              return sendEmailViaGmail(to, subject, body, candidateName, jobTitle, threadId, messageId);
+            }
+          }
+          
+          throw new Error(data.error);
+        }
+        
+        const result: EmailResult = {
+          threadId: data?.threadId || '',
+          messageId: data?.messageId || '',
+          rfcMessageId: data?.rfcMessageId || ''
+        };
+        
+        console.log("Email sent successfully:", result);
+        
+        if (onSuccess) {
+          onSuccess();
+        }
+        
+        return result;
+      } catch (err: any) {
+        if (err instanceof FunctionsHttpError && err.response) {
+          const json = await err.response.json().catch(() => ({}));
+          toast({
+            title: `send-gmail ${err.response.status}`,
+            description: json.details || json.error || err.message,
+            variant: "destructive"
+          });
+        }
+        throw err; // re-throw so existing logic still works
       }
-      
-      const result: EmailResult = {
-        threadId: data?.threadId || '',
-        messageId: data?.messageId || '',
-        rfcMessageId: data?.rfcMessageId || ''
-      };
-      
-      console.log("Email sent successfully:", result);
-      
-      if (onSuccess) {
-        onSuccess();
-      }
-      
-      return result;
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to send email";
       setErrorMessage(message);

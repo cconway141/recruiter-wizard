@@ -152,8 +152,15 @@ async function sendGmailMessage(
     // Gmail API endpoint
     const url = 'https://gmail.googleapis.com/gmail/v1/users/me/messages/send';
     
-    // Make the request to Gmail API
-    const gmailRes = await fetch(url, { method: "POST", headers, body });
+    // Make the request to Gmail API with proper headers
+    const gmailRes = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(email)
+    });
 
     if (!gmailRes.ok) {
       const text = await gmailRes.text();
