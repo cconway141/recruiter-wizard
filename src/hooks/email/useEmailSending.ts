@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEmailSender } from "@/hooks/email/useEmailSender";
@@ -83,15 +84,15 @@ export const useEmailSending = ({
       // For replies, don't pass subject - Gmail will use the thread's subject
       const emailSubject = isNewThread ? subject : "";
       
-      // Always pass threadId and messageId when available - critical for threading
+      // Pass only non‑empty IDs (trim whitespace; else undefined)
       const result = await sendEmailViaGmail(
         candidateEmail,
         emailSubject,
         body,
         candidateName,
         candidateFacingTitle || "",
-        threadId,
-        messageId
+        threadId?.trim() || undefined,
+        messageId?.trim() || undefined
       );
 
       if (result?.threadId && candidateId && jobId) {
