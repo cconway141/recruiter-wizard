@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Trash } from "lucide-react";
@@ -34,12 +33,12 @@ export const CandidateListItem: React.FC<CandidateListItemProps> = ({
 }) => {
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
 
-  const handleEmailClick = (e: React.MouseEvent) => {
+  const handleEmailClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    const { threadId, rfcMessageId } = await getThreadMeta(candidate.id, jobId);
     setEmailDialogOpen(true);
   };
 
-  // Get thread ID for the current job using standardized format
   const getThreadIdForJob = (): string | null => {
     console.log("GET THREAD ID DEBUG:", {
       candidateId: candidate.id,
@@ -64,7 +63,6 @@ export const CandidateListItem: React.FC<CandidateListItemProps> = ({
     return threadId;
   };
 
-  // Get message ID for the current job
   const getMessageIdForJob = (): string | null => {
     if (!candidate.threadIds || !jobId) return null;
     
@@ -130,7 +128,6 @@ export const CandidateListItem: React.FC<CandidateListItemProps> = ({
           </div>
         </div>
         
-        {/* Status checkboxes */}
         {Object.keys(candidate.status).map((statusKey) => (
           <StatusCheckbox
             key={statusKey}
@@ -142,7 +139,6 @@ export const CandidateListItem: React.FC<CandidateListItemProps> = ({
         ))}
       </div>
 
-      {/* Email Dialog */}
       <EmailDialog
         isOpen={emailDialogOpen}
         onClose={() => setEmailDialogOpen(false)}
