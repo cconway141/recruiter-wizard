@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEmailSender } from "@/hooks/email/useEmailSender";
@@ -68,7 +67,6 @@ export const useEmailSending = ({
       setIsSending(true);
       setErrorMessage(null);
       
-      // Determine if this is a new thread
       const isNewThread = !threadId;
       
       console.log("Email threading details:", {
@@ -81,10 +79,8 @@ export const useEmailSending = ({
         messageId: messageId || "Not available"
       });
 
-      // For replies, don't pass subject - Gmail will use the thread's subject
       const emailSubject = isNewThread ? subject : "";
       
-      // Pass only non‑empty IDs (trim whitespace; else undefined)
       const result = await sendEmailViaGmail(
         candidateEmail,
         emailSubject,
@@ -101,14 +97,12 @@ export const useEmailSending = ({
           messageId: result.messageId
         });
         
-        // Get existing thread IDs
         const { data } = await supabase
           .from('candidates')
           .select('thread_ids')
           .eq('id', candidateId)
           .maybeSingle();
           
-        // Create a safe default empty object if there are no thread IDs
         const existingThreadIds = (data?.thread_ids || {}) as Record<string, any>;
         
         await saveThreadId({
