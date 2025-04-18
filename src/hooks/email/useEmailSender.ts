@@ -1,4 +1,3 @@
-
 import { useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -21,7 +20,6 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { refreshGmailToken } = useGmailConnection();
   
-  // Add connection status cache to prevent repeated checks
   const connectionCheckedRef = useRef<boolean>(false);
   const lastConnectionCheckTimeRef = useRef<number>(0);
   const connectionStatusRef = useRef<boolean>(false);
@@ -51,14 +49,10 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
       setIsSending(true);
       setErrorMessage(null);
       
-      // Always CC the recruitment team
       const cc = "recruitment@theitbc.com";
       
-      // When replying (threadId exists), don't send a subject
-      // Gmail will use the existing thread subject
       const finalSubject = threadId ? "" : subject;
       
-      // Add comprehensive logging before sending
       console.log("EMAIL SENDING PAYLOAD DEBUG:", {
         recipient: to,
         subject: subject || "(reply - using thread subject)",
@@ -69,7 +63,6 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
         messageId: messageId ? `MESSAGE: ${messageId.trim()}` : "NO MESSAGE ID",
       });
       
-      // Create the payload object with ALL threading information
       const payload: any = {
         to,
         cc,
@@ -80,8 +73,6 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
         userId: user.id
       };
       
-      // Always include threadId and messageId in the payload if they exist
-      // This is critical for proper threading
       if (threadId) {
         payload.threadId = threadId.trim();
         console.log("Including threadId in request:", threadId.trim());
@@ -92,21 +83,19 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
         console.log("Including messageId in request:", messageId.trim());
       }
       
-      // Optimized token check with caching to avoid repeated checks
       const now = Date.now();
       const shouldCheckToken = !connectionCheckedRef.current || 
                              (now - lastConnectionCheckTimeRef.current) > 60000; // 1 minute cache
       
       if (shouldCheckToken) {
         console.log("Checking Gmail token before sending (not cached)");
-        const connection = await supabase.functions.invoke('google-auth', {
+        const connection = await supabase.functions.invoke("google-auth", {
           body: {
-            action: 'check-token',
+            action: "check-connection",
             userId: user.id
           }
         });
         
-        // Cache the connection check results
         connectionCheckedRef.current = true;
         lastConnectionCheckTimeRef.current = now;
         connectionStatusRef.current = !connection.data?.expired;
@@ -123,7 +112,7 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
         console.log("Using cached Gmail token status - skipping redundant check");
       }
       
-      const { data, error } = await supabase.functions.invoke('send-gmail', {
+      const { data, error } = await supabase.functions.invoke("send-gmail", {
         body: payload
       });
       
@@ -135,12 +124,10 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
       if (data?.error) {
         console.error("Error from send-gmail function:", data.error);
         if (data.error.includes("token expired") || data.error.includes("not connected")) {
-          // Invalidate cache on token error
           connectionCheckedRef.current = false;
           
           const refreshed = await refreshGmailToken();
           if (refreshed) {
-            // Try again with refreshed token
             return sendEmailViaGmail(to, subject, body, candidateName, jobTitle, threadId, messageId);
           }
         }
