@@ -1,13 +1,13 @@
 import { useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { FunctionsHttpError } from "@supabase/supabase-js";
+import { FunctionsError } from "@supabase/supabase-js";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGmailConnection } from "@/hooks/gmail";
 import { EmailResult } from "./types";
 
 interface UseEmailSenderProps {
-  onSuccess: () => void;
+  onSuccess?: () => void;
 }
 
 export const useEmailSender = ({ onSuccess }: UseEmailSenderProps) => {
@@ -127,11 +127,11 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps) => {
         
         return result;
       } catch (err: any) {
-        if (err instanceof FunctionsHttpError && err.response) {
-          const json = await err.response.json().catch(() => ({}));
+        if (err instanceof FunctionsError) {
+          const errorDetails = err.message;
           toast({
-            title: `send-gmail ${err.response.status}`,
-            description: json.details || json.error || err.message,
+            title: `Email Error ${err.code || ''}`,
+            description: errorDetails || 'Failed to send email',
             variant: "destructive"
           });
         }
