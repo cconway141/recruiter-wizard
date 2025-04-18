@@ -50,7 +50,6 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
       setErrorMessage(null);
       
       const cc = "recruitment@theitbc.com";
-      
       const finalSubject = subject;
       
       console.log("EMAIL SENDING PAYLOAD DEBUG:", {
@@ -73,12 +72,12 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
         userId: user.id
       };
       
-      if (threadId) {
+      if (threadId?.trim()) {
         payload.threadId = threadId.trim();
         console.log("Including threadId in request:", threadId.trim());
       }
       
-      if (messageId) {
+      if (messageId?.trim()) {
         payload.messageId = messageId.trim();
         console.log("Including messageId in request:", messageId.trim());
       }

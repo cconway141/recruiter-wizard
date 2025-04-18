@@ -12,6 +12,7 @@ interface UseEmailActionsProps {
   jobId?: string;
   jobTitle?: string;
   threadId?: string | null;
+  messageId?: string | null;
   selectedTemplate?: string;
   onSuccess?: () => void;
 }
@@ -22,6 +23,7 @@ export const useEmailActions = ({
   jobId,
   jobTitle,
   threadId,
+  messageId,
   selectedTemplate = 'default',
   onSuccess,
 }: UseEmailActionsProps = {}) => {
@@ -135,7 +137,8 @@ export const useEmailActions = ({
         body,
         candidateName,
         jobTitle,
-        threadId
+        threadId,
+        messageId
       );
     } catch (error) {
       console.error("Error sending email:", error);
@@ -156,6 +159,7 @@ export const useEmailActions = ({
     selectedTemplate,
     sendEmail,
     threadId,
+    messageId,
     toast
   ]);
 
