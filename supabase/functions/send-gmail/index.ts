@@ -220,16 +220,27 @@ async function sendGmailMessage(
 
 // Build email headers including threading headers if applicable
 function buildEmailHeaders(to: string, cc: string, subject: string, messageId?: string): string {
-  const headers = [
+  const headerEntries = [
     `To: ${to}`,
     cc ? `Cc: ${cc}` : null,
     subject ? `Subject: ${subject}` : null,
     `Date: ${new Date().toUTCString()}`,
     'MIME-Version: 1.0',
     'Content-Type: text/html; charset=UTF-8'
-  ]
-  .filter(Boolean)
-  .join('\r\n');
+  ];
+
+  // Add threading headers if messageId exists
+  if (messageId?.trim()) {
+    console.log("Adding threading headers for messageId:", messageId);
+    headerEntries.push(
+      `In-Reply-To: <${messageId.trim()}>`,
+      `References: <${messageId.trim()}>`
+    );
+  }
+
+  const headers = headerEntries
+    .filter(Boolean)
+    .join('\r\n');
 
   return headers + '\r\n\r\n';
 }
