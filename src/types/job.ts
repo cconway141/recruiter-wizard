@@ -1,4 +1,3 @@
-
 export type JobStatus = "Active" | "Aquarium" | "Inactive" | "Closed";
 export type Locale = "Onshore" | "Nearshore" | "Offshore";
 export type Flavor = "FE" | "BE" | "FS" | "DevOps" | "Data" | "ML" | "Mobile" | "Other";
