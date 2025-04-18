@@ -126,22 +126,14 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps) => {
         }
         
         return result;
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (err instanceof FunctionsHttpError) {
-          const resp = err.context?.response;            // may be undefined
-          const status = resp?.status ?? err.status;     // fallback to err.status
-
-          let details = "";
-          if (resp) {
-            try {
-              const json = await resp.clone().json();    // resp only readable once
-              details = json.details || json.error || "";
-            } catch { /* body wasn't JSON */ }
-          }
+          const status = err.context?.response?.status ?? 500;
+          const json = await err.context?.response?.json().catch(() => ({}));
 
           toast({
-            title: `send‑gmail ${status}`,
-            description: details || err.message,
+            title: `send-gmail ${status}`,
+            description: json?.details || json?.error || err.message,
             variant: "destructive"
           });
         }
