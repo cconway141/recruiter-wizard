@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { getThreadMeta } from "@/hooks/email/useCandidateThreads";
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,11 @@ import { StatusCheckbox } from "./status/StatusCheckbox";
 import { EmailButton } from "./email/EmailButton";
 import { LinkedinButton } from "./social/LinkedinButton";
 import { EmailDialog } from "./email/EmailDialog";
-import { AlertDialog } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog, AlertDialogTrigger, AlertDialogContent,
+  AlertDialogHeader, AlertDialogTitle, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogCancel, AlertDialogAction
+} from "@/components/ui/alert-dialog";
 
 interface CandidateListItemProps {
   candidate: Candidate;
