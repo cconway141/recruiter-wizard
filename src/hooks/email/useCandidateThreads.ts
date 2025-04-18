@@ -11,6 +11,16 @@ export interface CandidateThreadData {
   newMessageId?: string;
 }
 
+export const getThreadMeta = async (candidateId: string, jobId: string) => {
+  const { data } = await supabase
+    .from("candidates")
+    .select("thread_ids")
+    .eq("id", candidateId)
+    .maybeSingle();
+
+  return data?.thread_ids?.[jobId] ?? { threadId: undefined, rfcMessageId: undefined };
+};
+
 export const useCandidateThreads = () => {
   const saveThreadId = async ({ 
     candidateId, 
@@ -19,6 +29,7 @@ export const useCandidateThreads = () => {
     newThreadId,
     newMessageId
   }: CandidateThreadData) => {
+    const { toast } = useToast();
     if (!jobId || !newThreadId || !candidateId) {
       console.error("Missing required data for thread saving:", { jobId, newThreadId, candidateId });
       return false;
@@ -64,6 +75,10 @@ export const useCandidateThreads = () => {
   };
   
   return {
-    saveThreadId
+    saveThreadId,
+    getThreadId,
+    getMessageId,
+    getThreadInfo,
+    getThreadMeta
   };
 };

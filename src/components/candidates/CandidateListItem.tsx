@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { getThreadMeta } from "@/hooks/email/useCandidateThreads";
 import { Button } from "@/components/ui/button";
 import { Trash } from "lucide-react";
 import { Candidate, EmailThreadInfo } from "./types";
