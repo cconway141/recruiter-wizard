@@ -23,13 +23,15 @@ export const useEmailSending = ({
   candidateEmail,
   jobId,
   candidateFacingTitle,
-  threadId,
-  messageId,
+  threadId: initialThreadId,
+  messageId: initialMessageId,
   onClose,
 }: UseEmailSendingProps) => {
   const { toast } = useToast();
   const [isSending, setIsSending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [currentThreadId, setCurrentThreadId] = useState<string | null | undefined>(initialThreadId);
+  const [currentMessageId, setCurrentMessageId] = useState<string | null | undefined>(initialMessageId);
 
   const { saveThreadId } = useCandidateThreads();
 
@@ -68,16 +70,14 @@ export const useEmailSending = ({
       setIsSending(true);
       setErrorMessage(null);
       
-      const isNewThread = !threadId;
-      
       console.log("Email threading details:", {
         candidateId,
         jobId,
         candidateEmail,
         subject,
-        isNewThread,
-        threadId: threadId || "New thread",
-        messageId: messageId || "Not available"
+        isNewThread: !currentThreadId,
+        threadId: currentThreadId || "New thread",
+        messageId: currentMessageId || "Not available"
       });
 
       // Always include subject to ensure proper Gmail threading
@@ -89,11 +89,11 @@ export const useEmailSending = ({
         body,
         candidateName,
         candidateFacingTitle || "",
-        threadId?.trim() || undefined,
-        messageId?.trim() || undefined
+        currentThreadId?.trim() || undefined,
+        currentMessageId?.trim() || undefined
       );
 
-      if (result?.threadId && candidateId && jobId) {
+      if (result?.threadId && result?.messageId && candidateId && jobId) {
         console.log("Email sent successfully, saving thread info:", {
           threadId: result.threadId, 
           messageId: result.messageId
@@ -114,6 +114,10 @@ export const useEmailSending = ({
           newThreadId: result.threadId,
           newMessageId: result.messageId
         });
+
+        // Update state with new IDs for next send
+        setCurrentThreadId(result.threadId);
+        setCurrentMessageId(result.messageId);
       }
     } catch (error) {
       console.error("Error sending email:", error);
