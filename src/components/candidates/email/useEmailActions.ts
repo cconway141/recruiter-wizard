@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -12,6 +11,7 @@ interface UseEmailActionsProps {
   jobId?: string;
   jobTitle?: string;
   threadId?: string | null;
+  messageId?: string | null;
   templates?: any[];
   selectedTemplate?: string;
   onSuccess?: () => void;
@@ -23,6 +23,7 @@ export const useEmailActions = ({
   jobId,
   jobTitle,
   threadId,
+  messageId = null,
   templates = [],
   selectedTemplate = 'default',
   onSuccess,
@@ -45,7 +46,6 @@ export const useEmailActions = ({
     selectedTemplate
   });
   
-  // Check Gmail connection on mount
   useEffect(() => {
     if (user) {
       setIsCheckingGmail(true);
@@ -79,7 +79,8 @@ export const useEmailActions = ({
         body,
         candidateName,
         jobTitle,
-        threadId
+        threadId,
+        messageId
       );
     } catch (error) {
       console.error("Error sending email:", error);
@@ -99,7 +100,8 @@ export const useEmailActions = ({
     onSuccess,
     selectedTemplate,
     sendEmail,
-    threadId
+    threadId,
+    messageId
   ]);
 
   return {
