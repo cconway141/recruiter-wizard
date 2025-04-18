@@ -127,13 +127,36 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps) => {
         
         return result;
       } catch (err: unknown) {
+        console.error("Email sending error:", err);
+        
         if (err instanceof FunctionsHttpError) {
           const status = err.context?.response?.status ?? 500;
           const json = await err.context?.response?.json().catch(() => ({}));
+          
+          let errorTitle = "Failed to Send Email";
+          let errorDetail = "An unexpected error occurred";
+          
+          switch (status) {
+            case 400:
+              errorTitle = "Invalid Email Data";
+              errorDetail = json?.details || "Please check the email details";
+              break;
+            case 401:
+              errorTitle = "Gmail Authentication Failed";
+              errorDetail = "Please reconnect your Gmail account";
+              break;
+            case 429:
+              errorTitle = "Too Many Requests";
+              errorDetail = "Please wait a moment before sending more emails";
+              break;
+            default:
+              errorTitle = `Email Error (${status})`;
+              errorDetail = json?.details || json?.error || err.message;
+          }
 
           toast({
-            title: `send-gmail ${status}`,
-            description: json?.details || json?.error || err.message,
+            title: errorTitle,
+            description: errorDetail,
             variant: "destructive"
           });
         }
