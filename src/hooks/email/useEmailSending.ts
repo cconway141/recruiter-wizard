@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEmailSender } from "@/hooks/email/useEmailSender";
@@ -79,7 +80,8 @@ export const useEmailSending = ({
         messageId: messageId || "Not available"
       });
 
-      const emailSubject = isNewThread ? subject : "";
+      // Always include subject to ensure proper Gmail threading
+      const emailSubject = subject;
       
       const result = await sendEmailViaGmail(
         candidateEmail,

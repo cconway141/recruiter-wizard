@@ -208,6 +208,7 @@ function buildEmailHeaders(to: string, cc: string, subject: string, messageId?: 
     console.log("No messageId provided, creating new thread (no threading headers)");
   }
   
+  headers += 'MIME-Version: 1.0\r\n';
   headers += 'Content-Type: text/html; charset=utf-8\r\n\r\n';
   return headers;
 }
