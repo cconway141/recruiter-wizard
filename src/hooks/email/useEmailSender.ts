@@ -1,4 +1,3 @@
-
 import { useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { FunctionsHttpError } from "@supabase/supabase-js";
@@ -110,7 +109,7 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps) => {
       }
       
       try {
-        const { data } = await supabase.functions.invoke("send-gmail", {
+        const { data } = await supabase.functions.invoke('send-gmail', {
           body: payload
         });
         
@@ -128,15 +127,25 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps) => {
         
         return result;
       } catch (err: any) {
-        if (err instanceof FunctionsHttpError && err.response) {
-          const json = await err.response.json().catch(() => ({}));
+        if (err instanceof FunctionsHttpError) {
+          const resp = err.context?.response;            // may be undefined
+          const status = resp?.status ?? err.status;     // fallback to err.status
+
+          let details = "";
+          if (resp) {
+            try {
+              const json = await resp.clone().json();    // resp only readable once
+              details = json.details || json.error || "";
+            } catch { /* body wasn't JSON */ }
+          }
+
           toast({
-            title: `send-gmail ${err.response.status}`,
-            description: json.details || json.error || err.message,
+            title: `send‑gmail ${status}`,
+            description: details || err.message,
             variant: "destructive"
           });
         }
-        throw err; // re-throw so existing logic still works
+        throw err;
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to send email";
