@@ -1,4 +1,3 @@
-
 import { useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -115,6 +114,12 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps) => {
       if (error) {
         console.error("Error sending email via function:", error);
         throw new Error(error.message || "Failed to send email");
+      }
+      
+      if (data?.status) {
+        throw new Error(
+          `send-gmail returned ${data.status}: ${data.details || data.error}`
+        );
       }
       
       if (data?.error) {

@@ -153,20 +153,23 @@ async function sendGmailMessage(
     const url = 'https://gmail.googleapis.com/gmail/v1/users/me/messages/send';
     
     // Make the request to Gmail API
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(email)
-    });
-    
-    if (!response.ok) {
-      return handleGmailApiError(response);
+    const gmailRes = await fetch(url, { method: "POST", headers, body });
+
+    if (!gmailRes.ok) {
+      const text = await gmailRes.text();
+      console.error("Gmail API error:", gmailRes.status, text);
+
+      return new Response(
+        JSON.stringify({
+          error: "Gmail API error",
+          status: gmailRes.status,
+          details: text.slice(0, 500)
+        }),
+        { status: gmailRes.status, headers: corsHeaders }
+      );
     }
     
-    const data = await response.json();
+    const data = await gmailRes.json();
     const gmailId = data.id;
     const gmailThreadId = data.threadId;
 
