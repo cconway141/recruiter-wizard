@@ -1,7 +1,9 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Json } from "@/integrations/supabase/types";
 import { EmailThreadInfo } from "@/components/candidates/types";
+import { EmailResult } from "./types";
 
 export interface CandidateThreadData {
   candidateId: string;
@@ -22,6 +24,22 @@ export const getThreadMeta = async (candidateId: string, jobId: string) => {
 };
 
 export const useCandidateThreads = () => {
+  // Helper functions that use getThreadMeta
+  const getThreadId = async (candidateId: string, jobId: string): Promise<string | null> => {
+    const { threadId } = await getThreadMeta(candidateId, jobId);
+    return threadId ?? null;
+  };
+
+  const getMessageId = async (candidateId: string, jobId: string): Promise<string | null> => {
+    const { rfcMessageId } = await getThreadMeta(candidateId, jobId);
+    return rfcMessageId ?? null;
+  };
+
+  const getThreadInfo = async (candidateId: string, jobId: string): Promise<EmailThreadInfo | null> => {
+    const { threadId, rfcMessageId } = await getThreadMeta(candidateId, jobId);
+    return threadId || rfcMessageId ? { threadId, messageId: rfcMessageId } : null;
+  };
+
   const saveThreadId = async ({ 
     candidateId, 
     threadIds, 

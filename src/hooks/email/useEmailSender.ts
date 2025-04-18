@@ -3,14 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useGmailConnection } from "@/hooks/gmail";
+import { EmailResult } from "@/hooks/email/types";
 
 interface UseEmailSenderProps {
   onSuccess?: () => void;
-}
-
-interface EmailResult {
-  threadId: string;
-  messageId: string;
 }
 
 export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
@@ -136,7 +132,8 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
       
       const result: EmailResult = {
         threadId: data?.threadId || '',
-        messageId: data?.messageId || ''
+        messageId: data?.messageId || '',
+        rfcMessageId: data?.rfcMessageId || ''
       };
       
       console.log("Email sent successfully:", result);

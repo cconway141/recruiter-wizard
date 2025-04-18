@@ -1,9 +1,11 @@
+
 import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEmailSender } from "@/hooks/email/useEmailSender";
 import { useCandidateThreads } from "@/hooks/email/useCandidateThreads";
 import { useToast } from "@/hooks/use-toast";
 import { EmailThreadInfo } from "@/components/candidates/types";
+import { EmailResult } from "@/hooks/email/types";
 
 interface UseEmailSendingProps {
   candidateId?: string;

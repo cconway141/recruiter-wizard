@@ -1,4 +1,6 @@
 
+// Define common email types used across the application
+
 export interface EmailResult {
   success?: boolean;
   error?: string;
