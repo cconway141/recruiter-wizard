@@ -29,9 +29,9 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
     subject: string,
     body: string,
     candidateName: string,
-    jobTitle: string = "", 
-    threadId?: string | null,
-    messageId?: string | null
+    jobTitle: string | undefined,
+    threadId: string | null,
+    messageId: string | null
   ): Promise<EmailResult | null> => {
     if (!to || !user) {
       const error = "Missing recipient email or user not logged in";
@@ -51,7 +51,7 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
       
       const cc = "recruitment@theitbc.com";
       
-      const finalSubject = threadId ? "" : subject;
+      const finalSubject = subject;
       
       console.log("EMAIL SENDING PAYLOAD DEBUG:", {
         recipient: to,
@@ -69,7 +69,7 @@ export const useEmailSender = ({ onSuccess }: UseEmailSenderProps = {}) => {
         subject: finalSubject,
         body,
         candidateName,
-        jobTitle,
+        jobTitle: jobTitle || '',
         userId: user.id
       };
       
