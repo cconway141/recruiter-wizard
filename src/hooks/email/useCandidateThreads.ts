@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Json } from "@/integrations/supabase/types";
@@ -72,6 +71,16 @@ export const useCandidateThreads = () => {
     }
   };
 
+  const getThreadMeta = async (candidateId: string, jobId: string) => {
+    const { data } = await supabase
+      .from("candidates")
+      .select("thread_ids")
+      .eq("id", candidateId)
+      .maybeSingle();
+
+    return data?.thread_ids?.[jobId] ?? { threadId: undefined, rfcMessageId: undefined };
+  };
+
   const saveThreadId = async ({ 
     candidateId, 
     threadIds, 
@@ -143,6 +152,7 @@ export const useCandidateThreads = () => {
     saveThreadId,
     getThreadId,
     getMessageId,
-    getThreadInfo
+    getThreadInfo,
+    getThreadMeta
   };
 };

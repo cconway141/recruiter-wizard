@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEmailSender } from "@/hooks/email/useEmailSender";
@@ -80,12 +79,9 @@ export const useEmailSending = ({
         messageId: currentMessageId || "Not available"
       });
 
-      // Always include subject to ensure proper Gmail threading
-      const emailSubject = subject;
-      
       const result = await sendEmailViaGmail(
         candidateEmail,
-        emailSubject,
+        subject,
         body,
         candidateName,
         candidateFacingTitle || "",
@@ -93,10 +89,10 @@ export const useEmailSending = ({
         currentMessageId?.trim() || undefined
       );
 
-      if (result?.threadId && result?.messageId && candidateId && jobId) {
+      if (result?.threadId && result?.rfcMessageId && candidateId && jobId) {
         console.log("Email sent successfully, saving thread info:", {
           threadId: result.threadId, 
-          messageId: result.messageId
+          rfcMessageId: result.rfcMessageId
         });
         
         const { data } = await supabase
@@ -112,12 +108,11 @@ export const useEmailSending = ({
           threadIds: existingThreadIds,
           jobId,
           newThreadId: result.threadId,
-          newMessageId: result.messageId
+          newMessageId: result.rfcMessageId
         });
 
-        // Update state with new IDs for next send
         setCurrentThreadId(result.threadId);
-        setCurrentMessageId(result.messageId);
+        setCurrentMessageId(result.rfcMessageId);
       }
     } catch (error) {
       console.error("Error sending email:", error);

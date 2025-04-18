@@ -167,23 +167,40 @@ async function sendGmailMessage(
     }
     
     const data = await response.json();
+    const gmailId = data.id;
+    const gmailThreadId = data.threadId;
 
-    if (!data.id) {
-      console.error("Gmail API returned no messageId");
-      return { error: "Gmail API response missing messageId", details: data };
+    // Fetch the RFC Message-ID
+    const metaResponse = await fetch(
+      `https://gmail.googleapis.com/gmail/v1/users/me/messages/${gmailId}?format=metadata&metadataHeaders=Message-ID`,
+      {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    if (!metaResponse.ok) {
+      console.error("Failed to fetch message metadata");
+      return { error: "Failed to fetch message metadata" };
     }
-    
+
+    const metaData = await metaResponse.json();
+    const rfcMessageId = metaData.payload?.headers?.find((h: any) => h.name === "Message-ID")?.value;
+
     console.log("Gmail API response success:", {
-      messageId: data.id,
-      threadId: data.threadId,
+      messageId: gmailId,
+      threadId: gmailThreadId,
+      rfcMessageId,
       wasReply: !!threadId,
       hadMessageIdHeader: !!(messageId && messageId.trim())
     });
     
     return {
       success: true,
-      messageId: data.id,
-      threadId: data.threadId
+      messageId: gmailId,
+      threadId: gmailThreadId,
+      rfcMessageId
     };
   } catch (error) {
     console.error('Error sending Gmail message:', error);
@@ -348,7 +365,8 @@ serve(async (req) => {
       success: true,
       message: 'Email sent successfully',
       threadId: sendResult.threadId,
-      messageId: sendResult.messageId
+      messageId: sendResult.messageId,
+      rfcMessageId: sendResult.rfcMessageId
     };
     
     storeRequestResult(body, result);
